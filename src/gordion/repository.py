@@ -22,7 +22,6 @@ class Repository:
     """
 
     if not self._exists():
-      print("here2")
       print(self.path.parent)
       with pushd(self.path.parent, create=True):
         args = ['git', 'clone', self.url]

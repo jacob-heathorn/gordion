@@ -29,21 +29,12 @@ def test_exists():
   assert repo._exists()
 
 # TODO make it work with ssh url.
+# TODO why is it printing red
 def test_update():
   path = os.path.join(REPOS_DIR, 'west_demo_a')
   url = 'https://github.com/jacob-heathorn/west_demo_a.git'
   tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
   branch = 'develop'
-
-  print("here")
-  print(path)
-
-  # import debugpy
-  # debugpy.listen(("localhost", 5678))
-  # print("Waiting for debugger...")
-  # debugpy.wait_for_client()
-  # TODO doesnt work in sourc code!
-
 
   repo = Repository(path, url, tag, branch)
   assert not repo._exists()
