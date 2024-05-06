@@ -7,7 +7,7 @@ REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-def test_is_git_repository():
+def test_repository_exists():
 
   url = 'dontcare'
   tag = 'dontcare'
@@ -16,9 +16,14 @@ def test_is_git_repository():
   # Repository does not exist yet
   path = os.path.join(REPOS_DIR, 'west_example_a')
   repo = Repository(path, url, tag, branch)
-  assert not repo._is_git_repository()
+  assert not repo._exists()
 
-  # Check that self is a repository
+  # A file inside a repository is not an existing repository
   path = os.path.join(SCRIPT_DIR)
   repo = Repository(path, url, tag, branch)
-  assert repo._is_git_repository()
+  assert not repo._exists()
+
+  # This file lives in the gordion repository gordion root directory is an existing repository.
+  path = os.path.join(SCRIPT_DIR, '..')
+  repo = Repository(path, url, tag, branch)
+  assert repo._exists()

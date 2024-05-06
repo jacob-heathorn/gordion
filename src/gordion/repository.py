@@ -20,21 +20,23 @@ class Repository:
 
     """
 
-    if self._is_git_repository():
+    if self._exists():
       print("yay")
 
-  def _is_git_repository(self) -> bool:
+  def _exists(self) -> bool:
+    # Check directory exists
     if not os.path.isdir(self.path):
       return False
 
     try:
-      # Run `git rev-parse` to verify the directory is a Git repository
-      subprocess.check_call(
-          ["git", "-C", self.path, "rev-parse", "--is-inside-work-tree"],
-          stdout=subprocess.DEVNULL,
+      # Run the command to determine the root of the repository
+      result = subprocess.check_output(
+          ["git", "-C", self.path, "rev-parse", "--show-toplevel"],
           stderr=subprocess.DEVNULL
-      )
-      return True
+      ).strip().decode('utf-8')
+
+      # Compare the output with self.path to determine if it's the root
+      return os.path.abspath(result) == os.path.abspath(self.path)
     except subprocess.CalledProcessError:
-      # If `git rev-parse` fails, it's not a valid Git repository
-      return False
+        # If the command fails, the directory is not inside a Git repository
+        return False
