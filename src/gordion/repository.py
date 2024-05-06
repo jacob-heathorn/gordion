@@ -1,6 +1,7 @@
 import os
 import subprocess
-
+from gordion.utils import pushd
+from pathlib import Path
 
 class Repository:
   """
@@ -9,7 +10,7 @@ class Repository:
   """
 
   def __init__(self, path: str, url: str, tag: str, branch: str) -> None:
-    self.path = path
+    self.path = Path(path)
     self.url = url
     self.tag = tag
     self.branch = branch
@@ -20,8 +21,13 @@ class Repository:
 
     """
 
-    if self._exists():
-      print("yay")
+    if not self._exists():
+      print("here2")
+      print(self.path.parent)
+      with pushd(self.path.parent, create=True):
+        args = ['git', 'clone', self.url]
+        subprocess.check_call(args)
+      
 
   def _exists(self) -> bool:
     # Check directory exists
