@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 
 class Repository:
@@ -25,15 +26,17 @@ class Repository:
     return True
 
   def _is_git_repository(self) -> bool:
-    """
-    Checks if the given the path is a git repository
+    if not os.path.isdir(self.path):
+      return False
 
-    """
-    # Construct the expected path to the `.git` folder
-    git_dir = os.path.join(self.path, ".git")
-
-    # Check if the `.git` directory exists and is a directory itself
-    return os.path.isdir(git_dir)
-
-    # args = [LINK_SERVER, "flash", "--no-boot", "MIMXRT1176xxxxx:MIMXRT1170-EVK", "load",
-    # application] subprocess.check_call(args)
+    try:
+      # Run `git rev-parse` to verify the directory is a Git repository
+      subprocess.check_call(
+          ["git", "-C", self.path, "rev-parse", "--is-inside-work-tree"],
+          stdout=subprocess.DEVNULL,
+          stderr=subprocess.DEVNULL
+      )
+      return True
+    except subprocess.CalledProcessError:
+      # If `git rev-parse` fails, it's not a valid Git repository
+      return False
