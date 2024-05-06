@@ -7,7 +7,7 @@ class Repository:
 
   """
 
-  def __init__(self, path: os.Path, url: str, tag: str, branch: str) -> None:
+  def __init__(self, path: os.path, url: str, tag: str, branch: str) -> None:
     self.path = path
     self.url = url
     self.tag = tag
@@ -21,6 +21,8 @@ class Repository:
 
     if self._is_git_repository():
       print("yay")
+
+    return True
 
   
   def _is_git_repository(self) -> bool:
