@@ -26,7 +26,7 @@ class Repository:
       print(self.path.parent)
       with pushd(self.path.parent, create=True):
         args = ['git', 'clone', self.url]
-        subprocess.check_call(args)
+        subprocess.check_call(args, stderr=subprocess.STDOUT)
 
   def _exists(self) -> bool:
     # Check directory exists
