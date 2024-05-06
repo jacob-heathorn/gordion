@@ -28,6 +28,7 @@ def test_exists():
   repo = Repository(path, url, tag, branch)
   assert repo._exists()
 
+
 # TODO make it work with ssh url.
 # TODO why is it printing red
 def test_update():

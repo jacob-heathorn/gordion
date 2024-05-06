@@ -1,6 +1,7 @@
 import contextlib
 import os
 
+
 # Context manager for pushd. Example from
 # (https://stackoverflow.com/questions/6194499/pushd-through-os-system)
 @contextlib.contextmanager

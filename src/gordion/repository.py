@@ -3,6 +3,7 @@ import subprocess
 from gordion.utils import pushd
 from pathlib import Path
 
+
 class Repository:
   """
   Encapsulates a git repository in the gordion context.
@@ -26,7 +27,6 @@ class Repository:
       with pushd(self.path.parent, create=True):
         args = ['git', 'clone', self.url]
         subprocess.check_call(args)
-      
 
   def _exists(self) -> bool:
     # Check directory exists
