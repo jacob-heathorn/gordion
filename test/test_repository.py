@@ -30,7 +30,6 @@ def test_exists():
 
 
 # TODO make it work with ssh url.
-# TODO why is it printing red
 def test_update():
   path = os.path.join(REPOS_DIR, 'west_demo_a')
   url = 'https://github.com/jacob-heathorn/west_demo_a.git'
