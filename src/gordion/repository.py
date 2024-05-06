@@ -14,7 +14,7 @@ class Repository:
     self.tag = tag
     self.branch = branch
 
-  def update(self) -> bool:
+  def update(self) -> None:
     """
     Clones the repository if it does not exist, otherwise updates it to the requested branch:tag
 
@@ -22,8 +22,6 @@ class Repository:
 
     if self._is_git_repository():
       print("yay")
-
-    return True
 
   def _is_git_repository(self) -> bool:
     if not os.path.isdir(self.path):
