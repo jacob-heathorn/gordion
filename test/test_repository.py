@@ -5,6 +5,7 @@ assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
 REPOS_PATH = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 
+
 def test_repository():
 
     # # White box test for git parsing behavior.
