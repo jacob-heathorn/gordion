@@ -26,11 +26,12 @@ class Repository:
     if not self._exists():
       print(self.path.parent)
       with pushd(self.path.parent, create=True):
+        # TODO clone with repository name specified in path.
         args = ['git', 'clone', self.url]
         subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     # TODO: Checkout the branch:tag
-    
+
 
   def _exists(self) -> bool:
     # Check directory exists
