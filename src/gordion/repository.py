@@ -7,13 +7,13 @@ class Repository:
 
   """
 
-  def __init__(self, path: os.path, url: str, tag: str, branch: str) -> None:
+  def __init__(self, path: str, url: str, tag: str, branch: str) -> None:
     self.path = path
     self.url = url
     self.tag = tag
     self.branch = branch
 
-  def update(self) -> None:
+  def update(self) -> bool:
     """
     Clones the repository if it does not exist, otherwise updates it to the requested branch:tag
 
