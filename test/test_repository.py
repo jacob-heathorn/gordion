@@ -13,9 +13,8 @@ def test_repository():
     # assert gv(b'git version 2.24.3 (Apple Git-128)\n') == (2, 24, 3)
     # assert gv(b'git version 2.29.GIT\n') == (2, 29)
     # assert gv(b'not a git version') is None
-  
+
   repo = Repository(path=REPOS_PATH, url='git@github.com:jacob-heathorn/west_demo_a.git',
                     tag='1c518ee74d9c619321fea12e90c7a721dfddb0ee', branch='develop')
 
   assert repo.update()
-
