@@ -47,9 +47,7 @@ class TestRepository(unittest.TestCase):
     args = ["git", "-C", path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
     subprocess.check_call(args)
 
-    # Verify update will error, because the new commit would be lost because the remote branch does
-    # not have this commit.
-
+    # Verify update error. User needs to save the commits, or force the update.
     with self.assertRaises(gordion.ActiveBranchAheadError) as context:
       repo.update()
     expected = gordion.ActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
