@@ -49,9 +49,11 @@ class TestRepository(unittest.TestCase):
 
     # Verify update will error, because the new commit would be lost because the remote branch does
     # not have this commit.
-    with self.assertRaises(gordion.OperationError) as context:
+
+    with self.assertRaises(gordion.ActiveBranchAheadError) as context:
       repo.update()
-    self.assertTrue("develop is ahead" in str(context.exception))
+    expected = gordion.ActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
+    self.assertEqual(str(context.exception), str(expected))
 
     # # Older commit same branch.
     # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
