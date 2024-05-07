@@ -52,7 +52,13 @@ class TestRepository(unittest.TestCase):
       repo.update()
     expected = gordion.UpdateActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
     self.assertEqual(str(context.exception), str(expected))
-    print(str(context.exception))
+    
+    # Create a new local branch
+    args = ["git", "-C", path, "checkout", "-b", "test_branch"]
+    subprocess.check_call(args)
+
+    # Verify update scucceeds because no information is lost.
+    repo.update()
 
     # # Older commit same branch.
     # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'

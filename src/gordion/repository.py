@@ -36,6 +36,11 @@ class Repository:
     repo = Repo(self.path)
     target_commit = repo.commit(self.tag)
 
+    # TODO make sure git operations don't do anything until we know the whole thing would succeed?
+    # At least for the current repository. For nested repository, something could go wrong, leaving
+    # things in a broken state. but that's ok because the repository itself is a well understood
+    # state.
+
     # Check if branch is constant.
     if repo.active_branch.name == self.branch:
       # Check if commit is constant
@@ -60,6 +65,8 @@ class Repository:
     
     # Branch changes.
     else:
+      # TODO before checking out this branch?, verify that information would not be lost when you
+      # change commit inside it.
       pass
 
   def _update_active_branch(self, repo: Repo):
