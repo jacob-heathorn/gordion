@@ -48,10 +48,11 @@ class TestRepository(unittest.TestCase):
     subprocess.check_call(args)
 
     # Verify update error. User needs to save the commits, or force the update.
-    with self.assertRaises(gordion.ActiveBranchAheadError) as context:
+    with self.assertRaises(gordion.UpdateActiveBranchAheadError) as context:
       repo.update()
-    expected = gordion.ActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
+    expected = gordion.UpdateActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
     self.assertEqual(str(context.exception), str(expected))
+    print(str(context.exception))
 
     # # Older commit same branch.
     # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'

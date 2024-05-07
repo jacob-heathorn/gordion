@@ -86,7 +86,7 @@ class Repository:
     if commits_ahead and commits_behind:
       print(f"TODO: {self.branch} and {remote_branch_ref} have diverged with {len(commits_ahead)} local commit(s) ahead and {len(commits_behind)} remote commit(s) behind.")
     elif commits_ahead:
-      raise gordion.ActiveBranchAheadError(self.path, self.branch, remote_branch_ref, len(commits_ahead))
+      raise gordion.UpdateActiveBranchAheadError(self.path, self.branch, remote_branch_ref, len(commits_ahead))
     # elif commits_behind:
     #     return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)} commit(s)."
     # else:
