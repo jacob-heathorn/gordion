@@ -74,7 +74,7 @@ class Repository:
     # Make sure there is a common history.
     if not merge_base:
       # f"No common history between {local_branch_name} and {remote_branch_ref}."
-      raise OperationError("Error, the active branch cannot be updated because it differes from the remote branch. TODO need to..")
+      raise gordion.OperationError("Error, the active branch cannot be updated because it differes from the remote branch. TODO need to..")
 
     # Compare local commits that are ahead of the merge base but not in the remote branch
     commits_ahead = list(repo.iter_commits(f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
