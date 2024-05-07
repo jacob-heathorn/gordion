@@ -1,42 +1,61 @@
 import os
 from gordion.repository import Repository
+import subprocess
+import unittest
+from gordion.exception import OperationError
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
 REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+class TestRepository(unittest.TestCase):
+  
+  def test_exists(self):
+    url = 'dontcare'
+    tag = 'dontcare'
+    branch = 'dontcare'
 
-def test_exists():
+    # Repository does not exist yet
+    path = os.path.join(REPOS_DIR, 'west_demo_a')
+    repo = Repository(path, url, tag, branch)
+    self.assertFalse(repo._exists())
 
-  url = 'dontcare'
-  tag = 'dontcare'
-  branch = 'dontcare'
+    # A file inside a repository is not an existing repository
+    path = os.path.join(SCRIPT_DIR)
+    repo = Repository(path, url, tag, branch)
+    self.assertFalse(repo._exists())
 
-  # Repository does not exist yet
-  path = os.path.join(REPOS_DIR, 'west_demo_a')
-  repo = Repository(path, url, tag, branch)
-  assert not repo._exists()
+    # This file lives in the gordion repository gordion root directory is an existing repository.
+    path = os.path.join(SCRIPT_DIR, '..')
+    repo = Repository(path, url, tag, branch)
+    self.assertTrue(repo._exists())
 
-  # A file inside a repository is not an existing repository
-  path = os.path.join(SCRIPT_DIR)
-  repo = Repository(path, url, tag, branch)
-  assert not repo._exists()
+  # TODO make it work with ssh url.
+  def test_update(self):
+    path = os.path.join(REPOS_DIR, 'west_demo_a')
+    url = 'https://github.com/jacob-heathorn/west_demo_a.git'
+    tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
+    branch = 'develop'
 
-  # This file lives in the gordion repository gordion root directory is an existing repository.
-  path = os.path.join(SCRIPT_DIR, '..')
-  repo = Repository(path, url, tag, branch)
-  assert repo._exists()
+    repo = Repository(path, url, tag, branch)
+    self.assertFalse(repo._exists())
+    repo.update()
+    self.assertTrue(repo._exists())
 
+    # Create newer commit on same branch.
+    args = ["git", "-C", path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
+    subprocess.check_call(args)
 
-# TODO make it work with ssh url.
-def test_update():
-  path = os.path.join(REPOS_DIR, 'west_demo_a')
-  url = 'https://github.com/jacob-heathorn/west_demo_a.git'
-  tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
-  branch = 'develop'
+    # Verify update will error, because the new commit would be lost because the remote branch does
+    # not have this commit.
+    with self.assertRaises(OperationError) as context:
+      repo.update()
+    self.assertTrue("is ahead" in str(context.exception))
 
-  repo = Repository(path, url, tag, branch)
-  assert not repo._exists()
-  repo.update()
-  assert repo._exists()
+    # # Older commit same branch.
+    # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
+    # repo = Repository(path, url, tag, branch)
+    # repo.update()
+
+    # TODO test remote is ahead.
