@@ -1,5 +1,9 @@
 import os
 import subprocess
+from gordion.utils import pushd
+from pathlib import Path
+from git import Repo
+import gordion
 
 
 class Repository:
@@ -9,7 +13,7 @@ class Repository:
   """
 
   def __init__(self, path: str, url: str, tag: str, branch: str) -> None:
-    self.path = path
+    self.path = Path(path)
     self.url = url
     self.tag = tag
     self.branch = branch
@@ -20,21 +24,102 @@ class Repository:
 
     """
 
-    if self._is_git_repository():
-      print("yay")
+    # Clone if necessary.
+    if not self._exists():
+      print(self.path.parent)
+      with pushd(self.path.parent, create=True):
+        # TODO clone with repository name specified in path.
+        args = ['git', 'clone', self.url]
+        subprocess.check_call(args, stderr=subprocess.STDOUT)
 
-  def _is_git_repository(self) -> bool:
+    # TODO: Checkout the branch:tag
+
+    repo = Repo(self.path)
+    target_commit = repo.commit(self.tag)
+
+    # TODO make sure git operations don't do anything until we know the whole thing would succeed?
+    # At least for the current repository. For nested repository, something could go wrong, leaving
+    # things in a broken state. but that's ok because the repository itself is a well understood
+    # state.
+
+    # Check if branch is constant.
+    if repo.active_branch.name == self.branch:
+      # Check if commit is constant
+      if target_commit == repo.active_branch.commit:
+        pass  # nothing to do.
+
+      # The commit changes.
+      else:
+        # Fetch remote information
+        origin = repo.remotes.origin
+        origin.fetch()
+
+        # Check if active branch contains the target commit.
+        if target_commit in repo.active_branch.commit.traverse():
+          self._update_active_branch(repo)
+
+        # Active branch does not contain target commit.
+        else:
+          pass
+          # Check if remote branch contains target commit.
+          # remote_ref = repo.refs[remote_branch]
+
+    # Branch changes.
+    else:
+      # TODO before checking out this branch?, verify that information would not be lost when you
+      # change commit inside it.
+      pass
+
+  def _update_active_branch(self, repo: Repo):
+    # Resolve the local and remote branch references
+    local_branch = repo.heads[self.branch]
+    remote_branch_ref = f'origin/{self.branch}'
+    remote_branch = repo.remotes['origin'].refs[self.branch]
+
+    # Find the latest common ancestor between the two branches
+    merge_base = repo.merge_base(local_branch, remote_branch)
+
+    # Make sure there is a common history.
+    if not merge_base:
+      pass
+      # TODO f"No common history between {local_branch_name} and {remote_branch_ref}." raise
+      # gordion.OperationError("Error, the active branch cannot be updated because it differes from
+      # the remote branch. TODO need to..")
+
+    # Compare local commits that are ahead of the merge base but not in the remote branch
+    commits_ahead = list(repo.iter_commits(f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
+
+    # Compare remote commits that are ahead of the merge base but not in the local branch
+    commits_behind = list(repo.iter_commits(
+        f'{merge_base[0].hexsha}..{remote_branch.commit.hexsha}'))
+
+    # Evaluate comparison results
+    if commits_ahead and commits_behind:
+      print(f"TODO: {self.branch} and {remote_branch_ref} have diverged with {len(commits_ahead)}"
+            f"local commit(s) ahead and {len(commits_behind)} remote commit(s) behind.")
+    elif commits_ahead:
+      raise gordion.UpdateActiveBranchAheadError(
+          self.path, self.branch, remote_branch_ref, len(commits_ahead))
+    # elif commits_behind:
+    #     return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)}
+    #     commit(s)."
+    # else:
+    #     return f"{local_branch_name} and {remote_branch_ref} are up-to-date."
+
+  def _exists(self) -> bool:
+    # Check directory exists
     if not os.path.isdir(self.path):
       return False
 
     try:
-      # Run `git rev-parse` to verify the directory is a Git repository
-      subprocess.check_call(
-          ["git", "-C", self.path, "rev-parse", "--is-inside-work-tree"],
-          stdout=subprocess.DEVNULL,
+      # Run the command to determine the root of the repository
+      result = subprocess.check_output(
+          ["git", "-C", self.path, "rev-parse", "--show-toplevel"],
           stderr=subprocess.DEVNULL
-      )
-      return True
+      ).strip().decode('utf-8')
+
+      # Compare the output with self.path to determine if it's the root
+      return os.path.abspath(result) == os.path.abspath(self.path)
     except subprocess.CalledProcessError:
-      # If `git rev-parse` fails, it's not a valid Git repository
+        # If the command fails, the directory is not inside a Git repository
       return False
