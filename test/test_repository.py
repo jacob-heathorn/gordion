@@ -56,7 +56,7 @@ class TestRepository(unittest.TestCase):
 
     # Create a new local branch
     args = ["git", "-C", path, "checkout", "-b", "test_branch"]
-    subprocess.check_call(args)
+    subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     # Verify update scucceeds because no information is lost.
     repo.update()
