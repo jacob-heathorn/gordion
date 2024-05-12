@@ -9,8 +9,9 @@ assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+
 class TestRepository(unittest.TestCase):
-  
+
   def test_exists(self):
     url = 'dontcare'
     tag = 'dontcare'
@@ -52,7 +53,7 @@ class TestRepository(unittest.TestCase):
       repo.update()
     expected = gordion.UpdateActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
     self.assertEqual(str(context.exception), str(expected))
-    
+
     # Create a new local branch
     args = ["git", "-C", path, "checkout", "-b", "test_branch"]
     subprocess.check_call(args)

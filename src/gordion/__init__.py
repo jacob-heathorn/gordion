@@ -1,1 +1,1 @@
-from .exception import *
+from .exception import UpdateActiveBranchAheadError  # noqa: F401

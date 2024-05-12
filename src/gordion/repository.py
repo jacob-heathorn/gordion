@@ -5,6 +5,7 @@ from pathlib import Path
 from git import Repo
 import gordion
 
+
 class Repository:
   """
   Encapsulates a git repository in the gordion context.
@@ -45,24 +46,24 @@ class Repository:
     if repo.active_branch.name == self.branch:
       # Check if commit is constant
       if target_commit == repo.active_branch.commit:
-        pass # nothing to do.
-      
+        pass  # nothing to do.
+
       # The commit changes.
       else:
         # Fetch remote information
         origin = repo.remotes.origin
         origin.fetch()
-        
+
         # Check if active branch contains the target commit.
         if target_commit in repo.active_branch.commit.traverse():
           self._update_active_branch(repo)
-        
+
         # Active branch does not contain target commit.
         else:
           pass
           # Check if remote branch contains target commit.
           # remote_ref = repo.refs[remote_branch]
-    
+
     # Branch changes.
     else:
       # TODO before checking out this branch?, verify that information would not be lost when you
@@ -81,26 +82,30 @@ class Repository:
     # Make sure there is a common history.
     if not merge_base:
       pass
-      # TODO
-      # f"No common history between {local_branch_name} and {remote_branch_ref}."
-      # raise gordion.OperationError("Error, the active branch cannot be updated because it differes from the remote branch. TODO need to..")
+      # TODO f"No common history between {local_branch_name} and {remote_branch_ref}." raise
+      # gordion.OperationError("Error, the active branch cannot be updated because it differes from
+      # the remote branch. TODO need to..")
 
     # Compare local commits that are ahead of the merge base but not in the remote branch
     commits_ahead = list(repo.iter_commits(f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
 
     # Compare remote commits that are ahead of the merge base but not in the local branch
-    commits_behind = list(repo.iter_commits(f'{merge_base[0].hexsha}..{remote_branch.commit.hexsha}'))
+    commits_behind = list(repo.iter_commits(
+        f'{merge_base[0].hexsha}..{remote_branch.commit.hexsha}'))
 
     # Evaluate comparison results
     if commits_ahead and commits_behind:
-      print(f"TODO: {self.branch} and {remote_branch_ref} have diverged with {len(commits_ahead)} local commit(s) ahead and {len(commits_behind)} remote commit(s) behind.")
+      print(f"TODO: {self.branch} and {remote_branch_ref} have diverged with {len(commits_ahead)}"
+            f"local commit(s) ahead and {len(commits_behind)} remote commit(s) behind.")
     elif commits_ahead:
-      raise gordion.UpdateActiveBranchAheadError(self.path, self.branch, remote_branch_ref, len(commits_ahead))
+      raise gordion.UpdateActiveBranchAheadError(
+          self.path, self.branch, remote_branch_ref, len(commits_ahead))
     # elif commits_behind:
-    #     return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)} commit(s)."
+    #     return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)}
+    #     commit(s)."
     # else:
     #     return f"{local_branch_name} and {remote_branch_ref} are up-to-date."
-      
+
   def _exists(self) -> bool:
     # Check directory exists
     if not os.path.isdir(self.path):
@@ -117,4 +122,4 @@ class Repository:
       return os.path.abspath(result) == os.path.abspath(self.path)
     except subprocess.CalledProcessError:
         # If the command fails, the directory is not inside a Git repository
-        return False
+      return False
