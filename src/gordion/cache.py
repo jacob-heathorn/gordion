@@ -1,9 +1,7 @@
 import os
-import subprocess
-from gordion.utils import pushd
-from pathlib import Path
-from git import Repo
 import gordion
+import subprocess
+import shutil
 
 CACHE_DIR = os.path.join(os.environ['HOME'], '.gordion')
 
@@ -18,10 +16,20 @@ class Cache:
     if not os.path.exists(CACHE_DIR):
       os.makedirs(CACHE_DIR)
 
-  def get_mirror_path(url: str) -> None:
+  def clean():
+    shutil.rmtree(CACHE_DIR)
+    os.makedirs(CACHE_DIR)
+
+  def ensure_mirror(url: str) -> None:
     """
-    Returns a path in the cache
+    Clones a mirror if it does not already exist
 
     """
 
-    pass
+    host, username, repo_name = gordion.extract_repo_details(url)
+    local_path = os.path.join(CACHE_DIR, "mirrors", host, username, repo_name)
+
+    # Clone if the mirror does not exist
+    if not os.path.exists(local_path):
+      args = ['git', 'clone', '--mirror', url, local_path]
+      subprocess.check_call(args, stderr=subprocess.STDOUT)
