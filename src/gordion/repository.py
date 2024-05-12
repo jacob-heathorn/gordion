@@ -1,7 +1,5 @@
 import os
 import subprocess
-from gordion.utils import pushd
-from pathlib import Path
 from git import Repo
 import gordion
 
@@ -13,7 +11,7 @@ class Repository:
   """
 
   def __init__(self, path: str, url: str, tag: str, branch: str) -> None:
-    self.path = Path(path)
+    self.path = path
     self.url = url
     self.tag = tag
     self.branch = branch
@@ -26,11 +24,11 @@ class Repository:
 
     # Clone if necessary.
     if not self._exists():
-      print(self.path.parent)
-      with pushd(self.path.parent, create=True):
-        # TODO clone with repository name specified in path.
-        args = ['git', 'clone', self.url]
-        subprocess.check_call(args, stderr=subprocess.STDOUT)
+      cache = gordion.Cache()
+      mirror_path = cache.ensure_mirror(self.url)
+
+      args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
+      subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     # TODO: Checkout the branch:tag
 
