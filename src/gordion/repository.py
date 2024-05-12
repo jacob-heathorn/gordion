@@ -1,7 +1,5 @@
 import os
 import subprocess
-from gordion.utils import pushd
-from pathlib import Path
 from git import Repo
 import gordion
 
@@ -26,7 +24,7 @@ class Repository:
 
     # Clone if necessary.
     if not self._exists():
-      cache = gordion.Cache
+      cache = gordion.Cache()
       mirror_path = cache.ensure_mirror(self.url)
 
       args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]

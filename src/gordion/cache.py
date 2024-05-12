@@ -12,15 +12,15 @@ class Cache:
 
   """
 
-  def __init__() -> None:
+  def __init__(self) -> None:
     if not os.path.exists(CACHE_DIR):
       os.makedirs(CACHE_DIR)
 
-  def clean():
+  def clean(self):
     shutil.rmtree(CACHE_DIR)
     os.makedirs(CACHE_DIR)
 
-  def ensure_mirror(url: str) -> str:
+  def ensure_mirror(self, url: str) -> str:
     """
     Clones a mirror if it does not already exist
 

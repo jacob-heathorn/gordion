@@ -36,7 +36,7 @@ class TestCache(unittest.TestCase):
     self.assertEqual(username, "username")
     self.assertEqual(repo_name, "repository")
 
-  def test_fetch(self):
-    cache = gordion.Cache
+  def test_mirror(self):
+    cache = gordion.Cache()
     cache.clean()
     cache.ensure_mirror('https://github.com/jacob-heathorn/west_demo_a.git')
