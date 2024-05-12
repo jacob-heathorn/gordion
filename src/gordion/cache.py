@@ -20,7 +20,7 @@ class Cache:
     shutil.rmtree(CACHE_DIR)
     os.makedirs(CACHE_DIR)
 
-  def ensure_mirror(url: str) -> None:
+  def ensure_mirror(url: str) -> str:
     """
     Clones a mirror if it does not already exist
 
@@ -33,3 +33,5 @@ class Cache:
     if not os.path.exists(local_path):
       args = ['git', 'clone', '--mirror', url, local_path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
+
+    return local_path
