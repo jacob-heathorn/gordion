@@ -27,8 +27,6 @@ class Repository:
       cache = gordion.Cache()
       mirror_path = cache.ensure_mirror(self.url)
 
-      # args = ['git', 'clone', '--dissociate', '--reference', mirror_path, self.path]
-      # args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       args = ['git', 'clone', mirror_path, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
