@@ -3,6 +3,7 @@ from gordion.repository import Repository
 import subprocess
 import gordion
 import pytest
+from git import Repo
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
@@ -26,7 +27,7 @@ def test_exists():
   assert repo._exists()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def repoA():
   path = os.path.join(REPOS_DIR, 'west_demo_a')
   url = 'https://github.com/jacob-heathorn/west_demo_a.git'
@@ -34,12 +35,15 @@ def repoA():
   branch = 'develop'
   repo = Repository(path, url, tag, branch)
 
-  # Verify repository does not exist yet
-  assert not repo._exists()
-
   # Verify update clones the repository
-  repo.update()
-  assert repo._exists()
+  repo.update(force=True)
+
+  # Delete all local branches except develop
+  git_repo = Repo(path)
+  branches = list(git_repo.branches)
+  for branch in branches:
+    if branch.name != 'develop':
+      git_repo.delete_head(branch, force=True)
 
   yield repo
 

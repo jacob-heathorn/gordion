@@ -16,7 +16,7 @@ class Repository:
     self.tag = tag
     self.branch = branch
 
-  def update(self) -> None:
+  def update(self, force=False) -> None:
     """
     Clones the repository if it does not exist, otherwise updates it to the requested branch:tag
 
@@ -54,7 +54,7 @@ class Repository:
 
         # Check if active branch contains the target commit.
         if target_commit in repo.active_branch.commit.traverse():
-          self._update_active_branch(repo, target_commit)
+          self._update_active_branch(repo, target_commit, force)
 
         # Active branch does not contain target commit.
         else:
@@ -68,7 +68,7 @@ class Repository:
       # change commit inside it.
       pass
 
-  def _update_active_branch(self, repo: Repo, target_commit):
+  def _update_active_branch(self, repo: Repo, target_commit, force: bool):
     # Resolve the local and remote branch references
     local_branch = repo.heads[self.branch]
     remote_branch_ref = f'origin/{self.branch}'
@@ -96,8 +96,13 @@ class Repository:
       print(f"TODO: {self.branch} and {remote_branch_ref} have diverged with {len(commits_ahead)}"
             f"local commit(s) ahead and {len(commits_behind)} remote commit(s) behind.")
     elif commits_ahead:
-      raise gordion.UpdateActiveBranchAheadError(
-          self.path, self.branch, remote_branch_ref, len(commits_ahead))
+      if not force:
+        raise gordion.UpdateActiveBranchAheadError(
+            self.path, self.branch, remote_branch_ref, len(commits_ahead))
+      else:
+        # TODO print messages about what commits have been lost.
+        repo.git.reset('--hard', target_commit)
+
     elif commits_behind:
       # Reset the branch to the specific commit
       repo.git.reset('--hard', target_commit)
