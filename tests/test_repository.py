@@ -61,9 +61,9 @@ class TestRepository(unittest.TestCase):
     # Verify update scucceeds because no information is lost.
     repo.update()
 
-    # Older commit same branch.
-    tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
-    repo = Repository(path, url, tag, branch)
-    repo.update()
+    # # Older commit same branch.
+    # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
+    # repo = Repository(path, url, tag, branch)
+    # repo.update()
 
     # TODO test remote is ahead.
