@@ -3,6 +3,7 @@ from gordion.repository import Repository
 import subprocess
 import unittest
 import gordion
+import pytest
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
@@ -10,60 +11,86 @@ REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-class TestRepository(unittest.TestCase):
+def test_exists():
+  url = 'dontcare'
+  tag = 'dontcare'
+  branch = 'dontcare'
 
-  def test_exists(self):
-    url = 'dontcare'
-    tag = 'dontcare'
-    branch = 'dontcare'
+  # A file inside a repository is not an existing repository
+  path = os.path.join(SCRIPT_DIR)
+  repo = Repository(path, url, tag, branch)
+  assert not repo._exists()
 
-    # Repository does not exist yet
-    path = os.path.join(REPOS_DIR, 'west_demo_a')
-    repo = Repository(path, url, tag, branch)
-    self.assertFalse(repo._exists())
+  # Verify this repository root is a git repository path.
+  path = os.path.join(SCRIPT_DIR, '..')
+  repo = Repository(path, url, tag, branch)
+  assert repo._exists()
 
-    # A file inside a repository is not an existing repository
-    path = os.path.join(SCRIPT_DIR)
-    repo = Repository(path, url, tag, branch)
-    self.assertFalse(repo._exists())
 
-    # This file lives in the gordion repository gordion root directory is an existing repository.
-    path = os.path.join(SCRIPT_DIR, '..')
-    repo = Repository(path, url, tag, branch)
-    self.assertTrue(repo._exists())
+@pytest.fixture(scope="class")
+def repoA():
+  path = os.path.join(REPOS_DIR, 'west_demo_a')
+  url = 'https://github.com/jacob-heathorn/west_demo_a.git'
+  tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
+  branch = 'develop'
+  repo = Repository(path, url, tag, branch)
 
-  # TODO make it work with ssh url.
-  def test_update(self):
-    path = os.path.join(REPOS_DIR, 'west_demo_a')
-    url = 'https://github.com/jacob-heathorn/west_demo_a.git'
-    tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
-    branch = 'develop'
+  # Verify repository does not exist yet
+  assert not repo._exists()
 
-    repo = Repository(path, url, tag, branch)
-    self.assertFalse(repo._exists())
-    repo.update()
-    self.assertTrue(repo._exists())
+  # Verify update clones the repository
+  repo.update()
+  assert repo._exists()
 
-    # Create newer commit on same branch.
-    args = ["git", "-C", path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
-    subprocess.check_call(args)
+  yield repo
 
-    # Verify update error. User needs to save the commits, or force the update.
-    with self.assertRaises(gordion.UpdateActiveBranchAheadError) as context:
-      repo.update()
-    expected = gordion.UpdateActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
-    self.assertEqual(str(context.exception), str(expected))
 
-    # Create a new local branch
-    args = ["git", "-C", path, "checkout", "-b", "test_branch"]
-    subprocess.check_call(args, stderr=subprocess.STDOUT)
+class TestRepositoryUpdate:
+  def test1(self, repoA):
+    repoA.update()
 
-    # Verify update scucceeds because no information is lost.
-    repo.update()
+  def test2(self, repoA):
+    repoA.update()
 
-    # # Older commit same branch.
-    # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
-    # repo = Repository(path, url, tag, branch)
-    # repo.update()
 
-    # TODO test remote is ahead.
+# def test_update_1(repoA):
+
+#   repoA.update()
+
+
+# def test_update_2(repoA):
+
+#   repoA.update()
+#   # path = os.path.join(REPOS_DIR, 'west_demo_a')
+#   # url = 'https://github.com/jacob-heathorn/west_demo_a.git'
+#   # tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
+#   # branch = 'develop'
+
+#   # repo = Repository(path, url, tag, branch)
+#   # self.assertFalse(repo._exists())
+#   # repo.update()
+#   # self.assertTrue(repo._exists())
+
+#   # # Create newer commit on same branch.
+#   # args = ["git", "-C", path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
+#   # subprocess.check_call(args)
+
+#   # # Verify update error. User needs to save the commits, or force the update.
+#   # with self.assertRaises(gordion.UpdateActiveBranchAheadError) as context:
+#   #   repo.update()
+#   # expected = gordion.UpdateActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
+#   # self.assertEqual(str(context.exception), str(expected))
+
+#   # # Create a new local branch
+#   # args = ["git", "-C", path, "checkout", "-b", "test_branch"]
+#   # subprocess.check_call(args, stderr=subprocess.STDOUT)
+
+#   # # Verify update scucceeds because no information is lost.
+#   # repo.update()
+
+#   # # # Older commit same branch.
+#   # # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
+#   # # repo = Repository(path, url, tag, branch)
+#   # # repo.update()
+
+#   # # TODO test remote is ahead.

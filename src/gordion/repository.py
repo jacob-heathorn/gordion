@@ -54,7 +54,7 @@ class Repository:
 
         # Check if active branch contains the target commit.
         if target_commit in repo.active_branch.commit.traverse():
-          self._update_active_branch(repo)
+          self._update_active_branch(repo, target_commit)
 
         # Active branch does not contain target commit.
         else:
@@ -68,7 +68,7 @@ class Repository:
       # change commit inside it.
       pass
 
-  def _update_active_branch(self, repo: Repo):
+  def _update_active_branch(self, repo: Repo, target_commit):
     # Resolve the local and remote branch references
     local_branch = repo.heads[self.branch]
     remote_branch_ref = f'origin/{self.branch}'
@@ -98,9 +98,12 @@ class Repository:
     elif commits_ahead:
       raise gordion.UpdateActiveBranchAheadError(
           self.path, self.branch, remote_branch_ref, len(commits_ahead))
-    # elif commits_behind:
-    #     return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)}
-    #     commit(s)."
+    elif commits_behind:
+      # Reset the branch to the specific commit
+      repo.git.reset('--hard', target_commit)
+
+      # return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)}
+      # commit(s)."
     # else:
     #     return f"{local_branch_name} and {remote_branch_ref} are up-to-date."
 
@@ -119,5 +122,5 @@ class Repository:
       # Compare the output with self.path to determine if it's the root
       return os.path.abspath(result) == os.path.abspath(self.path)
     except subprocess.CalledProcessError:
-        # If the command fails, the directory is not inside a Git repository
+      # If the command fails, the directory is not inside a Git repository
       return False
