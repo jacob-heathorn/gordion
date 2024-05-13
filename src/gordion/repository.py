@@ -1,6 +1,6 @@
 import os
 import subprocess
-from git import Repo
+from git import Repo, NoSuchPathError, InvalidGitRepositoryError
 import gordion
 
 
@@ -115,19 +115,11 @@ class Repository:
     #     return f"{local_branch_name} and {remote_branch_ref} are up-to-date."
 
   def _exists(self) -> bool:
-    # Check directory exists
-    if not os.path.isdir(self.path):
-      return False
-
     try:
-      # Run the command to determine the root of the repository
-      result = subprocess.check_output(
-          ["git", "-C", self.path, "rev-parse", "--show-toplevel"],
-          stderr=subprocess.DEVNULL
-      ).strip().decode('utf-8')
-
-      # Compare the output with self.path to determine if it's the root
-      return os.path.abspath(result) == os.path.abspath(self.path)
-    except subprocess.CalledProcessError:
-      # If the command fails, the directory is not inside a Git repository
+        # Initialize the Repo object
+      repo = Repo(self.path)
+      # Compare the absolute paths to determine if 'path' is the repository root
+      return os.path.abspath(repo.working_tree_dir) == os.path.abspath(self.path)
+    except (NoSuchPathError, InvalidGitRepositoryError):
+      # If Repo initialization fails, the path is not a Git repository
       return False
