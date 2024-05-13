@@ -1,7 +1,6 @@
 import os
 from gordion.repository import Repository
 import subprocess
-import unittest
 import gordion
 import pytest
 
@@ -46,11 +45,19 @@ def repoA():
 
 
 class TestRepositoryUpdate:
-  def test1(self, repoA):
-    repoA.update()
+  def test_active_branch_ahead(self, repoA):
+    # Create newer commit on same branch.
+    args = ["git", "-C", repoA.path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
+    subprocess.check_call(args)
 
-  def test2(self, repoA):
-    repoA.update()
+    # Verify update error. User needs to save the commits, or force the update.
+    with pytest.raises(gordion.UpdateActiveBranchAheadError) as context:
+      repoA.update()
+    expected = gordion.UpdateActiveBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
+    assert str(context.value) == str(expected)
+
+  # def test2(self, repoA):
+  #   repoA.update()
 
 
 # def test_update_1(repoA):
@@ -60,16 +67,6 @@ class TestRepositoryUpdate:
 
 # def test_update_2(repoA):
 
-#   repoA.update()
-#   # path = os.path.join(REPOS_DIR, 'west_demo_a')
-#   # url = 'https://github.com/jacob-heathorn/west_demo_a.git'
-#   # tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
-#   # branch = 'develop'
-
-#   # repo = Repository(path, url, tag, branch)
-#   # self.assertFalse(repo._exists())
-#   # repo.update()
-#   # self.assertTrue(repo._exists())
 
 #   # # Create newer commit on same branch.
 #   # args = ["git", "-C", path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
