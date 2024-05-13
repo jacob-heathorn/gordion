@@ -33,9 +33,8 @@ class Repository:
 
     # TODO: Checkout the branch:tag
 
-    repo = Repo(self.path)
-    self.handle = repo  # TODO use handle from the start and through all git commands.
-    target_commit = repo.commit(self.tag)
+    self.handle = Repo(self.path)
+    target_commit = self.handle.commit(self.tag)
 
     # TODO make sure git operations don't do anything until we know the whole thing would succeed?
     # At least for the current repository. For nested repository, something could go wrong, leaving
@@ -43,20 +42,20 @@ class Repository:
     # state.
 
     # Check if branch is constant.
-    if repo.active_branch.name == self.branch:
+    if self.handle.active_branch.name == self.branch:
       # Check if commit is constant
-      if target_commit == repo.active_branch.commit:
+      if target_commit == self.handle.active_branch.commit:
         pass  # nothing to do.
 
       # The commit changes.
       else:
         # Fetch remote information
-        origin = repo.remotes.origin
+        origin = self.handle.remotes.origin
         origin.fetch()
 
         # Check if active branch contains the target commit.
-        if target_commit in repo.active_branch.commit.traverse():
-          self._update_active_branch(repo, target_commit, force)
+        if target_commit in self.handle.active_branch.commit.traverse():
+          self._update_active_branch(target_commit, force)
 
         # Active branch does not contain target commit.
         else:
@@ -70,14 +69,14 @@ class Repository:
       # change commit inside it.
       pass
 
-  def _update_active_branch(self, repo: Repo, target_commit, force: bool):
+  def _update_active_branch(self, target_commit, force: bool):
     # Resolve the local and remote branch references
-    local_branch = repo.heads[self.branch]
+    local_branch = self.handle.heads[self.branch]
     remote_branch_ref = f'origin/{self.branch}'
-    remote_branch = repo.remotes['origin'].refs[self.branch]
+    remote_branch = self.handle.remotes['origin'].refs[self.branch]
 
     # Find the latest common ancestor between the two branches
-    merge_base = repo.merge_base(local_branch, remote_branch)
+    merge_base = self.handle.merge_base(local_branch, remote_branch)
 
     # Make sure there is a common history.
     if not merge_base:
@@ -87,10 +86,11 @@ class Repository:
       # the remote branch. TODO need to..")
 
     # Compare local commits that are ahead of the merge base but not in the remote branch
-    commits_ahead = list(repo.iter_commits(f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
+    commits_ahead = list(self.handle.iter_commits(
+        f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
 
     # Compare remote commits that are ahead of the merge base but not in the local branch
-    commits_behind = list(repo.iter_commits(
+    commits_behind = list(self.handle.iter_commits(
         f'{merge_base[0].hexsha}..{remote_branch.commit.hexsha}'))
 
     # Evaluate comparison results
@@ -103,11 +103,11 @@ class Repository:
             self.path, self.branch, remote_branch_ref, len(commits_ahead))
       else:
         # TODO print messages about what commits have been lost.
-        repo.git.reset('--hard', target_commit)
+        self.handle.git.reset('--hard', target_commit)
 
     elif commits_behind:
       # Reset the branch to the specific commit
-      repo.git.reset('--hard', target_commit)
+      self.handle.git.reset('--hard', target_commit)
 
       # return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)}
       # commit(s)."
