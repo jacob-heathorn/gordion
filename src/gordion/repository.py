@@ -15,6 +15,7 @@ class Repository:
     self.url = url
     self.tag = tag
     self.branch = branch
+    self.handle = []
 
   def update(self, force=False) -> None:
     """
@@ -33,6 +34,7 @@ class Repository:
     # TODO: Checkout the branch:tag
 
     repo = Repo(self.path)
+    self.handle = repo  # TODO use handle from the start and through all git commands.
     target_commit = repo.commit(self.tag)
 
     # TODO make sure git operations don't do anything until we know the whole thing would succeed?

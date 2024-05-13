@@ -71,15 +71,13 @@ class TestRepositoryUpdate:
     Verifies that switching active local branches during update will succeed because no information
     is lost.
     """
-    # Create a new local branch
-    args = ["git", "-C", repoA.path, "checkout", "-b", "test_branch"]
-    subprocess.check_call(args, stderr=subprocess.STDOUT)
+
+    # Create a new branch and switch to it
+    new_branch = repoA.handle.create_head('test_branch')
+    new_branch.checkout()
 
     # Verify update scucceeds because no information is lost.
     repoA.update()
-
-  # def test2(self, repoA):
-  #   repoA.update()
 
 
 # def test_update_1(repoA):
