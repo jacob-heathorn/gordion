@@ -50,6 +50,10 @@ def repoA():
 
 class TestRepositoryUpdate:
   def test_active_branch_ahead(self, repoA):
+    """
+    Verifies that updating the active branch will error if it is ahead of the remote because commits
+    will be lost.
+    """
     # Create newer commit on same branch.
     args = ["git", "-C", repoA.path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
     subprocess.check_call(args)
@@ -59,6 +63,20 @@ class TestRepositoryUpdate:
       repoA.update()
     expected = gordion.UpdateActiveBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
     assert str(context.value) == str(expected)
+
+  # TODO ability to access underlying handle (repo) object directly
+
+  def test_switch_branch(self, repoA):
+    """
+    Verifies that switching active local branches during update will succeed because no information
+    is lost.
+    """
+    # Create a new local branch
+    args = ["git", "-C", repoA.path, "checkout", "-b", "test_branch"]
+    subprocess.check_call(args, stderr=subprocess.STDOUT)
+
+    # Verify update scucceeds because no information is lost.
+    repoA.update()
 
   # def test2(self, repoA):
   #   repoA.update()
