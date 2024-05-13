@@ -48,22 +48,22 @@ class TestRepository(unittest.TestCase):
     args = ["git", "-C", path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
     subprocess.check_call(args)
 
-    # # Verify update error. User needs to save the commits, or force the update.
-    # with self.assertRaises(gordion.UpdateActiveBranchAheadError) as context:
-    #   repo.update()
-    # expected = gordion.UpdateActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
-    # self.assertEqual(str(context.exception), str(expected))
+    # Verify update error. User needs to save the commits, or force the update.
+    with self.assertRaises(gordion.UpdateActiveBranchAheadError) as context:
+      repo.update()
+    expected = gordion.UpdateActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
+    self.assertEqual(str(context.exception), str(expected))
 
-    # # Create a new local branch
-    # args = ["git", "-C", path, "checkout", "-b", "test_branch"]
-    # subprocess.check_call(args, stderr=subprocess.STDOUT)
+    # Create a new local branch
+    args = ["git", "-C", path, "checkout", "-b", "test_branch"]
+    subprocess.check_call(args, stderr=subprocess.STDOUT)
 
-    # # Verify update scucceeds because no information is lost.
-    # repo.update()
+    # Verify update scucceeds because no information is lost.
+    repo.update()
 
-    # # Older commit same branch.
-    # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
-    # repo = Repository(path, url, tag, branch)
-    # repo.update()
+    # Older commit same branch.
+    tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
+    repo = Repository(path, url, tag, branch)
+    repo.update()
 
     # TODO test remote is ahead.

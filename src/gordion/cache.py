@@ -33,5 +33,7 @@ class Cache:
     if not os.path.exists(local_path):
       args = ['git', 'clone', url, local_path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
+    else:
+      args = ['git', '-C', local_path, 'fetch']
 
     return local_path

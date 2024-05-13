@@ -34,7 +34,6 @@ class Repository:
 
       args = ['git', '-C', self.path, 'remote', 'set-url', 'origin', self.url]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
-      return
 
     # TODO: Checkout the branch:tag
 
