@@ -29,9 +29,11 @@ class Cache:
     host, username, repo_name = gordion.extract_repo_details(url)
     local_path = os.path.join(CACHE_DIR, "mirrors", host, username, repo_name)
 
-    # Clone if the mirror does not exist
+    # Clone if the mirror does not exist, otherwise fetch
     if not os.path.exists(local_path):
-      args = ['git', 'clone', '--mirror', url, local_path]
+      args = ['git', 'clone', url, local_path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
+    else:
+      args = ['git', '-C', local_path, 'fetch']
 
     return local_path
