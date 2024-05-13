@@ -107,6 +107,7 @@ class Repository:
 
     elif commits_behind:
       # Reset the branch to the specific commit
+      print("\nhere commits behind")
       self.handle.git.reset('--hard', target_commit)
 
       # return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)}

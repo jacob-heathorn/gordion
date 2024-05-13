@@ -27,7 +27,7 @@ def test_exists():
   assert repo._exists()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def repoA():
   path = os.path.join(REPOS_DIR, 'west_demo_a')
   url = 'https://github.com/jacob-heathorn/west_demo_a.git'
@@ -49,10 +49,9 @@ def repoA():
 
 
 class TestRepositoryUpdate:
-  def test_active_branch_ahead(self, repoA):
+  def test_commits_ahead(self, repoA):
     """
-    Verifies that updating the active branch will error if it is ahead of the remote because commits
-    will be lost.
+    Verifies that updating the active branch will ERROR if it is ahead of the remote.
     """
     # Create newer commit on same branch.
     args = ["git", "-C", repoA.path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
@@ -64,12 +63,24 @@ class TestRepositoryUpdate:
     expected = gordion.UpdateActiveBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
     assert str(context.value) == str(expected)
 
-  # TODO ability to access underlying handle (repo) object directly
+  # def test_commits_behind(self, repoA):
+  #   """
+  #   Verifies that updating the active branch will SUCCEED if it is behind the remote.
+  #   """
+  #   # Go one commit back
+  #   current_branch = repoA.handle.head.ref
+  #   parent_commit = current_branch.commit.parents[0]
+  #   original_sha = current_branch.commit.hexsha
+  #   repoA.handle.git.reset(parent_commit.hexsha, hard=True)
+
+  #   # Verify update no error
+  #   repoA.update()
+
+  #   assert original_sha == repoA.handle.head.ref.commit.hexsha
 
   def test_switch_branch(self, repoA):
     """
-    Verifies that switching active local branches during update will succeed because no information
-    is lost.
+    Verifies that switching active local branches during update will SUCCEED
     """
 
     # Create a new branch and switch to it
@@ -78,6 +89,9 @@ class TestRepositoryUpdate:
 
     # Verify update scucceeds because no information is lost.
     repoA.update()
+
+    # TODO next, need to verify we switched back to the develop branch on update. This is not
+    # implemented yet.
 
 
 # def test_update_1(repoA):
