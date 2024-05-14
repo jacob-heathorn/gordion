@@ -12,22 +12,18 @@ class Repository:
 
   def __init__(self, path: str, url: str, tag: str, branch: str) -> None:
     self.path = path
-    self.url = url
-    self.branch = branch
-    self.handle = []
 
     # Clone if necessary.
     if not Repository._exists(path):
       cache = gordion.Cache()
-      mirror_path = cache.ensure_mirror(self.url)
+      mirror_path = cache.ensure_mirror(url)
 
-      args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
+      args = ['git', 'clone', '--reference', mirror_path, url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
-    # TODO: Checkout the branch:tag
-
     self.handle = Repo(self.path)
-    self.target_commit = self.handle.commit(tag)
+    self.target_tag = tag
+    self.target_branch_name = branch
 
   def update(self, force=False) -> None:
     """
@@ -41,9 +37,10 @@ class Repository:
     # state.
 
     # Check if branch is constant.
-    if self.handle.active_branch.name == self.branch:
+    if self.handle.active_branch.name == self.target_branch_name:
       # Check if commit is constant
-      if self.target_commit == self.handle.active_branch.commit:
+      target_commit = self.handle.commit(self.target_tag)
+      if target_commit == self.handle.active_branch.commit:
         pass  # nothing to do.
 
       # The commit changes.
@@ -53,8 +50,8 @@ class Repository:
         origin.fetch()
 
         # Check if active branch contains the target commit.
-        if self.target_commit in self.handle.active_branch.commit.traverse():
-          self._update_active_branch(self.target_commit, force)
+        if target_commit in self.handle.active_branch.commit.traverse():
+          self._update_active_branch(target_commit, force)
 
         # Active branch does not contain target commit.
         else:
@@ -75,9 +72,9 @@ class Repository:
 
   def _update_active_branch(self, target_commit, force: bool):
     # Resolve the local and remote branch references
-    local_branch = self.handle.heads[self.branch]
-    remote_branch_ref = f'origin/{self.branch}'
-    remote_branch = self.handle.remotes['origin'].refs[self.branch]
+    local_branch = self.handle.heads[self.target_branch_name]
+    remote_branch_ref = f'origin/{self.target_branch_name}'
+    remote_branch = self.handle.remotes['origin'].refs[self.target_branch_name]
 
     # Find the latest common ancestor between the two branches
     merge_base = self.handle.merge_base(local_branch, remote_branch)
@@ -99,20 +96,21 @@ class Repository:
 
     # Evaluate comparison results
     if commits_ahead and commits_behind:
-      print(f"TODO: {self.branch} and {remote_branch_ref} have diverged with {len(commits_ahead)}"
-            f"local commit(s) ahead and {len(commits_behind)} remote commit(s) behind.")
+      print(f"TODO: {self.target_branch_name} and {remote_branch_ref} have diverged with"
+            f"{len(commits_ahead)} local commit(s) ahead and {len(commits_behind)} remote"
+            f"commit(s) behind.")
     elif commits_ahead:
       if not force:
         raise gordion.UpdateActiveBranchAheadError(
-            self.path, self.branch, remote_branch_ref, len(commits_ahead))
+            self.path, self.target_branch_name, remote_branch_ref, len(commits_ahead))
       else:
         # TODO print messages about what commits have been lost.
-        self.handle.git.reset('--hard', self.target_commit)
+        self.handle.git.reset('--hard', target_commit)
 
     elif commits_behind:
       # Reset the branch to the specific commit
       print("\nhere commits behind")
-      self.handle.git.reset('--hard', self.target_commit)
+      self.handle.git.reset('--hard', target_commit)
 
       # return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)}
       # commit(s)."
