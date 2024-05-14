@@ -13,7 +13,6 @@ class Repository:
   def __init__(self, path: str, url: str, tag: str, branch: str) -> None:
     self.path = path
     self.url = url
-    self.tag = tag
     self.branch = branch
     self.handle = []
 
@@ -28,14 +27,13 @@ class Repository:
     # TODO: Checkout the branch:tag
 
     self.handle = Repo(self.path)
+    self.target_commit = self.handle.commit(tag)
 
   def update(self, force=False) -> None:
     """
     Clones the repository if it does not exist, otherwise updates it to the requested branch:tag
 
     """
-
-    target_commit = self.handle.commit(self.tag)
 
     # TODO make sure git operations don't do anything until we know the whole thing would succeed?
     # At least for the current repository. For nested repository, something could go wrong, leaving
@@ -45,7 +43,7 @@ class Repository:
     # Check if branch is constant.
     if self.handle.active_branch.name == self.branch:
       # Check if commit is constant
-      if target_commit == self.handle.active_branch.commit:
+      if self.target_commit == self.handle.active_branch.commit:
         pass  # nothing to do.
 
       # The commit changes.
@@ -55,8 +53,8 @@ class Repository:
         origin.fetch()
 
         # Check if active branch contains the target commit.
-        if target_commit in self.handle.active_branch.commit.traverse():
-          self._update_active_branch(target_commit, force)
+        if self.target_commit in self.handle.active_branch.commit.traverse():
+          self._update_active_branch(self.target_commit, force)
 
         # Active branch does not contain target commit.
         else:
@@ -109,12 +107,12 @@ class Repository:
             self.path, self.branch, remote_branch_ref, len(commits_ahead))
       else:
         # TODO print messages about what commits have been lost.
-        self.handle.git.reset('--hard', target_commit)
+        self.handle.git.reset('--hard', self.target_commit)
 
     elif commits_behind:
       # Reset the branch to the specific commit
       print("\nhere commits behind")
-      self.handle.git.reset('--hard', target_commit)
+      self.handle.git.reset('--hard', self.target_commit)
 
       # return f"{local_branch_name} is behind {remote_branch_ref} by {len(commits_behind)}
       # commit(s)."
