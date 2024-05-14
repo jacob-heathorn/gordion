@@ -36,14 +36,14 @@ class Repository:
     # things in a broken state. but that's ok because the repository itself is a well understood
     # state.
 
-    # Check if branch is constant.
+    # Branch is constant
     if self.handle.active_branch.name == self.target_branch_name:
-      # Check if commit is constant
+      # Commit is constant
       target_commit = self.handle.commit(self.target_tag)
       if target_commit == self.handle.active_branch.commit:
         pass  # nothing to do.
 
-      # The commit changes.
+      # Commit changes
       else:
         # Fetch remote information
         origin = self.handle.remotes.origin
@@ -61,12 +61,17 @@ class Repository:
 
         # Active branch does not contain target commit.
         else:
-          # Check if active branch has a remote branch
+          # No remote tracking branch
           if self.handle.active_branch.tracking_branch() is None:
             raise "TODO error active branch does not have remote and does not contain commit"
+
+          # Has remote tracking branch
           else:
+            # Tracking branch contains target commit
             if self._does_tracking_branch_contain_target_commit():
               self.handle.git.reset(target_commit, hard=True)
+
+            # Tracking branch does not contain target commit
             else:
               pass
 
