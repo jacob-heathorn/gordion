@@ -12,19 +12,13 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def test_exists():
-  url = 'dontcare'
-  tag = 'dontcare'
-  branch = 'dontcare'
-
   # A file inside a repository is not an existing repository
   path = os.path.join(SCRIPT_DIR)
-  repo = Repository(path, url, tag, branch)
-  assert not repo._exists()
+  assert not Repository._exists(path)
 
   # Verify this repository root is a git repository path.
   path = os.path.join(SCRIPT_DIR, '..')
-  repo = Repository(path, url, tag, branch)
-  assert repo._exists()
+  assert Repository._exists(path)
 
 
 @pytest.fixture
@@ -35,7 +29,6 @@ def repoA():
   branch = 'develop'
   repo = Repository(path, url, tag, branch)
 
-  # Verify update clones the repository
   repo.update(force=True)
 
   # Delete all local branches except develop

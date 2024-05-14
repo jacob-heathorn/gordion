@@ -17,14 +17,8 @@ class Repository:
     self.branch = branch
     self.handle = []
 
-  def update(self, force=False) -> None:
-    """
-    Clones the repository if it does not exist, otherwise updates it to the requested branch:tag
-
-    """
-
     # Clone if necessary.
-    if not self._exists():
+    if not Repository._exists(path):
       cache = gordion.Cache()
       mirror_path = cache.ensure_mirror(self.url)
 
@@ -34,6 +28,13 @@ class Repository:
     # TODO: Checkout the branch:tag
 
     self.handle = Repo(self.path)
+
+  def update(self, force=False) -> None:
+    """
+    Clones the repository if it does not exist, otherwise updates it to the requested branch:tag
+
+    """
+
     target_commit = self.handle.commit(self.tag)
 
     # TODO make sure git operations don't do anything until we know the whole thing would succeed?
@@ -120,12 +121,13 @@ class Repository:
     # else:
     #     return f"{local_branch_name} and {remote_branch_ref} are up-to-date."
 
-  def _exists(self) -> bool:
+  @staticmethod
+  def _exists(path: str) -> bool:
     try:
         # Initialize the Repo object
-      repo = Repo(self.path)
+      repo = Repo(path)
       # Compare the absolute paths to determine if 'path' is the repository root
-      return os.path.abspath(repo.working_tree_dir) == os.path.abspath(self.path)
+      return os.path.abspath(repo.working_tree_dir) == os.path.abspath(path)
     except (NoSuchPathError, InvalidGitRepositoryError):
       # If Repo initialization fails, the path is not a Git repository
       return False
