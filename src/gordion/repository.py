@@ -69,6 +69,11 @@ class Repository:
       # change commit inside it.
       pass
 
+  # def _is_head_at_commit(self, branch_name, commit):
+  #   branch = self.handle.branches[branch_name]
+  #   current_commit = branch.commit.hexsha
+  #   return current_commit == commit_hash
+
   def _update_active_branch(self, target_commit, force: bool):
     # Resolve the local and remote branch references
     local_branch = self.handle.heads[self.branch]
