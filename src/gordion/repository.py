@@ -61,14 +61,15 @@ class Repository:
 
     # Branch changes.
     else:
-      # TODO before checking out this branch?, verify that information would not be lost when you
-      # change commit inside it.
-      pass
+      if (self._is_target_branch_at_target_commit()):
+        self.handle.branches[self.target_branch_name].checkout()
+      else:
+        raise "todo"
 
-  # def _is_head_at_commit(self, branch_name, commit):
-  #   branch = self.handle.branches[branch_name]
-  #   current_commit = branch.commit.hexsha
-  #   return current_commit == commit_hash
+  def _is_target_branch_at_target_commit(self):
+    target_commit = self.handle.commit(self.target_tag)
+    target_branch = self.handle.branches[self.target_branch_name]
+    return target_branch.commit.hexsha == target_commit.hexsha
 
   def _update_active_branch(self, target_commit, force: bool):
     # Resolve the local and remote branch references

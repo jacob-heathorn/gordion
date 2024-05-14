@@ -79,12 +79,22 @@ class TestRepositoryUpdate:
     # Create a new branch and switch to it
     new_branch = repoA.handle.create_head('test_branch')
     new_branch.checkout()
+    assert repoA.handle.head.reference.name == "test_branch"
 
     # Verify update scucceeds because no information is lost.
     repoA.update()
+    assert repoA.handle.head.reference.name == repoA.target_branch_name
+    assert repoA.handle.head.commit.hexsha == repoA.target_tag
 
-    # TODO next, need to verify we switched back to the develop branch on update. This is not
-    # implemented yet.
+  # def test_switch_branch_ahead(self, repoA):
+  #   """
+  #   Verifies that switching active local branches and losing commits will FAIL
+  #   """
+
+  #   # Create a new branch and switch to it
+  #   new_branch = repoA.handle.create_head('test_branch')
+  #   new_branch.checkout()
+  #   assert repoA.handle.head.reference.name == "test_branch"
 
 
 # def test_update_1(repoA):
