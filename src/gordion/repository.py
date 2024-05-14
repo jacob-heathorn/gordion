@@ -88,10 +88,11 @@ class Repository:
   def _is_active_branch_behind_remote(self) -> bool:
     active_branch = self.handle.active_branch
     remote_branch = self.handle.active_branch.tracking_branch()
-    if active_branch.commit.hexsha != remote_branch.commit.hexsha:
-      return active_branch.commit.committed_date < remote_branch.commit.committed_date
-    else:
-      return False
+
+    commits_behind = list(self.handle.iter_commits(f"{active_branch}..{remote_branch}"))
+    if len(commits_behind) > 0:
+      return True
+    return False
 
   def _does_tracking_branch_contain_target_commit(self):
     remote_branch = self.handle.active_branch.tracking_branch()
