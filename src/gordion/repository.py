@@ -51,11 +51,25 @@ class Repository:
 
         # Check if active branch contains the target commit.
         if target_commit in self.handle.active_branch.commit.traverse():
-          self._update_active_branch(target_commit, force)
+          # Check if the active branch is behind remote
+          if (self._is_active_branch_behind_remote()):
+            # TODO rethink
+            # Set the active branch to the target commit
+            self.handle.git.reset(target_commit, hard=True)
+          else:
+            self._update_active_branch(target_commit, force)
 
         # Active branch does not contain target commit.
         else:
-          pass
+          # Check if active branch has a remote branch
+          if self.handle.active_branch.tracking_branch() is None:
+            raise "TODO error active branch does not have remote and does not contain commit"
+          else:
+            if self._does_tracking_branch_contain_target_commit():
+              self.handle.git.reset(target_commit, hard=True)
+            else:
+              pass
+
           # Check if remote branch contains target commit.
           # remote_ref = repo.refs[remote_branch]
 
@@ -70,6 +84,23 @@ class Repository:
     target_commit = self.handle.commit(self.target_tag)
     target_branch = self.handle.branches[self.target_branch_name]
     return target_branch.commit.hexsha == target_commit.hexsha
+
+  def _is_active_branch_behind_remote(self) -> bool:
+    active_branch = self.handle.active_branch
+    remote_branch = self.handle.active_branch.tracking_branch()
+    if active_branch.commit.hexsha != remote_branch.commit.hexsha:
+      return active_branch.commit.committed_date < remote_branch.commit.committed_date
+    else:
+      return False
+
+  def _does_tracking_branch_contain_target_commit(self):
+    remote_branch = self.handle.active_branch.tracking_branch()
+    target_commit = self.handle.commit(self.target_tag)
+
+    for commit in self.handle.iter_commits(remote_branch.name):
+      if commit.hexsha == target_commit.hexsha:
+        return True
+    return False
 
   def _update_active_branch(self, target_commit, force: bool):
     # Resolve the local and remote branch references

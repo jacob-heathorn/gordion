@@ -55,20 +55,22 @@ class TestRepositoryUpdate:
     expected = gordion.UpdateActiveBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
     assert str(context.value) == str(expected)
 
-  # def test_commits_behind(self, repoA):
-  #   """
-  #   Verifies that updating the active branch will SUCCEED if it is behind the remote.
-  #   """
-  #   # Go one commit back
-  #   current_branch = repoA.handle.head.ref
-  #   parent_commit = current_branch.commit.parents[0]
-  #   original_sha = current_branch.commit.hexsha
-  #   repoA.handle.git.reset(parent_commit.hexsha, hard=True)
+  def test_commits_behind(self, repoA):
+    """
+    Verifies that updating the active branch will SUCCEED if it is behind the remote.
+    """
 
-  #   # Verify update no error
-  #   repoA.update()
+    original_sha = repoA.handle.head.commit.hexsha
 
-  #   assert original_sha == repoA.handle.head.ref.commit.hexsha
+    # Go back one commit
+    current_branch = repoA.handle.head.ref
+    parent_commit = current_branch.commit.parents[0]
+    repoA.handle.git.reset(parent_commit.hexsha, hard=True)
+
+    # Verify update no error
+    repoA.update()
+
+    assert original_sha == repoA.handle.head.commit.hexsha
 
   def test_switch_branch(self, repoA):
     """
