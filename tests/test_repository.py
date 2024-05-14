@@ -72,6 +72,16 @@ class TestRepositoryUpdate:
 
     assert original_sha == repoA.handle.head.commit.hexsha
 
+  # TODO HERE
+  # def test_active_branch_does_not_contain_commit(self, repoA):
+  #   """
+  #   Verifies that updating the active branch will FAIL if it does not contian the target commit.
+  #   """
+
+  #   # repoA.target_tag = "bad" # TODO
+  #   repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
+  #   repoA.update()
+
   def test_switch_branch(self, repoA):
     """
     Verifies that switching active local branches during update will SUCCEED

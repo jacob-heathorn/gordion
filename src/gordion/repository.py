@@ -49,7 +49,7 @@ class Repository:
         origin = self.handle.remotes.origin
         origin.fetch()
 
-        # Check if active branch contains the target commit.
+        # Active branch contains target commit
         if target_commit in self.handle.active_branch.commit.traverse():
           # Check if the active branch is behind remote
           if (self._is_active_branch_behind_remote()):
@@ -59,7 +59,7 @@ class Repository:
           else:
             self._update_active_branch(target_commit, force)
 
-        # Active branch does not contain target commit.
+        # Active branch does NOT contain target commit.
         else:
           # No remote tracking branch
           if self.handle.active_branch.tracking_branch() is None:
@@ -71,9 +71,9 @@ class Repository:
             if self._does_tracking_branch_contain_target_commit():
               self.handle.git.reset(target_commit, hard=True)
 
-            # Tracking branch does not contain target commit
+            # Tracking branch does NOT contain target commit
             else:
-              pass
+              raise gordion.TargetBranchDoesNotContainTag(self)
 
           # Check if remote branch contains target commit.
           # remote_ref = repo.refs[remote_branch]
