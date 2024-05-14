@@ -47,8 +47,7 @@ class TestRepositoryUpdate:
     Verifies that updating the active branch will ERROR if it is ahead of the remote.
     """
     # Create newer commit on same branch.
-    args = ["git", "-C", repoA.path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
-    subprocess.check_call(args)
+    repoA.handle.index.commit("Empty commit for testing")
 
     # Verify update error. User needs to save the commits, or force the update.
     with pytest.raises(gordion.UpdateActiveBranchAheadError) as context:
