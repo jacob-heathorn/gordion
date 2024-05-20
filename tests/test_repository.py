@@ -3,7 +3,7 @@ from gordion.repository import Repository
 import subprocess
 import gordion
 import pytest
-from git import Repo
+from git import Repo, BadName
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
@@ -72,15 +72,22 @@ class TestRepositoryUpdate:
 
     assert original_sha == repoA.handle.head.commit.hexsha
 
-  # TODO HERE
-  # def test_active_branch_does_not_contain_commit(self, repoA):
-  #   """
-  #   Verifies that updating the active branch will FAIL if it does not contian the target commit.
-  #   """
+  def test_active_branch_does_not_contain_commit(self, repoA):
+    """
+    Verifies that updating the active branch will FAIL if it does not contian the target commit.
+    """
 
-  #   # repoA.target_tag = "bad" # TODO
-  #   repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
-  #   repoA.update()
+    # Just use a random, well-formatted commit that does not exist.
+    repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
+    with pytest.raises(ValueError):
+      repoA.update()
+
+    # Try a random, ill-formed commit
+    repoA.target_tag = "123"
+    with pytest.raises(BadName):
+      repoA.update()
+
+  # TODO test commit exists in remote, but not local.
 
   def test_switch_branch(self, repoA):
     """
