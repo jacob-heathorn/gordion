@@ -21,28 +21,42 @@ def test_exists():
   assert gordion.Repository._exists(path)
 
 
-# @pytest.fixture
-# def repoA():
-#   path = os.path.join(REPOS_DIR, 'west_demo_a')
-#   url = 'https://github.com/jacob-heathorn/west_demo_a.git'
-#   tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
-#   branch = 'develop'
-#   repo = Repository(path, url, tag, branch)
+@pytest.fixture
+def repoA():
+  path = os.path.join(REPOS_DIR, 'west_demo_a')
+  url = 'https://github.com/jacob-heathorn/west_demo_a.git'
+  tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
+  branch = 'develop'
+  repo = gordion.Repository(path, url, tag, branch)
 
-#   repo.update(force=True)
+  repo.update(force=True)
 
-#   # Delete all local branches except develop
-#   git_repo = Repo(path)
-#   branches = list(git_repo.branches)
-#   for branch in branches:
-#     if branch.name != 'develop':
-#       git_repo.delete_head(branch, force=True)
+  # Delete all local branches except develop
+  branches = list(repo.handle.branches)
+  for branch in branches:
+    if branch.name != 'develop':
+      repo.handle.delete_head(branch, force=True)
 
-#   yield repo
+  yield repo
 
 
-# def test_does_local_branch_have_commit(repoA):
-#   assert repoA._does_local_branch_have_commit()
+def test_does_local_branch_have_commit(repoA):
+  # Verify HEAD of activre branch returns true
+  assert repoA._does_local_branch_have_commit()
+
+  # Verify older commit of active branch returns true
+  repoA.target_tag = '1c518ee74d9c619321fea12e90c7a721dfddb0ee'
+  assert repoA._does_local_branch_have_commit()
+
+  # Verify HEAD of a non-active local branch returns true
+
+  # Verify older commit in non-active local branch returns true
+
+  # Verify bad commit (does not exist) - raises error
+
+  # Verfiy commit on remote but not on local returns false, but not raise error. Also verify this
+  # just after pushing remote before a fetch occurs. Is a fetch necessary to use the commit()
+  # function to create commit object?
 
 
 # class TestRepositoryUpdate:

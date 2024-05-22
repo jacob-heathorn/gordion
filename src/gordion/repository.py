@@ -89,10 +89,10 @@ class Repository:
   def _does_local_branch_have_commit(self) -> bool:
     target_commit = self.handle.commit(self.target_tag)
     local_branch = self.handle.heads[self.target_branch_name]
-    if target_commit in local_branch.commit.traverse():
+    if target_commit == local_branch.commit:
       return True
     else:
-      return False
+      return target_commit in local_branch.commit.iter_parents()
 
     # def _is_target_branch_at_target_commit(self):
     #   target_commit = self.handle.commit(self.target_tag)
