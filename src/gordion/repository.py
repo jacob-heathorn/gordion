@@ -87,7 +87,12 @@ class Repository:
 
   # TODO make sure this would not raise error on creating commit object.
   def _does_local_branch_have_commit(self) -> bool:
-    target_commit = self.handle.commit(self.target_tag)
+    try:
+      target_commit = self.handle.commit(self.target_tag)
+    except ValueError:
+      # A value error is thrown if the commit is not found.
+      return False
+
     local_branch = self.handle.heads[self.target_branch_name]
     if target_commit == local_branch.commit:
       return True

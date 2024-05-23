@@ -63,15 +63,12 @@ def test_does_local_branch_have_commit(repoA):
   repoA.target_tag = '1c518ee74d9c619321fea12e90c7a721dfddb0ee'
   assert repoA._does_local_branch_have_commit()
 
-  # Verify bad commit (does not exist) raises an error.
-  #
-  # 1) Just use a random, well-formatted commit that does not exist.
+  # Verify that a commit that does not exist will return False, but not raise an error.
   repoA.target_branch = 'develop'
   repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
-  with pytest.raises(ValueError):
-    repoA._does_local_branch_have_commit()
+  assert not repoA._does_local_branch_have_commit()
 
-  # 2) Try a random, ill-formed commit
+  # Verify that an ill-formed commit will raise an error.
   repoA.target_tag = "123"
   with pytest.raises(BadName):
     repoA._does_local_branch_have_commit()
@@ -79,9 +76,6 @@ def test_does_local_branch_have_commit(repoA):
   # Verfiy commit on remote but not on local returns false, but does not raise error.
   repoA.target_tag = "15289e899626fdb9aa187ab4b5888facf86e3ed8"
   assert not repoA._does_local_branch_have_commit()
-
-  # Also verify this just after pushing remote before a fetch occurs. Is a fetch necessary to use
-  # the commit() function to create commit object?
 
 
 # class TestRepositoryUpdate:
