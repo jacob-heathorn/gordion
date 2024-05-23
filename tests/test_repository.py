@@ -69,30 +69,22 @@ def test_does_local_branch_have_commit(repoA):
   commit = gordion.Repository._verify_tag(repoA.handle, '1c518ee74d9c619321fea12e90c7a721dfddb0ee')
   assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
-  # # Verify HEAD of a non-active local branch returns true
-  # repoA.handle.create_head('test_branch')
-  # assert repoA.handle.head.reference.name == "develop"  # Active branch is still develop
-  # repoA.target_branch = 'test_branch'
-  # assert repoA._does_local_branch_have_commit()
+  # Verify remote branch (testbranch1) that is not local returns false.
+  assert not gordion.Repository._does_local_branch_have_commit(repoA.handle, 'testbranch1', commit)
 
-  # # Verify older commit of a non-active branch returns true
-  # repoA.target_tag = '1c518ee74d9c619321fea12e90c7a721dfddb0ee'
-  # assert repoA._does_local_branch_have_commit()
+  # Now checkout testbranch1 so it exists locally, then switch back to develop. The same function
+  # should return true.
+  repoA.handle.git.checkout('-b', 'testbranch1', 'origin/testbranch1')
+  repoA.handle.branches['develop'].checkout()
+  assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'testbranch1', commit)
 
-  # # Verify that a commit that does not exist will return False, but not raise an error.
-  # repoA.target_branch = 'develop'
-  # repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
-  # assert not repoA._does_local_branch_have_commit()
+  # Verfiy commit on remote but not on local returns false.
+  commit = gordion.Repository._verify_tag(repoA.handle, '15289e899626fdb9aa187ab4b5888facf86e3ed8')
+  assert not gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
-  # # Verify that an ill-formed commit will raise an error.
-  # repoA.target_tag = "123"
-  # with pytest.raises(BadName):
-  #   repoA._does_local_branch_have_commit()
-
-  # # Verfiy commit on remote but not on local returns false, but does not raise error.
-  # repoA.target_tag = "15289e899626fdb9aa187ab4b5888facf86e3ed8"
-  # assert not repoA._does_local_branch_have_commit()
-
+  # For sanity, pull develop, same function should return true now.
+  repoA.handle.remotes.origin.pull('develop')
+  assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
 # class TestRepositoryUpdate:
   # def test_commits_ahead(self, repoA):

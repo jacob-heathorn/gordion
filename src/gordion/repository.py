@@ -113,7 +113,12 @@ class Repository:
     Returns true if there exist a local branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
     """
-    local_branch = repo.heads[branch_name]
+    try:
+      local_branch = repo.heads[branch_name]
+    except IndexError:
+      # The local branch does not exist, so it cannot contain the commit.
+      return False
+
     if commit == local_branch.commit:
       return True
     else:
