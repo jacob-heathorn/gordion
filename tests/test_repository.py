@@ -27,9 +27,14 @@ def repoA():
   url = 'https://github.com/jacob-heathorn/west_demo_a.git'
   tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
   branch = 'develop'
+  # Create the repo object, this will clone.
   repo = gordion.Repository(path, url, tag, branch)
 
-  repo.update(force=True)
+  # Use the underlying Repo handle object to reset the commit
+  develop = repo.handle.heads['develop']
+  develop.checkout()
+  target_commit = repo.handle.commit(repo.target_tag)
+  repo.handle.head.reset(commit=target_commit, index=True, working_tree=True)
 
   # Delete all local branches except develop
   branches = list(repo.handle.branches)
@@ -71,9 +76,9 @@ def test_does_local_branch_have_commit(repoA):
   with pytest.raises(BadName):
     repoA._does_local_branch_have_commit()
 
-  # # Verfiy commit on remote but not on local returns false, but not raise error.
-  # repoA.target_tag = "15289e899626fdb9aa187ab4b5888facf86e3ed8"
-  # assert not repoA._does_local_branch_have_commit()
+  # Verfiy commit on remote but not on local returns false, but does not raise error.
+  repoA.target_tag = "15289e899626fdb9aa187ab4b5888facf86e3ed8"
+  assert not repoA._does_local_branch_have_commit()
 
   # Also verify this just after pushing remote before a fetch occurs. Is a fetch necessary to use
   # the commit() function to create commit object?
