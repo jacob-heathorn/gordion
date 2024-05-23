@@ -45,6 +45,24 @@ def repoA():
   yield repo
 
 
+def test_verify_tag_exists(repoA):
+  # Verify HEAD of active branch exists
+  repoA._verify_tag_exists()
+
+  # Verify older commit of active branch exists
+  repoA.target_tag = '1c518ee74d9c619321fea12e90c7a721dfddb0ee'
+  repoA._verify_tag_exists()
+
+  # Verify a tag that only exists on a different remote branch (testbranch1) in fact exists.
+  repoA.target_tag = '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a'
+  repoA._verify_tag_exists()
+
+  # Verify that an ill-formed commit will raise an error.
+  repoA.target_tag = "123"
+  with pytest.raises(BadName):
+    repoA._verify_tag_exists()
+
+
 def test_does_local_branch_have_commit(repoA):
   # Verify HEAD of activre branch returns true
   assert repoA._does_local_branch_have_commit()

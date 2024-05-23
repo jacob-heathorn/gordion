@@ -85,6 +85,19 @@ class Repository:
     #   else:
     #     raise "todo"
 
+  def _verify_tag_exists(self):
+    try:
+      self.handle.commit(self.target_tag)
+    except ValueError:
+      # A value error is thrown if the commit is not found. Let's fetch and then try one more time.
+      # Fetch takes time and an internet connection, so I only want to do it if I have to.
+      origin = self.handle.remotes.origin
+      origin.fetch()
+
+      # If this throws a Value error again, then the commit really does not exist. If it throws a
+      # BadName error, the tag/commit is ill-formed.
+      self.handle.commit(self.target_tag)
+
   # TODO make sure this would not raise error on creating commit object.
   def _does_local_branch_have_commit(self) -> bool:
     try:
