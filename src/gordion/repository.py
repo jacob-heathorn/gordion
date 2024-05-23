@@ -86,9 +86,14 @@ class Repository:
     #     raise "todo"
 
   @staticmethod
-  def _verify_tag_exists(repo: Repo, tag: str):
+  def _verify_tag(repo: Repo, tag: str) -> Repo.commit:
+    """
+    Verifies and returns the commit object for the specified tag if it exists, otherwise throws an
+    error. This fuction will perform a fetch if necessary to check if recent remote changes contain
+    the tag.
+    """
     try:
-      repo.commit(tag)
+      commit = repo.commit(tag)
     except ValueError:
       # A value error is thrown if the commit is not found. Let's fetch and then try one more time.
       # Fetch takes time and an internet connection, so I only want to do it if I have to.
@@ -97,16 +102,22 @@ class Repository:
 
       # If this throws a Value error again, then the commit really does not exist. If it throws a
       # BadName error, the tag/commit is ill-formed.
-      repo.commit(tag)
+      commit = repo.commit(tag)
+      return commit
 
-  # TODO make sure this would not raise error on creating commit object.
-  def _does_local_branch_have_commit(self) -> bool:
-    target_commit = self.handle.commit(self.target_tag)
-    local_branch = self.handle.heads[self.target_branch_name]
-    if target_commit == local_branch.commit:
+    return commit
+
+  @staticmethod
+  def _does_local_branch_have_commit(repo: Repo, branch_name: str, commit: Repo.commit) -> bool:
+    """
+    Returns true if there exist a local branch with the specified name, that contains the specified
+    commit. Otherwise it returns false.
+    """
+    local_branch = repo.heads[branch_name]
+    if commit == local_branch.commit:
       return True
     else:
-      return target_commit in local_branch.commit.iter_parents()
+      return commit in local_branch.commit.iter_parents()
 
     # def _is_target_branch_at_target_commit(self):
     #   target_commit = self.handle.commit(self.target_tag)

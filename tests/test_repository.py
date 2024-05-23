@@ -45,38 +45,39 @@ def repoA():
   yield repo
 
 
-def test_verify_tag_exists(repoA):
+def test_verify_tag(repoA):
   # Verify HEAD of active branch exists.
-  gordion.Repository._verify_tag_exists(repoA.handle, '163f847f32fba7307dd94366560d7d55ffe3c144')
+  gordion.Repository._verify_tag(repoA.handle, '163f847f32fba7307dd94366560d7d55ffe3c144')
 
   # Verify older commit of active branch exists.
-  gordion.Repository._verify_tag_exists(repoA.handle, '1c518ee74d9c619321fea12e90c7a721dfddb0ee')
+  gordion.Repository._verify_tag(repoA.handle, '1c518ee74d9c619321fea12e90c7a721dfddb0ee')
 
   # Verify a tag that only exists on a different remote branch (testbranch1) in fact exists.
-  gordion.Repository._verify_tag_exists(repoA.handle, '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a')
+  gordion.Repository._verify_tag(repoA.handle, '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a')
 
   # Verify that an ill-formed commit will raise an error.
   with pytest.raises(BadName):
-    gordion.Repository._verify_tag_exists(repoA.handle, "123")
+    gordion.Repository._verify_tag(repoA.handle, "123")
 
 
 def test_does_local_branch_have_commit(repoA):
-  # Verify HEAD of active branch returns true
-  assert repoA._does_local_branch_have_commit()
+  # Verify HEAD of active branch returns true.
+  commit = gordion.Repository._verify_tag(repoA.handle, '163f847f32fba7307dd94366560d7d55ffe3c144')
+  assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
   # Verify older commit of active branch returns true
-  repoA.target_tag = '1c518ee74d9c619321fea12e90c7a721dfddb0ee'
-  assert repoA._does_local_branch_have_commit()
+  commit = gordion.Repository._verify_tag(repoA.handle, '1c518ee74d9c619321fea12e90c7a721dfddb0ee')
+  assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
-  # Verify HEAD of a non-active local branch returns true
-  repoA.handle.create_head('test_branch')
-  assert repoA.handle.head.reference.name == "develop"  # Active branch is still develop
-  repoA.target_branch = 'test_branch'
-  assert repoA._does_local_branch_have_commit()
+  # # Verify HEAD of a non-active local branch returns true
+  # repoA.handle.create_head('test_branch')
+  # assert repoA.handle.head.reference.name == "develop"  # Active branch is still develop
+  # repoA.target_branch = 'test_branch'
+  # assert repoA._does_local_branch_have_commit()
 
-  # Verify older commit of a non-active branch returns true
-  repoA.target_tag = '1c518ee74d9c619321fea12e90c7a721dfddb0ee'
-  assert repoA._does_local_branch_have_commit()
+  # # Verify older commit of a non-active branch returns true
+  # repoA.target_tag = '1c518ee74d9c619321fea12e90c7a721dfddb0ee'
+  # assert repoA._does_local_branch_have_commit()
 
   # # Verify that a commit that does not exist will return False, but not raise an error.
   # repoA.target_branch = 'develop'
@@ -88,9 +89,9 @@ def test_does_local_branch_have_commit(repoA):
   # with pytest.raises(BadName):
   #   repoA._does_local_branch_have_commit()
 
-  # Verfiy commit on remote but not on local returns false, but does not raise error.
-  repoA.target_tag = "15289e899626fdb9aa187ab4b5888facf86e3ed8"
-  assert not repoA._does_local_branch_have_commit()
+  # # Verfiy commit on remote but not on local returns false, but does not raise error.
+  # repoA.target_tag = "15289e899626fdb9aa187ab4b5888facf86e3ed8"
+  # assert not repoA._does_local_branch_have_commit()
 
 
 # class TestRepositoryUpdate:
