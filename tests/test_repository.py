@@ -49,14 +49,34 @@ def test_does_local_branch_have_commit(repoA):
   assert repoA._does_local_branch_have_commit()
 
   # Verify HEAD of a non-active local branch returns true
+  repoA.handle.create_head('test_branch')
+  assert repoA.handle.head.reference.name == "develop"  # Active branch is still develop
+  repoA.target_branch = 'test_branch'
+  assert repoA._does_local_branch_have_commit()
 
-  # Verify older commit in non-active local branch returns true
+  # Verify older commit of a non-active branch returns true
+  repoA.target_tag = '1c518ee74d9c619321fea12e90c7a721dfddb0ee'
+  assert repoA._does_local_branch_have_commit()
 
-  # Verify bad commit (does not exist) - raises error
+  # Verify bad commit (does not exist) raises an error.
+  #
+  # 1) Just use a random, well-formatted commit that does not exist.
+  repoA.target_branch = 'develop'
+  repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
+  with pytest.raises(ValueError):
+    repoA._does_local_branch_have_commit()
 
-  # Verfiy commit on remote but not on local returns false, but not raise error. Also verify this
-  # just after pushing remote before a fetch occurs. Is a fetch necessary to use the commit()
-  # function to create commit object?
+  # 2) Try a random, ill-formed commit
+  repoA.target_tag = "123"
+  with pytest.raises(BadName):
+    repoA._does_local_branch_have_commit()
+
+  # # Verfiy commit on remote but not on local returns false, but not raise error.
+  # repoA.target_tag = "15289e899626fdb9aa187ab4b5888facf86e3ed8"
+  # assert not repoA._does_local_branch_have_commit()
+
+  # Also verify this just after pushing remote before a fetch occurs. Is a fetch necessary to use
+  # the commit() function to create commit object?
 
 
 # class TestRepositoryUpdate:
@@ -98,13 +118,15 @@ def test_does_local_branch_have_commit(repoA):
   #   # Just use a random, well-formatted commit that does not exist.
   #   repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
   #   with pytest.raises(ValueError):
+  # #   # Just use a random, well-formatted commit that does not exist.
+  #   repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
+  #   with pytest.raises(ValueError):
   #     repoA.update()
 
   #   # Try a random, ill-formed commit
   #   repoA.target_tag = "123"
   #   with pytest.raises(BadName):
   #     repoA.update()
-
   # # TODO test commit exists in remote, but not local.
 
   # def test_switch_branch(self, repoA):
