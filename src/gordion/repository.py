@@ -35,37 +35,41 @@ class Repository:
 
     if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
                                                  target_commit):
-      print("here1")
       local_branch = self.handle.branches[self.target_branch_name]
       # Check if target commit is HEAD of local branch.
       if target_commit.hexsha == local_branch.commit.hexsha:
-        print(f"local hexsha: {local_branch.commit.hexsha}")
-        print("here1.1")
         local_branch.checkout()
-        print(f"local hexsha2: {local_branch.commit.hexsha}")
-        print(f"local branch name: {local_branch.name}")
 
       # Target commit is in local branch history.
       else:
-        print("here2")
-        # Check if local branch is ahead of remote. TODO ensure a remote branch exists.
+        # Need to fetch for this part of the logic.
         self.handle.remotes.origin.fetch()
-        # Find the latest common ancestor between the two branches
-        remote_branch = local_branch.tracking_branch()
-        merge_base = self.handle.merge_base(local_branch, remote_branch)
 
-        # Compare local commits that are ahead of the merge base but not in the remote branch
-        commits_ahead = list(self.handle.iter_commits(
-            f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
-        if commits_ahead:
-          raise gordion.UpdateActiveBranchAheadError(
-              self.path, self.target_branch_name, f'origin/{self.target_branch_name}',
-              len(commits_ahead))
+        # Check if the local branch has a remote tracking branch.
+        if local_branch.tracking_branch():
+          # Check if local branch is ahead of remote.
+          #
+          # Find the latest common ancestor between the two branches.
+          remote_branch = local_branch.tracking_branch()
+          merge_base = self.handle.merge_base(local_branch, remote_branch)
 
-        # All target branch local commits are contained in remote, reset to the target commit
+          # Compare local commits that are ahead of the merge base but not in the remote branch
+          commits_ahead = list(self.handle.iter_commits(
+              f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
+          if commits_ahead:
+            # TODO rename local
+            raise gordion.UpdateActiveBranchAheadError(
+                self.path, self.target_branch_name, f'origin/{self.target_branch_name}',
+                len(commits_ahead))
+
+          # All target branch local commits are contained in remote, reset to the target commit
+          else:
+            local_branch.checkout()
+            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+
+        # No tracking branch
         else:
-          local_branch.checkout()
-          self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+          raise gordion.UpdateNoTrackingBranchError(self.path, self.target_branch_name)
 
       # TODO go to local branch commit
 

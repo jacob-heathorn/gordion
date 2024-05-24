@@ -12,8 +12,8 @@ class UpdateActiveBranchAheadError(UpdateError):
     super().__init__(repo_path, reason, suggestion)
 
 
-class TargetBranchDoesNotContainTag(UpdateError):
-  def __init__(self, repo):
-    reason = (f"{repo.target_branch_name} does not contain {repo.target_tag}.")
-    suggestion = f"Ensure the tag exists in either the remote or local {repo.target_branch_name}"
-    super().__init__(repo.path, reason, suggestion)
+class UpdateNoTrackingBranchError(UpdateError):
+  def __init__(self, repo_path, local_branch):
+    reason = f"{local_branch} does not have a tracking branch, so commits will be lost."
+    suggestion = f"Create a remote tracking branch (git push -u origin {local_branch})"
+    super().__init__(repo_path, reason, suggestion)

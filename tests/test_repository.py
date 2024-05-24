@@ -121,6 +121,33 @@ def test_update_nonactive_local_branch_commits_ahead(repoA):
       repoA.path, 'testbranch1', 'origin/testbranch1', 1)
   assert str(context.value) == str(expected)
 
+
+def test_update_local_branch_no_loss(repoA):
+  """
+  TODO verify update can switch to another local branch with no loss
+  """
+  pass
+
+
+def test_update_local_branch_no_remote(repoA):
+  """
+  Verifies that updating a local branch will ERROR if it does not have a remote tracking branch.
+  """
+
+  # Create a new local branch, with no remote, and checkout develop again."
+  repoA.handle.git.checkout('-b', 'testbranch2')
+  repoA.handle.branches['develop'].checkout()
+
+  # Prepare update to point to testbranch2:HEAD~1
+  repoA.target_branch_name = 'testbranch2'
+  repoA.target_tag = repoA.handle.branches['testbranch2'].commit.parents[0].hexsha
+
+  # Verify update error. User needs to create a tracking branch.
+  with pytest.raises(gordion.UpdateNoTrackingBranchError) as context:
+    repoA.update()
+  expected = gordion.UpdateNoTrackingBranchError(repoA.path, 'testbranch2')
+  assert str(context.value) == str(expected)
+
   # Now verify with a non-active branch.
 
   # TODO need to verify with a local branch that does not have a remote.
