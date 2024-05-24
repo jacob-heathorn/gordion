@@ -95,9 +95,9 @@ def test_update_active_branch_commits_ahead(repoA):
   repoA.handle.index.commit("Empty commit for testing")
 
   # Verify update error. User needs to save the commits, or force the update.
-  with pytest.raises(gordion.UpdateActiveBranchAheadError) as context:
+  with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
     repoA.update()
-  expected = gordion.UpdateActiveBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
+  expected = gordion.UpdateLocalBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
   assert str(context.value) == str(expected)
 
 
@@ -115,9 +115,9 @@ def test_update_nonactive_local_branch_commits_ahead(repoA):
   repoA.target_branch_name = "testbranch1"
 
   # Verify update error. User needs to save the commits, or force the update.
-  with pytest.raises(gordion.UpdateActiveBranchAheadError) as context:
+  with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
     repoA.update()
-  expected = gordion.UpdateActiveBranchAheadError(
+  expected = gordion.UpdateLocalBranchAheadError(
       repoA.path, 'testbranch1', 'origin/testbranch1', 1)
   assert str(context.value) == str(expected)
 

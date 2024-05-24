@@ -58,7 +58,7 @@ class Repository:
               f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
           if commits_ahead:
             # TODO rename local
-            raise gordion.UpdateActiveBranchAheadError(
+            raise gordion.UpdateLocalBranchAheadError(
                 self.path, self.target_branch_name, f'origin/{self.target_branch_name}',
                 len(commits_ahead))
 

@@ -4,9 +4,9 @@ class UpdateError(Exception):
     super().__init__(self.message)
 
 
-class UpdateActiveBranchAheadError(UpdateError):
-  def __init__(self, repo_path, active_branch, remote_branch, num_commits):
-    reason = (f"{active_branch} has {num_commits} commit(s) ahead of {remote_branch}. "
+class UpdateLocalBranchAheadError(UpdateError):
+  def __init__(self, repo_path, local_branch, remote_branch, num_commits):
+    reason = (f"{local_branch} has {num_commits} commit(s) ahead of {remote_branch}. "
               f"Update would lose these commit(s)")
     suggestion = "Either push the commits or force the update please"
     super().__init__(repo_path, reason, suggestion)
