@@ -31,7 +31,39 @@ class Repository:
 
     """
 
-    # TODO make sure git operations don't do anything until we know the whole thing would succeed?
+    target_commit = Repository._verify_tag(self.handle, self.target_tag)
+
+    if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
+                                                 target_commit):
+      local_branch = self.handle.branches[self.target_branch_name]
+      # Check if target commit is HEAD of local branch.
+      if target_commit == local_branch.commit:
+        local_branch.checkout()
+
+      # Target commit is in local branch history.
+      else:
+        # Check if local branch is ahead of remote. TODO ensure a remote branch exists.
+        origin = self.handle.remotes.origin
+        origin.fetch()
+        # Find the latest common ancestor between the two branches
+        remote_branch = local_branch.tracking_branch()
+        merge_base = self.handle.merge_base(local_branch, remote_branch)
+
+        # Compare local commits that are ahead of the merge base but not in the remote branch
+        commits_ahead = list(self.handle.iter_commits(
+            f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
+        if commits_ahead:
+          raise gordion.UpdateActiveBranchAheadError(
+              self.path, self.target_branch_name, f'origin/{self.target_branch_name}',
+              len(commits_ahead))
+
+        # All target branch local commits are contained in remote, reset to the target commit
+        else:
+          local_branch.checkout()
+          self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+
+      # TODO go to local branch commit
+
     # At least for the current repository. For nested repository, something could go wrong, leaving
     # things in a broken state. but that's ok because the repository itself is a well understood
     # state.
@@ -84,6 +116,14 @@ class Repository:
     #     self.handle.branches[self.target_branch_name].checkout()
     #   else:
     #     raise "todo"
+
+  # @staticmethod
+  # def _go_to_local_branch_commit(repo: Repo, branch_name: str, commit: Repo.commit):
+  #   local_branch = repo.branches[branch_name]
+  #   if commit == local_branch.commit:
+  #     local_branch.checkout()
+  #   else
+  #   pass
 
   @staticmethod
   def _verify_tag(repo: Repo, tag: str) -> Repo.commit:

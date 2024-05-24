@@ -86,7 +86,21 @@ def test_does_local_branch_have_commit(repoA):
   repoA.handle.remotes.origin.pull('develop')
   assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
-# class TestRepositoryUpdate:
+
+def test_update_local_commits_ahead(repoA):
+  """
+  Verifies that updating the active branch will ERROR if it is ahead of the remote.
+  """
+  # Create newer commit on same branch.
+  repoA.handle.index.commit("Empty commit for testing")
+
+  # Verify update error. User needs to save the commits, or force the update.
+  with pytest.raises(gordion.UpdateActiveBranchAheadError) as context:
+    repoA.update()
+  expected = gordion.UpdateActiveBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
+  assert str(context.value) == str(expected)
+
+  # class TestRepositoryUpdate:
   # def test_commits_ahead(self, repoA):
   #   """
   #   Verifies that updating the active branch will ERROR if it is ahead of the remote.
