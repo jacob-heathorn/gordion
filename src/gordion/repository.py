@@ -35,16 +35,21 @@ class Repository:
 
     if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
                                                  target_commit):
+      print("here1")
       local_branch = self.handle.branches[self.target_branch_name]
       # Check if target commit is HEAD of local branch.
-      if target_commit == local_branch.commit:
+      if target_commit.hexsha == local_branch.commit.hexsha:
+        print(f"local hexsha: {local_branch.commit.hexsha}")
+        print("here1.1")
         local_branch.checkout()
+        print(f"local hexsha2: {local_branch.commit.hexsha}")
+        print(f"local branch name: {local_branch.name}")
 
       # Target commit is in local branch history.
       else:
+        print("here2")
         # Check if local branch is ahead of remote. TODO ensure a remote branch exists.
-        origin = self.handle.remotes.origin
-        origin.fetch()
+        self.handle.remotes.origin.fetch()
         # Find the latest common ancestor between the two branches
         remote_branch = local_branch.tracking_branch()
         merge_base = self.handle.merge_base(local_branch, remote_branch)

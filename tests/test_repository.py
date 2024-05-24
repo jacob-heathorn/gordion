@@ -87,11 +87,11 @@ def test_does_local_branch_have_commit(repoA):
   assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
 
-def test_update_local_commits_ahead(repoA):
+def test_update_active_branch_commits_ahead(repoA):
   """
   Verifies that updating the active branch will ERROR if it is ahead of the remote.
   """
-  # Create newer commit on same branch.
+  # Create newer commit on the active develop branch.
   repoA.handle.index.commit("Empty commit for testing")
 
   # Verify update error. User needs to save the commits, or force the update.
@@ -99,6 +99,31 @@ def test_update_local_commits_ahead(repoA):
     repoA.update()
   expected = gordion.UpdateActiveBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
   assert str(context.value) == str(expected)
+
+
+def test_update_nonactive_local_branch_commits_ahead(repoA):
+  """
+  Verifies that updating a non-active local branch will ERROR if it is ahead of the remote.
+  """
+
+  # Add a commit to "testbranch1"
+  repoA.handle.git.checkout('-b', 'testbranch1', 'origin/testbranch1')
+  repoA.handle.index.commit("Empty commit for testing")
+  repoA.handle.branches['develop'].checkout()
+
+  # Set the target branch name before update.
+  repoA.target_branch_name = "testbranch1"
+
+  # Verify update error. User needs to save the commits, or force the update.
+  with pytest.raises(gordion.UpdateActiveBranchAheadError) as context:
+    repoA.update()
+  expected = gordion.UpdateActiveBranchAheadError(
+      repoA.path, 'testbranch1', 'origin/testbranch1', 1)
+  assert str(context.value) == str(expected)
+
+  # Now verify with a non-active branch.
+
+  # TODO need to verify with a local branch that does not have a remote.
 
   # class TestRepositoryUpdate:
   # def test_commits_ahead(self, repoA):
