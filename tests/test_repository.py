@@ -180,6 +180,20 @@ def test_does_remote_branch_have_commit(repoA):
   assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
   assert not gordion.Repository._does_remote_branch_have_commit(repoA.handle, 'develop', commit)
 
+  # If remote branch does not exist, it just returns false.
+  assert not gordion.Repository._does_remote_branch_have_commit(repoA.handle, 'noname', commit)
+
+
+def test_update_remote_branch_only(repoA):
+  """
+  Verifies that update will create a new local branch to track the remote branch if it does not
+  exist yet and remote branch has the target commit.
+  """
+  repoA.target_branch_name = "testbranch1"
+  repoA.update()
+  assert repoA.handle.head.reference.name == "testbranch1"
+  assert repoA.handle.head.commit.hexsha == repoA.target_tag
+
   # Now verify with a non-active branch.
 
   # TODO need to verify with a local branch that does not have a remote.

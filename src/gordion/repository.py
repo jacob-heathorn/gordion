@@ -78,66 +78,82 @@ class Repository:
     else:
       self.fetch_once()
 
-      # At least for the current repository. For nested repository, something could go wrong, leaving
-      # things in a broken state. but that's ok because the repository itself is a well understood
-      # state.
+      # Check if the remote branch has the commit
+      if Repository._does_remote_branch_have_commit(self.handle, self.target_branch_name,
+                                                    target_commit):
 
-      # # Branch is constant
-      # if self.handle.active_branch.name == self.target_branch_name:
-      #   # Commit is constant
-      #   target_commit = self.handle.commit(self.target_tag)
-      #   if target_commit == self.handle.active_branch.commit:
-      #     pass  # nothing to do.
+        # Check if there is a local branch to match the remote branch.
+        local_branches = [branch.name for branch in self.handle.branches]
+        if self.target_branch_name in local_branches:
+          # Check if there are commits ahead
+          pass
 
-      #   # Commit changes
-      #   else:
-      #     # Fetch remote information
-      #     origin = self.handle.remotes.origin
-      #     origin.fetch()
+          # There is no local branch yet, create it, and reset it to the target commit.
+        else:
+          self.handle.git.checkout('-b', self.target_branch_name,
+                                   f'origin/{self.target_branch_name}')
+          self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
 
-      #     # Active branch contains target commit
-      #     if target_commit in self.handle.active_branch.commit.traverse():
-      #       # Check if the active branch is behind remote
-      #       if (self._is_active_branch_behind_remote()):
-      #         # TODO rethink
-      #         # Set the active branch to the target commit
-      #         self.handle.git.reset(target_commit, hard=True)
-      #       else:
-      #         self._update_active_branch(target_commit, force)
+        # At least for the current repository. For nested repository, something could go wrong, leaving
+        # things in a broken state. but that's ok because the repository itself is a well understood
+        # state.
 
-      #     # Active branch does NOT contain target commit.
-      #     else:
-      #       # No remote tracking branch
-      #       if self.handle.active_branch.tracking_branch() is None:
-      #         raise "TODO error active branch does not have remote and does not contain commit"
+        # # Branch is constant
+        # if self.handle.active_branch.name == self.target_branch_name:
+        #   # Commit is constant
+        #   target_commit = self.handle.commit(self.target_tag)
+        #   if target_commit == self.handle.active_branch.commit:
+        #     pass  # nothing to do.
 
-      #       # Has remote tracking branch
-      #       else:
-      #         # Tracking branch contains target commit
-      #         if self._does_tracking_branch_contain_target_commit():
-      #           self.handle.git.reset(target_commit, hard=True)
+        #   # Commit changes
+        #   else:
+        #     # Fetch remote information
+        #     origin = self.handle.remotes.origin
+        #     origin.fetch()
 
-      #         # Tracking branch does NOT contain target commit
-      #         else:
-      #           raise gordion.TargetBranchDoesNotContainTag(self)
+        #     # Active branch contains target commit
+        #     if target_commit in self.handle.active_branch.commit.traverse():
+        #       # Check if the active branch is behind remote
+        #       if (self._is_active_branch_behind_remote()):
+        #         # TODO rethink
+        #         # Set the active branch to the target commit
+        #         self.handle.git.reset(target_commit, hard=True)
+        #       else:
+        #         self._update_active_branch(target_commit, force)
 
-      #       # Check if remote branch contains target commit.
-      #       # remote_ref = repo.refs[remote_branch]
+        #     # Active branch does NOT contain target commit.
+        #     else:
+        #       # No remote tracking branch
+        #       if self.handle.active_branch.tracking_branch() is None:
+        #         raise "TODO error active branch does not have remote and does not contain commit"
 
-      # # Branch changes.
-      # else:
-      #   if (self._is_target_branch_at_target_commit()):
-      #     self.handle.branches[self.target_branch_name].checkout()
-      #   else:
-      #     raise "todo"
+        #       # Has remote tracking branch
+        #       else:
+        #         # Tracking branch contains target commit
+        #         if self._does_tracking_branch_contain_target_commit():
+        #           self.handle.git.reset(target_commit, hard=True)
 
-      # @staticmethod
-      # def _go_to_local_branch_commit(repo: Repo, branch_name: str, commit: Repo.commit):
-      #   local_branch = repo.branches[branch_name]
-      #   if commit == local_branch.commit:
-      #     local_branch.checkout()
-      #   else
-      #   pass
+        #         # Tracking branch does NOT contain target commit
+        #         else:
+        #           raise gordion.TargetBranchDoesNotContainTag(self)
+
+        #       # Check if remote branch contains target commit.
+        #       # remote_ref = repo.refs[remote_branch]
+
+        # # Branch changes.
+        # else:
+        #   if (self._is_target_branch_at_target_commit()):
+        #     self.handle.branches[self.target_branch_name].checkout()
+        #   else:
+        #     raise "todo"
+
+        # @staticmethod
+        # def _go_to_local_branch_commit(repo: Repo, branch_name: str, commit: Repo.commit):
+        #   local_branch = repo.branches[branch_name]
+        #   if commit == local_branch.commit:
+        #     local_branch.checkout()
+        #   else
+        #   pass
 
   @staticmethod
   def _does_remote_branch_have_commit(repo: Repo, branch_name: str, commit: Repo.commit) -> bool:
