@@ -194,6 +194,33 @@ def test_update_remote_branch_only(repoA):
   assert repoA.handle.head.reference.name == "testbranch1"
   assert repoA.handle.head.commit.hexsha == repoA.target_tag
 
+
+def test_update_local_fastforward(repoA):
+  """
+  If there is a local branch, but it does not contain the commit, but the remote branch does contain
+  the commit, update will fastforward.
+  """
+
+  # Choose a tag 2 commits ahead of our baseline test commit on develop.
+  repoA.target_tag = '65bf30cb0303e7c90f832fcedba83d7dd91dccab'
+  repoA.update()
+
+
+def test_local_branch_wrong_tracking_branch(repoA):
+  """
+  If there is a local branch that matches the remote branch by name, but it has the wrong tracking
+  branch, error.
+  """
+
+  # Checkout testbranch1 locally but link it to the wrong remote branch.
+  repoA.handle.git.checkout('-b', 'testbranch1', 'origin/develop')
+  repoA.target_branch_name = 'testbranch1'
+  repoA.target_tag = '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a'
+  with pytest.raises(gordion.UpdateWrongTrackingBranchError) as context:
+    repoA.update()
+  expected = gordion.UpdateWrongTrackingBranchError(repoA.path, 'testbranch1', 'origin/develop')
+  assert str(context.value) == str(expected)
+
   # Now verify with a non-active branch.
 
   # TODO need to verify with a local branch that does not have a remote.
