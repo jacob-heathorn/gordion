@@ -48,34 +48,19 @@ class Repository:
         # Need to fetch for this part of the logic.
         self.fetch_once()
 
-        # Check if the local branch has a remote tracking branch.
-        if local_branch.tracking_branch():
-          # Check if local branch is ahead of remote.
-          #
-          # Find the latest common ancestor between the two branches.
-          remote_branch = local_branch.tracking_branch()
+        # Make sure the local branch is setup to track the expected remote branch.
+        local_branch = self.handle.branches[self.target_branch_name]
+        tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
+            self.path, local_branch)
 
-          if remote_branch.name != f"origin/{self.target_branch_name}":
-            raise gordion.UpdateWrongTrackingBranchError(
-                self.path, self.target_branch_name, remote_branch.name)
+        # Make sure the local branch is not ahead of tracking branch, since we're moving the
+        # local HEAD, information would be lost.
+        Repository._verify_local_commits_not_ahead(
+            self.path, self.handle, local_branch, tracking_branch)
 
-          merge_base = self.handle.merge_base(local_branch, remote_branch)
-
-          # Compare local commits that are ahead of the merge base but not in the remote branch
-          commits_ahead = list(self.handle.iter_commits(
-              f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
-          if commits_ahead:
-            raise gordion.UpdateLocalBranchAheadError(
-                self.path, self.target_branch_name, remote_branch.name, len(commits_ahead))
-
-          # All target branch local commits are contained in remote, reset to the target commit
-          else:
-            local_branch.checkout()
-            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
-
-        # No tracking branch
-        else:
-          raise gordion.UpdateNoTrackingBranchError(self.path, self.target_branch_name)
+        # Good to go move the local branch HEAD to the target commit.
+        local_branch.checkout()
+        self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
 
     # Tag is not on a local branch
     else:
