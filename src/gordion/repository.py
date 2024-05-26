@@ -25,6 +25,8 @@ class Repository:
     self.target_tag = tag
     self.target_branch_name = branch
 
+  # TODO create a fetchonce function that will only fetch one time for the lifetime of the update()
+  # function call.
   def update(self, force=False) -> None:
     """
     TODO
@@ -71,68 +73,87 @@ class Repository:
         else:
           raise gordion.UpdateNoTrackingBranchError(self.path, self.target_branch_name)
 
-      # TODO go to local branch commit
+    # Tag is not on a local branch
+    else:
+      self.handle.remotes.origin.fetch()  # TODO fetch once.
 
-    # At least for the current repository. For nested repository, something could go wrong, leaving
-    # things in a broken state. but that's ok because the repository itself is a well understood
-    # state.
+      # At least for the current repository. For nested repository, something could go wrong, leaving
+      # things in a broken state. but that's ok because the repository itself is a well understood
+      # state.
 
-    # # Branch is constant
-    # if self.handle.active_branch.name == self.target_branch_name:
-    #   # Commit is constant
-    #   target_commit = self.handle.commit(self.target_tag)
-    #   if target_commit == self.handle.active_branch.commit:
-    #     pass  # nothing to do.
+      # # Branch is constant
+      # if self.handle.active_branch.name == self.target_branch_name:
+      #   # Commit is constant
+      #   target_commit = self.handle.commit(self.target_tag)
+      #   if target_commit == self.handle.active_branch.commit:
+      #     pass  # nothing to do.
 
-    #   # Commit changes
-    #   else:
-    #     # Fetch remote information
-    #     origin = self.handle.remotes.origin
-    #     origin.fetch()
+      #   # Commit changes
+      #   else:
+      #     # Fetch remote information
+      #     origin = self.handle.remotes.origin
+      #     origin.fetch()
 
-    #     # Active branch contains target commit
-    #     if target_commit in self.handle.active_branch.commit.traverse():
-    #       # Check if the active branch is behind remote
-    #       if (self._is_active_branch_behind_remote()):
-    #         # TODO rethink
-    #         # Set the active branch to the target commit
-    #         self.handle.git.reset(target_commit, hard=True)
-    #       else:
-    #         self._update_active_branch(target_commit, force)
+      #     # Active branch contains target commit
+      #     if target_commit in self.handle.active_branch.commit.traverse():
+      #       # Check if the active branch is behind remote
+      #       if (self._is_active_branch_behind_remote()):
+      #         # TODO rethink
+      #         # Set the active branch to the target commit
+      #         self.handle.git.reset(target_commit, hard=True)
+      #       else:
+      #         self._update_active_branch(target_commit, force)
 
-    #     # Active branch does NOT contain target commit.
-    #     else:
-    #       # No remote tracking branch
-    #       if self.handle.active_branch.tracking_branch() is None:
-    #         raise "TODO error active branch does not have remote and does not contain commit"
+      #     # Active branch does NOT contain target commit.
+      #     else:
+      #       # No remote tracking branch
+      #       if self.handle.active_branch.tracking_branch() is None:
+      #         raise "TODO error active branch does not have remote and does not contain commit"
 
-    #       # Has remote tracking branch
-    #       else:
-    #         # Tracking branch contains target commit
-    #         if self._does_tracking_branch_contain_target_commit():
-    #           self.handle.git.reset(target_commit, hard=True)
+      #       # Has remote tracking branch
+      #       else:
+      #         # Tracking branch contains target commit
+      #         if self._does_tracking_branch_contain_target_commit():
+      #           self.handle.git.reset(target_commit, hard=True)
 
-    #         # Tracking branch does NOT contain target commit
-    #         else:
-    #           raise gordion.TargetBranchDoesNotContainTag(self)
+      #         # Tracking branch does NOT contain target commit
+      #         else:
+      #           raise gordion.TargetBranchDoesNotContainTag(self)
 
-    #       # Check if remote branch contains target commit.
-    #       # remote_ref = repo.refs[remote_branch]
+      #       # Check if remote branch contains target commit.
+      #       # remote_ref = repo.refs[remote_branch]
 
-    # # Branch changes.
-    # else:
-    #   if (self._is_target_branch_at_target_commit()):
-    #     self.handle.branches[self.target_branch_name].checkout()
-    #   else:
-    #     raise "todo"
+      # # Branch changes.
+      # else:
+      #   if (self._is_target_branch_at_target_commit()):
+      #     self.handle.branches[self.target_branch_name].checkout()
+      #   else:
+      #     raise "todo"
 
-  # @staticmethod
-  # def _go_to_local_branch_commit(repo: Repo, branch_name: str, commit: Repo.commit):
-  #   local_branch = repo.branches[branch_name]
-  #   if commit == local_branch.commit:
-  #     local_branch.checkout()
-  #   else
-  #   pass
+      # @staticmethod
+      # def _go_to_local_branch_commit(repo: Repo, branch_name: str, commit: Repo.commit):
+      #   local_branch = repo.branches[branch_name]
+      #   if commit == local_branch.commit:
+      #     local_branch.checkout()
+      #   else
+      #   pass
+
+  @staticmethod
+  def _does_remote_branch_have_commit(repo: Repo, branch_name: str, commit: Repo.commit) -> bool:
+    """
+    Returns true if there is a remote branch with the specified name, that contains the specified
+    commit. Otherwise it returns false.
+    """
+    try:
+      remote_branch = repo.refs[f"origin/{branch_name}"]
+    except IndexError:
+      # The local branch does not exist, so it cannot contain the commit.
+      return False
+
+    if commit == remote_branch.commit:
+      return True
+    else:
+      return commit in remote_branch.commit.iter_parents()
 
   @staticmethod
   def _verify_tag(repo: Repo, tag: str) -> Repo.commit:

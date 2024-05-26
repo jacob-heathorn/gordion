@@ -148,6 +148,23 @@ def test_update_local_branch_no_remote(repoA):
   expected = gordion.UpdateNoTrackingBranchError(repoA.path, 'testbranch2')
   assert str(context.value) == str(expected)
 
+
+def test_does_remote_branch_have_commit(repoA):
+  """
+  Verifies behavior of _does_remote_branch_have_commit()
+  """
+
+  # Verify a commit is on remote branch but not local.
+  commit = gordion.Repository._verify_tag(repoA.handle, '65bf30cb0303e7c90f832fcedba83d7dd91dccab')
+  assert not gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
+  assert gordion.Repository._does_remote_branch_have_commit(repoA.handle, 'develop', commit)
+
+  # Verifies a commit on local but not remote.
+  repoA.handle.index.commit("Empty commit test_does_remote_branch_have_commit()")
+  commit = repoA.handle.active_branch.commit
+  assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
+  assert not gordion.Repository._does_remote_branch_have_commit(repoA.handle, 'develop', commit)
+
   # Now verify with a non-active branch.
 
   # TODO need to verify with a local branch that does not have a remote.
