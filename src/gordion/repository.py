@@ -91,22 +91,17 @@ class Repository:
         if self.target_branch_name in local_branches:
           # Make sure the local branch is setup to track the expected remote branch.
           local_branch = self.handle.branches[self.target_branch_name]
-          Repository._verify_local_branch_has_correct_tracking_branch(self.path, local_branch)
+          tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
+              self.path, local_branch)
 
-          # Make sure local branch does not have commits ahead.
-          remote_branch = local_branch.tracking_branch()
-          merge_base = self.handle.merge_base(local_branch, remote_branch)
+          # Make sure the local branch is not ahead of tracking branch, since we're moving the
+          # local HEAD, information would be lost.
+          Repository._verify_local_commits_not_ahead(
+              self.path, self.handle, local_branch, tracking_branch)
 
-          commits_ahead = list(self.handle.iter_commits(
-              f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
-          if commits_ahead:
-            raise gordion.UpdateLocalBranchAheadError(
-                self.path, self.target_branch_name, remote_branch.name, len(commits_ahead))
-
-          # All target branch local commits are contained in remote, reset to the target commit
-          else:
-            local_branch.checkout()
-            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+          # Good to go move the local branch HEAD to the target commit.
+          local_branch.checkout()
+          self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
 
         # There is no local branch yet, create it, and reset it to the target commit.
         else:
@@ -175,6 +170,17 @@ class Repository:
         #   else
         #   pass
 
+  # TODO get repo path from repo objec this function and one after.
+  @staticmethod
+  def _verify_local_commits_not_ahead(repo_path, repo: Repo, local_branch, remote_branch):
+    merge_base = repo.merge_base(local_branch, remote_branch)
+
+    commits_ahead = list(repo.iter_commits(
+        f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
+    if commits_ahead:
+      raise gordion.UpdateLocalBranchAheadError(
+          repo_path, local_branch.name, remote_branch.name, len(commits_ahead))
+
   @staticmethod
   def _verify_local_branch_has_correct_tracking_branch(repo_path, local_branch):
     if local_branch.tracking_branch():
@@ -182,6 +188,8 @@ class Repository:
       if remote_branch.name != f"origin/{local_branch.name}":
         raise gordion.UpdateWrongTrackingBranchError(
             repo_path, local_branch.name, remote_branch.name)
+      else:
+        return remote_branch
     else:
       raise gordion.UpdateNoTrackingBranchError(repo_path, local_branch.name)
 
