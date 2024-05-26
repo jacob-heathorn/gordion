@@ -24,6 +24,7 @@ class Repository:
     self.handle = Repo(self.path)
     self.target_tag = tag
     self.target_branch_name = branch
+    self.fetched = False
 
   # TODO create a fetchonce function that will only fetch one time for the lifetime of the update()
   # function call.
@@ -33,7 +34,7 @@ class Repository:
 
     """
 
-    target_commit = Repository._verify_tag(self.handle, self.target_tag)
+    target_commit = self._verify_tag(self.target_tag)
 
     if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
                                                  target_commit):
@@ -45,7 +46,7 @@ class Repository:
       # Target commit is in local branch history.
       else:
         # Need to fetch for this part of the logic.
-        self.handle.remotes.origin.fetch()
+        self.fetch_once()
 
         # Check if the local branch has a remote tracking branch.
         if local_branch.tracking_branch():
@@ -75,7 +76,7 @@ class Repository:
 
     # Tag is not on a local branch
     else:
-      self.handle.remotes.origin.fetch()  # TODO fetch once.
+      self.fetch_once()
 
       # At least for the current repository. For nested repository, something could go wrong, leaving
       # things in a broken state. but that's ok because the repository itself is a well understood
@@ -155,24 +156,22 @@ class Repository:
     else:
       return commit in remote_branch.commit.iter_parents()
 
-  @staticmethod
-  def _verify_tag(repo: Repo, tag: str) -> Repo.commit:
+  def _verify_tag(self, tag: str) -> Repo.commit:
     """
     Verifies and returns the commit object for the specified tag if it exists, otherwise throws an
     error. This fuction will perform a fetch if necessary to check if recent remote changes contain
     the tag.
     """
     try:
-      commit = repo.commit(tag)
+      commit = self.handle.commit(tag)
     except ValueError:
       # A value error is thrown if the commit is not found. Let's fetch and then try one more time.
       # Fetch takes time and an internet connection, so I only want to do it if I have to.
-      origin = repo.remotes.origin
-      origin.fetch()
+      self.fetch_once()
 
       # If this throws a Value error again, then the commit really does not exist. If it throws a
       # BadName error, the tag/commit is ill-formed.
-      commit = repo.commit(tag)
+      commit = self.handle.commit(tag)
       return commit
 
     return commit
@@ -274,3 +273,12 @@ class Repository:
     except (NoSuchPathError, InvalidGitRepositoryError):
       # If Repo initialization fails, the path is not a Git repository
       return False
+
+  def fetch_once(self):
+    """
+    Fetches only once for the lifetime of this Repository object.
+    """
+    if not self.fetched:
+      print("fetching")
+      self.handle.remotes.origin.fetch()
+      self.fetched = True

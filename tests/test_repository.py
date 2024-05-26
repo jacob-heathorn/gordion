@@ -21,52 +21,67 @@ def test_exists():
   assert gordion.Repository._exists(path)
 
 
-@pytest.fixture
-def repoA():
+@pytest.fixture(scope="session")
+def repoA_session():
+  """
+  Creates the repoA object only once for the lifetime of this session. This is important so the
+  "fetch_once" doesn't fetch every test case, which saves time.
+  """
   path = os.path.join(REPOS_DIR, 'west_demo_a')
   url = 'https://github.com/jacob-heathorn/west_demo_a.git'
-  tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
-  branch = 'develop'
+
   # Create the repo object, this will clone.
-  repo = gordion.Repository(path, url, tag, branch)
-
-  # Use the underlying Repo handle object to reset the commit
-  develop = repo.handle.heads['develop']
-  develop.checkout()
-  target_commit = repo.handle.commit(repo.target_tag)
-  repo.handle.head.reset(commit=target_commit, index=True, working_tree=True)
-
-  # Delete all local branches except develop
-  branches = list(repo.handle.branches)
-  for branch in branches:
-    if branch.name != 'develop':
-      repo.handle.delete_head(branch, force=True)
+  repo = gordion.Repository(path, url, 'TODO', 'TODO')
 
   yield repo
 
 
+@pytest.fixture
+def repoA(repoA_session):
+  """
+  This puts the repoA object back into a well-known state for each test case.
+  """
+  # Set the object to a known commit on the develop branch.
+  repoA_session.target_tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
+  repoA_session.target_branch_name = 'develop'
+
+  # Use the underlying Repo handle object to reset the commit
+  develop = repoA_session.handle.heads['develop']
+  develop.checkout()
+  target_commit = repoA_session.handle.commit(repoA_session.target_tag)
+  repoA_session.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+
+  # Delete all local branches except develop
+  branches = list(repoA_session.handle.branches)
+  for branch in branches:
+    if branch.name != 'develop':
+      repoA_session.handle.delete_head(branch, force=True)
+
+  yield repoA_session
+
+
 def test_verify_tag(repoA):
   # Verify HEAD of active branch exists.
-  gordion.Repository._verify_tag(repoA.handle, '163f847f32fba7307dd94366560d7d55ffe3c144')
+  repoA._verify_tag('163f847f32fba7307dd94366560d7d55ffe3c144')
 
   # Verify older commit of active branch exists.
-  gordion.Repository._verify_tag(repoA.handle, '1c518ee74d9c619321fea12e90c7a721dfddb0ee')
+  repoA._verify_tag('1c518ee74d9c619321fea12e90c7a721dfddb0ee')
 
   # Verify a tag that only exists on a different remote branch (testbranch1) in fact exists.
-  gordion.Repository._verify_tag(repoA.handle, '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a')
+  repoA._verify_tag('4a96229f1c4eb7c5c8f4d630513cca5919abcd7a')
 
   # Verify that an ill-formed commit will raise an error.
   with pytest.raises(BadName):
-    gordion.Repository._verify_tag(repoA.handle, "123")
+    repoA._verify_tag("123")
 
 
 def test_does_local_branch_have_commit(repoA):
   # Verify HEAD of active branch returns true.
-  commit = gordion.Repository._verify_tag(repoA.handle, '163f847f32fba7307dd94366560d7d55ffe3c144')
+  commit = repoA._verify_tag('163f847f32fba7307dd94366560d7d55ffe3c144')
   assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
   # Verify older commit of active branch returns true
-  commit = gordion.Repository._verify_tag(repoA.handle, '1c518ee74d9c619321fea12e90c7a721dfddb0ee')
+  commit = repoA._verify_tag('1c518ee74d9c619321fea12e90c7a721dfddb0ee')
   assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
   # Verify remote branch (testbranch1) that is not local returns false.
@@ -79,7 +94,7 @@ def test_does_local_branch_have_commit(repoA):
   assert gordion.Repository._does_local_branch_have_commit(repoA.handle, 'testbranch1', commit)
 
   # Verfiy commit on remote but not on local returns false.
-  commit = gordion.Repository._verify_tag(repoA.handle, '15289e899626fdb9aa187ab4b5888facf86e3ed8')
+  commit = repoA._verify_tag('15289e899626fdb9aa187ab4b5888facf86e3ed8')
   assert not gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
 
   # For sanity, pull develop, same function should return true now.
@@ -155,7 +170,7 @@ def test_does_remote_branch_have_commit(repoA):
   """
 
   # Verify a commit is on remote branch but not local.
-  commit = gordion.Repository._verify_tag(repoA.handle, '65bf30cb0303e7c90f832fcedba83d7dd91dccab')
+  commit = repoA._verify_tag('65bf30cb0303e7c90f832fcedba83d7dd91dccab')
   assert not gordion.Repository._does_local_branch_have_commit(repoA.handle, 'develop', commit)
   assert gordion.Repository._does_remote_branch_have_commit(repoA.handle, 'develop', commit)
 
