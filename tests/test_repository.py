@@ -256,3 +256,26 @@ def test_dont_specify_branch(repoA):
   repoA.update()
   assert repoA.handle.head.is_detached
   assert repoA.handle.head.commit.hexsha == repoA.target_tag
+
+
+def test_update_dirty_repo(repoA):
+  """
+  Verifieds update will error if the repository is dirty and the HEAD is about to move.
+  """
+
+  # Make an arbitrary change.
+  file_path = os.path.join(repoA.path, 'README.md')
+  with open(file_path, 'w') as file:
+    file.write('test_uncommitted_edits wrote this.\n')
+
+  # Attempt to move the HEAD and verify error.
+  repoA.target_tag = '55553d4a26bde22bec5817c17f803e9569cbb970'
+  with pytest.raises(gordion.UpdateRepoIsDirtyError) as context:
+    repoA.update()
+  expected = gordion.UpdateRepoIsDirtyError(repoA.path)
+  assert str(context.value) == str(expected)
+
+  # If you don't move the HEAD, but change the branch while it's dirty, it's OK actually.
+  repoA.target_tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
+  repoA.target_branch_name = 'testbranch1'
+  repoA.update()

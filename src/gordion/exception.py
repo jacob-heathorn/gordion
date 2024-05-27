@@ -35,3 +35,10 @@ class UpdateDetachedHeadNotSavedError(UpdateError):
               "make sure you save those changes.")
     suggestion = "Checkout a new local branch to save the current head state."
     super().__init__(repo_path, reason, suggestion)
+
+
+class UpdateRepoIsDirtyError(UpdateError):
+  def __init__(self, repo_path):
+    reason = ("The repository is dirty and you are trying to move the HEAD commit.")
+    suggestion = "Save or restore the uncommitted changes."
+    super().__init__(repo_path, reason, suggestion)

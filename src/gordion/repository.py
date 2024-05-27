@@ -35,11 +35,16 @@ class Repository:
 
     target_commit = self._verify_tag(self.target_tag)
 
-    # Check if we are in a detached HEAD state.
+    # Verify that we don't have an unsaved HEAD that would be lost by the update.
     if self.handle.head.is_detached:
       self._verify_head_wont_be_lost(target_commit)
 
-    # Check if a target branch HAS NOT been specified.
+    # Verify we don't have uncommitted chages that could be lost by the update.
+    if self.handle.is_dirty(untracked_files=True):
+      if target_commit.hexsha != self.handle.head.commit.hexsha:
+        raise gordion.UpdateRepoIsDirtyError(self.path)
+
+        # Check if a target branch HAS NOT been specified.
     if not self.target_branch_name:
       # Checkout the target commit in a detached HEAD state
       self.handle.git.checkout(target_commit)
