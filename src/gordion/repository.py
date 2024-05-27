@@ -92,6 +92,11 @@ class Repository:
                                    f'origin/{self.target_branch_name}')
           self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
 
+      # We could not find the commit on a local or remote branch by the designated name, so just
+      # checkout the commit in a detached head state.
+      else:
+        self.handle.git.checkout(target_commit)
+
   @staticmethod
   def _verify_local_commits_not_ahead(repo: Repo, local_branch, remote_branch):
     merge_base = repo.merge_base(local_branch, remote_branch)

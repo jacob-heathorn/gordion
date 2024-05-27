@@ -137,13 +137,6 @@ def test_update_nonactive_local_branch_commits_ahead(repoA):
   assert str(context.value) == str(expected)
 
 
-def test_update_local_branch_no_loss(repoA):
-  """
-  TODO verify update can switch to another local branch with no loss
-  """
-  pass
-
-
 def test_update_local_branch_no_remote(repoA):
   """
   Verifies that updating a local branch will ERROR if it does not have a remote tracking branch.
@@ -221,111 +214,15 @@ def test_local_branch_wrong_tracking_branch(repoA):
   expected = gordion.UpdateWrongTrackingBranchError(repoA.path, 'testbranch1', 'origin/develop')
   assert str(context.value) == str(expected)
 
-  # Now verify with a non-active branch.
 
-  # TODO need to verify with a local branch that does not have a remote.
+def test_branch_does_not_have_commit_but_commit_exists(repoA):
+  """
+  Verifies that update will checkout a commit in a detached head state if it exists,
+  but it cannot find it on the specified branch.
+  """
 
-  # class TestRepositoryUpdate:
-  # def test_commits_ahead(self, repoA):
-  #   """
-  #   Verifies that updating the active branch will ERROR if it is ahead of the remote.
-  #   """
-  #   # Create newer commit on same branch.
-  #   repoA.handle.index.commit("Empty commit for testing")
-
-  #   # Verify update error. User needs to save the commits, or force the update.
-  #   with pytest.raises(gordion.UpdateActiveBranchAheadError) as context:
-  #     repoA.update()
-  #   expected = gordion.UpdateActiveBranchAheadError(repoA.path, 'develop', 'origin/develop', 1)
-  #   assert str(context.value) == str(expected)
-
-  # def test_commits_behind(self, repoA):
-  #   """
-  #   Verifies that updating the active branch will SUCCEED if it is behind the remote.
-  #   """
-
-  #   original_sha = repoA.handle.head.commit.hexsha
-
-  #   # Go back one commit
-  #   current_branch = repoA.handle.head.ref
-  #   parent_commit = current_branch.commit.parents[0]
-  #   repoA.handle.git.reset(parent_commit.hexsha, hard=True)
-
-  #   # Verify update no error
-  #   repoA.update()
-
-  #   assert original_sha == repoA.handle.head.commit.hexsha
-
-  # def test_active_branch_does_not_contain_commit(self, repoA):
-  #   """
-  #   Verifies that updating the active branch will FAIL if it does not contian the target commit.
-  #   """
-
-  #   # Just use a random, well-formatted commit that does not exist.
-  #   repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
-  #   with pytest.raises(ValueError):
-  # #   # Just use a random, well-formatted commit that does not exist.
-  #   repoA.target_tag = "163f847f32fba7307dd94366560d7d55ffe3c145"
-  #   with pytest.raises(ValueError):
-  #     repoA.update()
-
-  #   # Try a random, ill-formed commit
-  #   repoA.target_tag = "123"
-  #   with pytest.raises(BadName):
-  #     repoA.update()
-  # # TODO test commit exists in remote, but not local.
-
-  # def test_switch_branch(self, repoA):
-  #   """
-  #   Verifies that switching active local branches during update will SUCCEED
-  #   """
-
-  #   # Create a new branch and switch to it
-  #   new_branch = repoA.handle.create_head('test_branch')
-  #   new_branch.checkout()
-  #   assert repoA.handle.head.reference.name == "test_branch"
-
-  #   # Verify update scucceeds because no information is lost.
-  #   repoA.update()
-  #   assert repoA.handle.head.reference.name == repoA.target_branch_name
-  #   assert repoA.handle.head.commit.hexsha == repoA.target_tag
-
-  # def test_switch_branch_ahead(self, repoA):
-  #   """
-  #   Verifies that switching active local branches and losing commits will FAIL
-  #   """
-
-  #   # Create a new branch and switch to it
-  #   new_branch = repoA.handle.create_head('test_branch')
-  #   new_branch.checkout()
-  #   assert repoA.handle.head.reference.name == "test_branch"
-
-  # def test_update_1(repoA):
-
-  #   repoA.update()
-
-  # def test_update_2(repoA):
-
-  #   # # Create newer commit on same branch.
-  #   # args = ["git", "-C", path, "commit", "--allow-empty", "-m", "Empty commit for testing"]
-  #   # subprocess.check_call(args)
-
-  #   # # Verify update error. User needs to save the commits, or force the update.
-  #   # with self.assertRaises(gordion.UpdateActiveBranchAheadError) as context:
-  #   #   repo.update()
-  #   # expected = gordion.UpdateActiveBranchAheadError(path, 'develop', 'origin/develop', 1)
-  #   # self.assertEqual(str(context.exception), str(expected))
-
-  #   # # Create a new local branch
-  #   # args = ["git", "-C", path, "checkout", "-b", "test_branch"]
-  #   # subprocess.check_call(args, stderr=subprocess.STDOUT)
-
-  #   # # Verify update scucceeds because no information is lost.
-  #   # repo.update()
-
-  #   # # # Older commit same branch.
-  #   # # tag = 'f68eccca87b05ca29c3a9ae0d71475f8f33115cd'
-  #   # # repo = Repository(path, url, tag, branch)
-  #   # # repo.update()
-
-  #   # # TODO test remote is ahead.
+  # Choose a tag that exists on 'testbranch1' but not on develop.
+  repoA.target_tag = '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a'
+  repoA.update()
+  assert repoA.handle.head.is_detached
+  assert repoA.handle.head.commit.hexsha == repoA.target_tag
