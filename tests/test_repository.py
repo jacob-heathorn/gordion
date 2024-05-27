@@ -246,3 +246,13 @@ def test_detached_head_unsaved_commit(repoA):
     repoA.update()
   expected = gordion.UpdateDetachedHeadNotSavedError(repoA.path)
   assert str(context.value) == str(expected)
+
+
+def test_dont_specify_branch(repoA):
+  """
+  Verifies that if you don't specify the branch, it will checkout the commit in detached head state.
+  """
+  repoA.target_branch_name = []
+  repoA.update()
+  assert repoA.handle.head.is_detached
+  assert repoA.handle.head.commit.hexsha == repoA.target_tag
