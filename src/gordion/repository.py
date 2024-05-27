@@ -36,58 +36,28 @@ class Repository:
 
     # Check if we are in a detached HEAD state.
     if self.handle.head.is_detached:
-      head_commit = self.handle.head.commit
+      self._verify_head_wont_be_lost(target_commit)
 
-      # Check if the target commit is different from the HEAD commit
-      if target_commit.hexsha != head_commit.hexsha:
-        # Check if the local HEAD commit is contained in a local or remote branch
-        local_branches = [branch for branch in self.handle.branches if head_commit.hexsha in [
-            commit.hexsha for commit in branch.commit.iter_parents()]]
-        if not local_branches:
-          self.fetch_once()
-          remote_branches = [branch for branch in self.handle.remotes.origin.refs if
-                             head_commit.hexsha in [commit.hexsha for commit in
-                                                    branch.commit.iter_parents()]]
-          if not remote_branches:
-            raise gordion.UpdateDetachedHeadNotSavedError(self.path)
+    # Check if a target branch HAS NOT been specified.
+    if not self.target_branch_name:
+      # Checkout the target commit in a detached HEAD state
+      self.handle.git.checkout(target_commit)
 
-    if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
-                                                 target_commit):
-      local_branch = self.handle.branches[self.target_branch_name]
-      # Check if target commit is HEAD of local branch.
-      if target_commit.hexsha == local_branch.commit.hexsha:
-        local_branch.checkout()
-
-      # Target commit is in local branch history.
-      else:
-        # Need to fetch for this part of the logic.
-        self.fetch_once()
-
-        # Make sure the local branch is setup to track the expected remote branch.
-        local_branch = self.handle.branches[self.target_branch_name]
-        tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
-            self.handle, local_branch)
-
-        # Make sure the local branch is not ahead of tracking branch, since we're moving the
-        # local HEAD, information would be lost.
-        Repository._verify_local_commits_not_ahead(self.handle, local_branch, tracking_branch)
-
-        # Good to go move the local branch HEAD to the target commit.
-        local_branch.checkout()
-        self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
-
-    # Tag is not on a local branch
+    # A branch HAS been specified
     else:
-      self.fetch_once()
+      # Check if a local branch by the target name has the target commit.
+      if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
+                                                   target_commit):
+        local_branch = self.handle.branches[self.target_branch_name]
+        # Check if target commit is HEAD of local branch.
+        if target_commit.hexsha == local_branch.commit.hexsha:
+          local_branch.checkout()
 
-      # Check if the remote branch has the commit
-      if Repository._does_remote_branch_have_commit(self.handle, self.target_branch_name,
-                                                    target_commit):
+        # Target commit is in local branch history.
+        else:
+          # Need to fetch for this part of the logic.
+          self.fetch_once()
 
-        # Check if there is a local branch to match the remote branch.
-        local_branches = [branch.name for branch in self.handle.branches]
-
-        if self.target_branch_name in local_branches:
           # Make sure the local branch is setup to track the expected remote branch.
           local_branch = self.handle.branches[self.target_branch_name]
           tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
@@ -101,16 +71,61 @@ class Repository:
           local_branch.checkout()
           self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
 
-        # There is no local branch yet, create it, and reset it to the target commit.
-        else:
-          self.handle.git.checkout('-b', self.target_branch_name,
-                                   f'origin/{self.target_branch_name}')
-          self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
-
-      # We could not find the commit on a local or remote branch by the designated name, so just
-      # checkout the commit in a detached head state.
+      # Tag is not on a local branch
       else:
-        self.handle.git.checkout(target_commit)
+        self.fetch_once()
+
+        # Check if a remote branch by the target name has the target commit.
+        if Repository._does_remote_branch_have_commit(self.handle, self.target_branch_name,
+                                                      target_commit):
+
+          # Check if there is a local branch to match the remote branch.
+          local_branches = [branch.name for branch in self.handle.branches]
+
+          if self.target_branch_name in local_branches:
+            # Make sure the local branch is setup to track the expected remote branch.
+            local_branch = self.handle.branches[self.target_branch_name]
+            tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
+                self.handle, local_branch)
+
+            # Make sure the local branch is not ahead of tracking branch, since we're moving the
+            # local HEAD, information would be lost.
+            Repository._verify_local_commits_not_ahead(self.handle, local_branch, tracking_branch)
+
+            # Good to go move the local branch HEAD to the target commit.
+            local_branch.checkout()
+            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+
+          # There is no local branch yet, create it, and reset it to the target commit.
+          else:
+            self.handle.git.checkout('-b', self.target_branch_name,
+                                     f'origin/{self.target_branch_name}')
+            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+
+        # We could not find the commit on a local or remote branch by the designated name, so just
+        # checkout the commit in a detached head state.
+        else:
+          self.handle.git.checkout(target_commit)
+
+  def _verify_head_wont_be_lost(self, target_commit):
+    """
+    This function should be used while in a detached head sate. It Raises an error if update will
+    move the HEAD AND the HEAD is a commit that is not saved on a local or remote branch somewhere.
+    """
+    head_commit = self.handle.head.commit
+
+    # Check if the target commit is different from the HEAD commit
+    if target_commit.hexsha != head_commit.hexsha:
+      # Check if the local HEAD commit is contained in a local or remote branch
+      local_branches = [branch for branch in self.handle.branches if head_commit.hexsha in [
+          commit.hexsha for commit in branch.commit.iter_parents()]]
+      if not local_branches:
+        self.fetch_once()
+        remote_branches = [branch for branch in self.handle.remotes.origin.refs if
+                           head_commit.hexsha in [commit.hexsha for commit in
+                                                  branch.commit.iter_parents()]]
+        if not remote_branches:
+          raise gordion.UpdateDetachedHeadNotSavedError(self.path)
 
   @staticmethod
   def _verify_local_commits_not_ahead(repo: Repo, local_branch, remote_branch):
