@@ -226,3 +226,23 @@ def test_branch_does_not_have_commit_but_commit_exists(repoA):
   repoA.update()
   assert repoA.handle.head.is_detached
   assert repoA.handle.head.commit.hexsha == repoA.target_tag
+
+
+def test_detached_head_unsaved_commit(repoA):
+  """
+  Verifies update will ERROR if we are in a detached head state, and the HEAD commit does not exist
+  on a branch somewhere.
+  """
+  # Go to detached HEAD state.
+  repoA.target_tag = '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a'
+  repoA.update()
+  assert repoA.handle.head.is_detached
+
+  # Now add a commit.
+  repoA.handle.index.commit("Commit while in detached HEAD state.")
+
+  # Now verify that update errors.
+  with pytest.raises(gordion.UpdateDetachedHeadNotSavedError) as context:
+    repoA.update()
+  expected = gordion.UpdateDetachedHeadNotSavedError(repoA.path)
+  assert str(context.value) == str(expected)

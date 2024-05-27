@@ -34,6 +34,23 @@ class Repository:
 
     target_commit = self._verify_tag(self.target_tag)
 
+    # Check if we are in a detached HEAD state.
+    if self.handle.head.is_detached:
+      head_commit = self.handle.head.commit
+
+      # Check if the target commit is different from the HEAD commit
+      if target_commit.hexsha != head_commit.hexsha:
+        # Check if the local HEAD commit is contained in a local or remote branch
+        local_branches = [branch for branch in self.handle.branches if head_commit.hexsha in [
+            commit.hexsha for commit in branch.commit.iter_parents()]]
+        if not local_branches:
+          self.fetch_once()
+          remote_branches = [branch for branch in self.handle.remotes.origin.refs if
+                             head_commit.hexsha in [commit.hexsha for commit in
+                                                    branch.commit.iter_parents()]]
+          if not remote_branches:
+            raise gordion.UpdateDetachedHeadNotSavedError(self.path)
+
     if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
                                                  target_commit):
       local_branch = self.handle.branches[self.target_branch_name]

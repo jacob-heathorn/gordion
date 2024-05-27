@@ -2,4 +2,5 @@
 from .repository import Repository
 from .cache import Cache
 from .utils import extract_repo_details
-from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError, UpdateWrongTrackingBranchError
+from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
+from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError

@@ -21,7 +21,17 @@ class UpdateNoTrackingBranchError(UpdateError):
 
 class UpdateWrongTrackingBranchError(UpdateError):
   def __init__(self, repo_path, local_branch, remote_branch):
-    reason = (f"{local_branch} does not track origin/{local_branch}. Instead, it tracks {remote_branch}.",
-              "This is unexpected and can cause problems.")
+    reason = (f"{local_branch} does not track origin/{local_branch}. Instead, it tracks"
+              "{remote_branch}. This is unexpected and can cause problems.")
     suggestion = f"fix it: git push -u origin {local_branch}. Maybe delete incorrect remote branch?"
+    super().__init__(repo_path, reason, suggestion)
+
+
+class UpdateDetachedHeadNotSavedError(UpdateError):
+  def __init__(self, repo_path):
+    reason = ("The repository is an a detached HEAD state. This is fine except the HEAD is a commit"
+              "that is not saved in a local ore remote branch. This indicates that you have made"
+              "local commits while in the detached HEAD state, which is fine but we want to"
+              "make sure you save those changes.")
+    suggestion = "Checkout a new local branch to save the current head state."
     super().__init__(repo_path, reason, suggestion)
