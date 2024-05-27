@@ -26,9 +26,10 @@ class Repository:
     self.target_branch_name = branch
     self.fetched = False
 
-  def update(self, force=False) -> None:
+  def update(self) -> None:
     """
-    TODO
+    Updates the repository to the specified commit and optional branch, as long as information will
+    not be lost in the process, otherwise it will raise descriptive errors about what to do next.
 
     """
 
