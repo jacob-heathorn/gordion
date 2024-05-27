@@ -26,8 +26,6 @@ class Repository:
     self.target_branch_name = branch
     self.fetched = False
 
-  # TODO create a fetchonce function that will only fetch one time for the lifetime of the update()
-  # function call.
   def update(self, force=False) -> None:
     """
     TODO
