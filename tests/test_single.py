@@ -60,13 +60,13 @@ def repoA(repoA_session):
 
 def test_verify_tag(repoA):
   # Verify HEAD of active branch exists.
-  repoA._verify_tag('26968db5866b41339b9811c809818f44055c8153')
+  repoA._verify_tag(repoA.handle.head.commit.hexsha)
 
   # Verify older commit of active branch exists.
-  repoA._verify_tag('c9da3e67006cbb03b6810d2e5b8effebb0f0b674')
+  repoA._verify_tag(repoA.handle.head.commit.parents[0].hexsha)
 
   # Verify a tag that only exists on a different remote branch (test_single_1) in fact exists.
-  repoA._verify_tag('48b124f02016d2c2f0858351ba1aed11c8c47341')
+  repoA._verify_tag('f30a7cbe5592ef4521dad06203d5178e651ecd5b')
 
   # Verify that an ill-formed commit will raise an error.
   with pytest.raises(BadName):
@@ -101,7 +101,7 @@ def test_does_local_branch_have_commit(repoA):
       repoA.handle, 'test_single_1', head_commit)
 
   # Verfiy commit on remote but not on local returns false.
-  future_commit = repoA._verify_tag('9451fe5a88374fae8ccebc92b6dccd52f50c2257')
+  future_commit = repoA._verify_tag('a415fa52649601f17fccf6d17616281213b117b8')
   assert not gordion.Repository._does_local_branch_have_commit(
       repoA.handle, 'test_single', future_commit)
 
@@ -167,7 +167,7 @@ def test_does_remote_branch_have_commit(repoA):
   """
 
   # Verify a commit is on remote branch but not local.
-  commit = repoA._verify_tag('9451fe5a88374fae8ccebc92b6dccd52f50c2257')
+  commit = repoA._verify_tag('a415fa52649601f17fccf6d17616281213b117b8')
   assert not gordion.Repository._does_local_branch_have_commit(repoA.handle, 'test_single', commit)
   assert gordion.Repository._does_remote_branch_have_commit(repoA.handle, 'test_single', commit)
 
@@ -181,55 +181,54 @@ def test_does_remote_branch_have_commit(repoA):
   assert not gordion.Repository._does_remote_branch_have_commit(repoA.handle, 'test_single', commit)
 
 
-# def test_update_remote_branch_only(repoA):
-#   """
-#   Verifies that update will create a new local branch to track the remote branch if it does not
-#   exist yet and remote branch has the target commit.
-#   """
-#   repoA.target_branch_name = "testbranch1"
-#   repoA.update()
-#   assert repoA.handle.head.reference.name == "testbranch1"
-#   assert repoA.handle.head.commit.hexsha == repoA.target_tag
+def test_update_remote_branch_only(repoA):
+  """
+  Verifies that update will create a new local branch to track the remote branch if it does not
+  exist yet AND the remote branch has the target commit.
+  """
+  repoA.target_branch_name = "test_single_1"
+  repoA.update()
+  assert repoA.handle.head.reference.name == "test_single_1"
+  assert repoA.handle.head.commit.hexsha == repoA.target_tag
 
 
-# def test_update_local_fastforward(repoA):
-#   """
-#   If there is a local branch, but it does not contain the commit, but the remote branch does contain
-#   the commit, update will fastforward.
-#   """
+def test_update_local_fastforward(repoA):
+  """
+  If there is a local branch, but it does not contain the commit, but the remote branch does
+  contain the commit, update will fastforward.
+  """
 
-#   # Choose a tag 2 commits ahead of our baseline test commit on develop.
-#   repoA.target_tag = '65bf30cb0303e7c90f832fcedba83d7dd91dccab'
-#   repoA.update()
-
-
-# def test_local_branch_wrong_tracking_branch(repoA):
-#   """
-#   If there is a local branch that matches the remote branch by name, but it has the wrong tracking
-#   branch, error.
-#   """
-
-#   # Checkout testbranch1 locally but link it to the wrong remote branch.
-#   repoA.handle.git.checkout('-b', 'testbranch1', 'origin/develop')
-#   repoA.target_branch_name = 'testbranch1'
-#   repoA.target_tag = '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a'
-#   with pytest.raises(gordion.UpdateWrongTrackingBranchError) as context:
-#     repoA.update()
-#   expected = gordion.UpdateWrongTrackingBranchError(repoA.path, 'testbranch1', 'origin/develop')
-#   assert str(context.value) == str(expected)
+  # Choose a tag ahead of our baseline commit.
+  repoA.target_tag = 'a415fa52649601f17fccf6d17616281213b117b8'
+  repoA.update()
 
 
-# def test_branch_does_not_have_commit_but_commit_exists(repoA):
-#   """
-#   Verifies that update will checkout a commit in a detached head state if it exists,
-#   but it cannot find it on the specified branch.
-#   """
+def test_local_branch_wrong_tracking_branch(repoA):
+  """
+  If there is a local branch that matches the remote branch by name, but it has the wrong tracking
+  branch, error.
+  """
 
-#   # Choose a tag that exists on 'testbranch1' but not on develop.
-#   repoA.target_tag = '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a'
-#   repoA.update()
-#   assert repoA.handle.head.is_detached
-#   assert repoA.handle.head.commit.hexsha == repoA.target_tag
+  # Checkout "test_single_1" locally but link it to the wrong remote branch.
+  repoA.handle.git.checkout('-b', 'test_single_1', 'origin/test_single')
+  repoA.target_branch_name = 'test_single_1'
+  with pytest.raises(gordion.UpdateWrongTrackingBranchError) as context:
+    repoA.update()
+  expected = gordion.UpdateWrongTrackingBranchError(repoA.path, 'test_single_1', 'origin/develop')
+  assert str(context.value) == str(expected)
+
+
+def test_branch_does_not_have_commit_but_commit_exists(repoA):
+  """
+  Verifies that update will checkout a commit in a detached head state if it exists,
+  but it cannot find it on the specified branch.
+  """
+
+  # Choose a tag that exists on 'test_single_1' but not on test_single.
+  repoA.target_tag = 'f30a7cbe5592ef4521dad06203d5178e651ecd5b'
+  repoA.update()
+  assert repoA.handle.head.is_detached
+  assert repoA.handle.head.commit.hexsha == repoA.target_tag
 
 
 # def test_detached_head_unsaved_commit(repoA):
