@@ -1,3 +1,7 @@
-from .exception import UpdateActiveBranchAheadError  # noqa: F401
-from .utils import extract_repo_details  # noqa: F401
-from .cache import Cache  # noqa: F401
+# flake8: noqa: F401
+from .repository import Repository
+from .cache import Cache
+from .utils import extract_repo_details
+from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
+from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
+from .exception import UpdateRepoIsDirtyError
