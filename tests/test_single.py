@@ -231,54 +231,53 @@ def test_branch_does_not_have_commit_but_commit_exists(repoA):
   assert repoA.handle.head.commit.hexsha == repoA.target_tag
 
 
-# def test_detached_head_unsaved_commit(repoA):
-#   """
-#   Verifies update will ERROR if we are in a detached head state, and the HEAD commit does not exist
-#   on a branch somewhere.
-#   """
-#   # Go to detached HEAD state.
-#   repoA.target_tag = '4a96229f1c4eb7c5c8f4d630513cca5919abcd7a'
-#   repoA.update()
-#   assert repoA.handle.head.is_detached
+def test_detached_head_unsaved_commit(repoA):
+  """
+  Verifies update will ERROR if we are in a detached head state, and the HEAD commit does not 
+  exist on a branch somewhere.
+  """
+  # Go to detached HEAD state.
+  repoA.handle.git.checkout(repoA.target_tag)
+  assert repoA.handle.head.is_detached
 
-#   # Now add a commit.
-#   repoA.handle.index.commit("Commit while in detached HEAD state.")
+  # Now add a commit.
+  repoA.handle.index.commit("Commit while in detached HEAD state.")
 
-#   # Now verify that update errors.
-#   with pytest.raises(gordion.UpdateDetachedHeadNotSavedError) as context:
-#     repoA.update()
-#   expected = gordion.UpdateDetachedHeadNotSavedError(repoA.path)
-#   assert str(context.value) == str(expected)
-
-
-# def test_dont_specify_branch(repoA):
-#   """
-#   Verifies that if you don't specify the branch, it will checkout the commit in detached head state.
-#   """
-#   repoA.target_branch_name = []
-#   repoA.update()
-#   assert repoA.handle.head.is_detached
-#   assert repoA.handle.head.commit.hexsha == repoA.target_tag
+  # Now verify that update errors.
+  with pytest.raises(gordion.UpdateDetachedHeadNotSavedError) as context:
+    repoA.update()
+  expected = gordion.UpdateDetachedHeadNotSavedError(repoA.path)
+  assert str(context.value) == str(expected)
 
 
-# def test_update_dirty_repo(repoA):
-#   """
-#   Verifieds update will error if the repository is dirty and the HEAD is about to move.
-#   """
+def test_dont_specify_branch(repoA):
+  """
+  Verifies that if you don't specify the branch, it will checkout the commit in detached head
+  state.
+  """
+  repoA.target_branch_name = []
+  repoA.update()
+  assert repoA.handle.head.is_detached
+  assert repoA.handle.head.commit.hexsha == repoA.target_tag
 
-#   # Make an arbitrary change.
-#   file_path = os.path.join(repoA.path, 'README.md')
-#   with open(file_path, 'w') as file:
-#     file.write('test_uncommitted_edits wrote this.\n')
 
-#   # Attempt to move the HEAD and verify error.
-#   repoA.target_tag = '55553d4a26bde22bec5817c17f803e9569cbb970'
-#   with pytest.raises(gordion.UpdateRepoIsDirtyError) as context:
-#     repoA.update()
-#   expected = gordion.UpdateRepoIsDirtyError(repoA.path)
-#   assert str(context.value) == str(expected)
+def test_update_dirty_repo(repoA):
+  """
+  Verifies update will error if the repository is dirty and the HEAD is about to move.
+  """
 
-#   # If you don't move the HEAD, but change the branch while it's dirty, it's OK actually.
-#   repoA.target_tag = '163f847f32fba7307dd94366560d7d55ffe3c144'
-#   repoA.target_branch_name = 'testbranch1'
-#   repoA.update()
+  # Make an arbitrary change.
+  file_path = os.path.join(repoA.path, 'README.md')
+  with open(file_path, 'w') as file:
+    file.write('test_uncommitted_edits wrote this.\n')
+
+  # Attempt to move the HEAD and verify error.
+  repoA.target_tag = repoA.handle.head.commit.parents[0].hexsha
+  with pytest.raises(gordion.UpdateRepoIsDirtyError) as context:
+    repoA.update()
+  expected = gordion.UpdateRepoIsDirtyError(repoA.path)
+  assert str(context.value) == str(expected)
+
+  # If you don't move the HEAD, but change the branch while it's dirty, it's OK actually.
+  repoA.target_tag = repoA.handle.head.commit.hexsha
+  repoA.update()
