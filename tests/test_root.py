@@ -30,7 +30,7 @@ def repoA(repoA_session):
   This puts the repoA object back into a well-known state for each test case.
   """
   # Set the object to a known commit on the develop branch.
-  repoA_session.target_tag = 'fb769bfc4facde44449b70ae0c617f6b2553d772'
+  repoA_session.target_tag = 'c9da3e67006cbb03b6810d2e5b8effebb0f0b674'
   repoA_session.target_branch_name = 'develop'
 
   # Use the underlying Repo handle object to reset the commit
@@ -51,6 +51,8 @@ def repoA(repoA_session):
 def test_one(repoA):
   yaml_fullfile = os.path.join(REPOS_DIR, 'gordion_demo_a', 'gordion.yaml')
 
-  obj = gordion.Root(yaml_fullfile)
+  root = gordion.Root(yaml_fullfile)
+
+  root.update()
 
   pass
