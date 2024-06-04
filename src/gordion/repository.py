@@ -11,7 +11,7 @@ class Repository:
 
   """
 
-  def __init__(self, path: str, url: str, tag: str, branch: str) -> None:
+  def __init__(self, path: str, url: str) -> None:
     self.path = path
 
     # Clone if necessary.
@@ -23,11 +23,9 @@ class Repository:
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     self.handle = Repo(self.path)
-    self.target_tag = tag
-    self.target_branch_name = branch
     self.fetched = False
 
-  def update(self, root=None) -> None:
+  def update(self, tag: str, branch_name: str, root=None) -> None:
     """
     Updates the repository to the specified commit and optional branch, as long as information will
     not be lost in the process, otherwise it will raise descriptive errors about what to do next.
@@ -37,30 +35,29 @@ class Repository:
     if root is None:
       root = self
 
-    target_commit = self._verify_tag(self.target_tag)
+    commit = self._verify_tag(tag)
 
     # Verify that we don't have an unsaved HEAD that would be lost by the update.
     if self.handle.head.is_detached:
-      self._verify_head_wont_be_lost(target_commit)
+      self._verify_head_wont_be_lost(commit)
 
     # Verify we don't have uncommitted chages that could be lost by the update.
     if self.handle.is_dirty(untracked_files=True):
-      if target_commit.hexsha != self.handle.head.commit.hexsha:
+      if commit.hexsha != self.handle.head.commit.hexsha:
         raise gordion.UpdateRepoIsDirtyError(self.path)
 
-        # Check if a target branch HAS NOT been specified.
-    if not self.target_branch_name:
+        # Check if a branch HAS NOT been specified.
+    if not branch_name:
       # Checkout the target commit in a detached HEAD state
-      self.handle.git.checkout(target_commit)
+      self.handle.git.checkout(commit)
 
     # A branch HAS been specified
     else:
       # Check if a local branch by the target name has the target commit.
-      if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
-                                                   target_commit):
-        local_branch = self.handle.branches[self.target_branch_name]
+      if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
+        local_branch = self.handle.branches[branch_name]
         # Check if target commit is HEAD of local branch.
-        if target_commit.hexsha == local_branch.commit.hexsha:
+        if commit.hexsha == local_branch.commit.hexsha:
           local_branch.checkout()
 
         # Target commit is in local branch history.
@@ -69,7 +66,7 @@ class Repository:
           self.fetch_once()
 
           # Make sure the local branch is setup to track the expected remote branch.
-          local_branch = self.handle.branches[self.target_branch_name]
+          local_branch = self.handle.branches[branch_name]
           tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
               self.handle, local_branch)
 
@@ -79,22 +76,21 @@ class Repository:
 
           # Good to go move the local branch HEAD to the target commit.
           local_branch.checkout()
-          self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+          self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
       # Tag is not on a local branch
       else:
         self.fetch_once()
 
         # Check if a remote branch by the target name has the target commit.
-        if Repository._does_remote_branch_have_commit(self.handle, self.target_branch_name,
-                                                      target_commit):
+        if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
 
           # Check if there is a local branch to match the remote branch.
           local_branches = [branch.name for branch in self.handle.branches]
 
-          if self.target_branch_name in local_branches:
+          if branch_name in local_branches:
             # Make sure the local branch is setup to track the expected remote branch.
-            local_branch = self.handle.branches[self.target_branch_name]
+            local_branch = self.handle.branches[branch_name]
             tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
                 self.handle, local_branch)
 
@@ -104,22 +100,21 @@ class Repository:
 
             # Good to go move the local branch HEAD to the target commit.
             local_branch.checkout()
-            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+            self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
           # There is no local branch yet, create it, and reset it to the target commit.
           else:
-            self.handle.git.checkout('-b', self.target_branch_name,
-                                     f'origin/{self.target_branch_name}')
-            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+            self.handle.git.checkout('-b', branch_name, f'origin/{branch_name}')
+            self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
         # We could not find the commit on a local or remote branch by the designated name, so just
         # checkout the commit in a detached head state.
         else:
-          self.handle.git.checkout(target_commit)
+          self.handle.git.checkout(commit)
 
-    self._update_children(root)
+    self._update_children(branch_name, root)
 
-  def _update_children(self, root):
+  def _update_children(self, branch_name: str, root):
     # Clear children
     self.children = []
 
@@ -131,20 +126,14 @@ class Repository:
 
         # Print the loaded data or process it as needed
         for child_name, child_info in yaml_data['repositories'].items():
-          # print(f"Repository Name: {repo_name}")
-          # print(f"URL: {repo_info['url']}")
-          # print(f"Tag: {repo_info['tag']}")
-          # print()  # Add a newline for readability between entries
-
           # Create child repository objects
           # TODO: non-default child path/name
           child_path = os.path.join(root.path, 'gordion', child_name)
-          child = Repository(child_path, child_info['url'],
-                             child_info['tag'], root.target_branch_name)
-          child.update(root)
+          child = Repository(child_path, child_info['url'])
+          child.update(child_info['tag'], branch_name, root)
           self.children.append(child)
 
-  def _verify_head_wont_be_lost(self, target_commit):
+  def _verify_head_wont_be_lost(self, commit):
     """
     This function should be used while in a detached head sate. It Raises an error if update will
     move the HEAD AND the HEAD is a commit that is not saved on a local or remote branch somewhere.
@@ -152,7 +141,7 @@ class Repository:
     head_commit = self.handle.head.commit
 
     # Check if the target commit is different from the HEAD commit
-    if target_commit.hexsha != head_commit.hexsha:
+    if commit.hexsha != head_commit.hexsha:
       # Check if the local HEAD commit is contained in a local or remote branch
       local_branches = [branch for branch in self.handle.branches if head_commit.hexsha in [
           commit.hexsha for commit in branch.commit.iter_parents()]]

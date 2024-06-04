@@ -28,8 +28,8 @@ def repoA_session():
   path = os.path.join(REPOS_DIR, 'gordion_demo_a')
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
-  # Create the repo object, this will clone.
-  repo = gordion.Repository(path, url, 'TODO', 'TODO')
+  # Create the repo object, this will clone if necessary
+  repo = gordion.Repository(path, url)
 
   yield repo
 
@@ -39,9 +39,6 @@ def repoA(repoA_session):
   """
   This puts the repoA object back into a well-known state for each test case.
   """
-  # Set the object to a known commit on the test-single branch.
-  repoA_session.target_tag = '26968db5866b41339b9811c809818f44055c8153'
-  repoA_session.target_branch_name = 'test_single'
 
   # Delete all local branches except develop (can't be deleted) to start fresh.
   repoA_session.handle.branches['develop'].checkout()
@@ -50,10 +47,14 @@ def repoA(repoA_session):
     if branch.name != 'develop':
       repoA_session.handle.delete_head(branch, force=True)
 
+  # Set the object to a known commit on the test_single branch.
+  tag = '26968db5866b41339b9811c809818f44055c8153'
+  branch_name = 'test_single'
+
   # Set the target branch/commit
-  repoA_session.update()
-  assert repoA_session.handle.active_branch.name == repoA_session.target_branch_name
-  assert repoA_session.handle.head.commit.hexsha == repoA_session.target_tag
+  repoA_session.update(tag, branch_name)
+  assert repoA_session.handle.head.commit.hexsha == tag
+  assert repoA_session.handle.active_branch.name == branch_name
 
   yield repoA_session
 
@@ -110,12 +111,14 @@ def test_update_active_branch_commits_ahead(repoA):
   """
   Verifies that updating the active branch will ERROR if it is ahead of the remote.
   """
+  baseline_commit = repoA.handle.head.commit.hexsha
+
   # Create newer commit on the active 'test_single' branch.
   repoA.handle.index.commit("Empty commit for testing")
 
   # Verify update error. User needs to save the commits, or force the update.
   with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
-    repoA.update()
+    repoA.update(baseline_commit, "test_single")
   expected = gordion.UpdateLocalBranchAheadError(repoA.path, 'test_single', 'origin/test_single', 1)
   assert str(context.value) == str(expected)
 
@@ -124,18 +127,14 @@ def test_update_nonactive_local_branch_commits_ahead(repoA):
   """
   Verifies that updating a non-active local branch will ERROR if it is ahead of the remote.
   """
-
   # Add a commit to "test_single_1"
   repoA.handle.git.checkout('-b', 'test_single_1', 'origin/test_single_1')
   repoA.handle.index.commit("Empty commit for testing")
   repoA.handle.branches['test_single'].checkout()
 
-  # Set the target branch name before update.
-  repoA.target_branch_name = "test_single_1"
-
   # Verify update error. User needs to save the commits, or force the update.
   with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
-    repoA.update()
+    repoA.update(repoA.handle.head.commit.hexsha, "test_single_1")
   expected = gordion.UpdateLocalBranchAheadError(
       repoA.path, 'test_single_1', 'origin/test_single_1', 1)
   assert str(context.value) == str(expected)
@@ -150,13 +149,14 @@ def test_update_local_branch_no_remote(repoA):
   repoA.handle.git.checkout('-b', 'test_branch_no_remote')
   repoA.handle.branches['test_single'].checkout()
 
-  # Point the update to test_branch_no_remote:HEAD~1
-  repoA.target_branch_name = 'test_branch_no_remote'
-  repoA.target_tag = repoA.handle.branches['test_branch_no_remote'].commit.parents[0].hexsha
+  # Point the update to test_branch_no_remote:HEAD~1. Verify update error. User needs to create a
+  # tracking branch.
+  branch_name = 'test_branch_no_remote'
+  tag = repoA.handle.branches['test_branch_no_remote'].commit.parents[0].hexsha
 
   # Verify update error. User needs to create a tracking branch.
   with pytest.raises(gordion.UpdateNoTrackingBranchError) as context:
-    repoA.update()
+    repoA.update(tag, branch_name)
   expected = gordion.UpdateNoTrackingBranchError(repoA.path, 'test_branch_no_remote')
   assert str(context.value) == str(expected)
 
@@ -186,10 +186,10 @@ def test_update_remote_branch_only(repoA):
   Verifies that update will create a new local branch to track the remote branch if it does not
   exist yet AND the remote branch has the target commit.
   """
-  repoA.target_branch_name = "test_single_1"
-  repoA.update()
+  baseline_commit = repoA.handle.head.commit.hexsha
+  repoA.update(baseline_commit, "test_single_1")
   assert repoA.handle.head.reference.name == "test_single_1"
-  assert repoA.handle.head.commit.hexsha == repoA.target_tag
+  assert repoA.handle.head.commit.hexsha == baseline_commit
 
 
 def test_update_local_fastforward(repoA):
@@ -199,8 +199,7 @@ def test_update_local_fastforward(repoA):
   """
 
   # Choose a tag ahead of our baseline commit.
-  repoA.target_tag = 'a415fa52649601f17fccf6d17616281213b117b8'
-  repoA.update()
+  repoA.update('a415fa52649601f17fccf6d17616281213b117b8', "test_single")
 
 
 def test_local_branch_wrong_tracking_branch(repoA):
@@ -208,12 +207,12 @@ def test_local_branch_wrong_tracking_branch(repoA):
   If there is a local branch that matches the remote branch by name, but it has the wrong tracking
   branch, error.
   """
+  baseline_commit = repoA.handle.head.commit.hexsha
 
   # Checkout "test_single_1" locally but link it to the wrong remote branch.
   repoA.handle.git.checkout('-b', 'test_single_1', 'origin/test_single')
-  repoA.target_branch_name = 'test_single_1'
   with pytest.raises(gordion.UpdateWrongTrackingBranchError) as context:
-    repoA.update()
+    repoA.update(baseline_commit, "test_single_1")
   expected = gordion.UpdateWrongTrackingBranchError(repoA.path, 'test_single_1', 'origin/develop')
   assert str(context.value) == str(expected)
 
@@ -225,10 +224,10 @@ def test_branch_does_not_have_commit_but_commit_exists(repoA):
   """
 
   # Choose a tag that exists on 'test_single_1' but not on test_single.
-  repoA.target_tag = 'f30a7cbe5592ef4521dad06203d5178e651ecd5b'
-  repoA.update()
+  tag = 'f30a7cbe5592ef4521dad06203d5178e651ecd5b'
+  repoA.update(tag, "test_single")
   assert repoA.handle.head.is_detached
-  assert repoA.handle.head.commit.hexsha == repoA.target_tag
+  assert repoA.handle.head.commit.hexsha == tag
 
 
 def test_detached_head_unsaved_commit(repoA):
@@ -237,7 +236,8 @@ def test_detached_head_unsaved_commit(repoA):
   exist on a branch somewhere.
   """
   # Go to detached HEAD state.
-  repoA.handle.git.checkout(repoA.target_tag)
+  baseline_commit = repoA.handle.head.commit.hexsha
+  repoA.handle.git.checkout(baseline_commit)
   assert repoA.handle.head.is_detached
 
   # Now add a commit.
@@ -245,7 +245,7 @@ def test_detached_head_unsaved_commit(repoA):
 
   # Now verify that update errors.
   with pytest.raises(gordion.UpdateDetachedHeadNotSavedError) as context:
-    repoA.update()
+    repoA.update(baseline_commit, "test_single")
   expected = gordion.UpdateDetachedHeadNotSavedError(repoA.path)
   assert str(context.value) == str(expected)
 
@@ -255,10 +255,10 @@ def test_dont_specify_branch(repoA):
   Verifies that if you don't specify the branch, it will checkout the commit in detached head
   state.
   """
-  repoA.target_branch_name = []
-  repoA.update()
+  baseline_commit = repoA.handle.head.commit.hexsha
+  repoA.update(baseline_commit, None)
   assert repoA.handle.head.is_detached
-  assert repoA.handle.head.commit.hexsha == repoA.target_tag
+  assert repoA.handle.head.commit.hexsha == baseline_commit
 
 
 def test_update_dirty_repo(repoA):
@@ -272,12 +272,12 @@ def test_update_dirty_repo(repoA):
     file.write('test_uncommitted_edits wrote this.\n')
 
   # Attempt to move the HEAD and verify error.
-  repoA.target_tag = repoA.handle.head.commit.parents[0].hexsha
+  tag = repoA.handle.head.commit.parents[0].hexsha
   with pytest.raises(gordion.UpdateRepoIsDirtyError) as context:
-    repoA.update()
+    repoA.update(tag, "test_single")
   expected = gordion.UpdateRepoIsDirtyError(repoA.path)
   assert str(context.value) == str(expected)
 
   # If you don't move the HEAD, but change the branch while it's dirty, it's OK actually.
-  repoA.target_tag = repoA.handle.head.commit.hexsha
-  repoA.update()
+  tag = repoA.handle.head.commit.hexsha
+  repoA.update(tag, "test_single")

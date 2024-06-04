@@ -18,8 +18,8 @@ def repoA_session():
   path = os.path.join(REPOS_DIR, 'gordion_demo_a')
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
-  # Create the repo object, this will clone.
-  repo = gordion.Repository(path, url, 'TODO', 'TODO')
+  # Create the repo object, this will clone if necessary
+  repo = gordion.Repository(path, url)
 
   yield repo
 
@@ -29,10 +29,6 @@ def repoA(repoA_session):
   """
   This puts the repoA object back into a well-known state for each test case.
   """
-  # Set the object to the head of the develop branch.
-  repoA_session.handle.branches['develop'].checkout()
-  repoA_session.target_tag = repoA_session.handle.head.commit.hexsha
-  repoA_session.target_branch_name = 'develop'
 
   # Delete all local branches except develop (can't be deleted) to start fresh.
   repoA_session.handle.branches['develop'].checkout()
@@ -41,10 +37,14 @@ def repoA(repoA_session):
     if branch.name != 'develop':
       repoA_session.handle.delete_head(branch, force=True)
 
+  # Set the object to a known commit on the test_single branch.
+  tag = repoA_session.handle.head.commit.hexsha
+  branch_name = 'develop'
+
   # Set the target branch/commit
-  repoA_session.update()
-  assert repoA_session.handle.active_branch.name == repoA_session.target_branch_name
-  assert repoA_session.handle.head.commit.hexsha == repoA_session.target_tag
+  repoA_session.update(tag, branch_name)
+  assert repoA_session.handle.head.commit.hexsha == tag
+  assert repoA_session.handle.active_branch.name == branch_name
 
   yield repoA_session
 
@@ -54,4 +54,4 @@ def test_diamond_clone(repoA):
   Verifies nominal recursive clone of the diamond
   """
 
-  repoA.update()
+  repoA.update(repoA.handle.head.commit.hexsha, 'develop')
