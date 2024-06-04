@@ -1,7 +1,6 @@
 import os
 import gordion
 import pytest
-from git import Repo, BadName
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 

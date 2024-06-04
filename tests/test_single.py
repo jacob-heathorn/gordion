@@ -1,7 +1,7 @@
 import os
 import gordion
 import pytest
-from git import Repo, BadName
+from git import BadName
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
@@ -232,7 +232,7 @@ def test_branch_does_not_have_commit_but_commit_exists(repoA):
 
 def test_detached_head_unsaved_commit(repoA):
   """
-  Verifies update will ERROR if we are in a detached head state, and the HEAD commit does not 
+  Verifies update will ERROR if we are in a detached head state, and the HEAD commit does not
   exist on a branch somewhere.
   """
   # Go to detached HEAD state.
