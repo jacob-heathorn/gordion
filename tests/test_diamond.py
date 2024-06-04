@@ -1,0 +1,57 @@
+import os
+import gordion
+import pytest
+from git import Repo, BadName
+
+assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
+
+REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+@pytest.fixture(scope="session")
+def repoA_session():
+  """
+  Creates the repoA object only once for the lifetime of this session. This is important so the
+  "fetch_once" doesn't fetch every test case, which saves time.
+  """
+  path = os.path.join(REPOS_DIR, 'gordion_demo_a')
+  url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
+
+  # Create the repo object, this will clone.
+  repo = gordion.Repository(path, url, 'TODO', 'TODO')
+
+  yield repo
+
+
+@pytest.fixture
+def repoA(repoA_session):
+  """
+  This puts the repoA object back into a well-known state for each test case.
+  """
+  # Set the object to the head of the develop branch.
+  repoA_session.handle.branches['develop'].checkout()
+  repoA_session.target_tag = repoA_session.handle.head.commit.hexsha
+  repoA_session.target_branch_name = 'develop'
+
+  # Delete all local branches except develop (can't be deleted) to start fresh.
+  repoA_session.handle.branches['develop'].checkout()
+  branches = list(repoA_session.handle.branches)
+  for branch in branches:
+    if branch.name != 'develop':
+      repoA_session.handle.delete_head(branch, force=True)
+
+  # Set the target branch/commit
+  repoA_session.update()
+  assert repoA_session.handle.active_branch.name == repoA_session.target_branch_name
+  assert repoA_session.handle.head.commit.hexsha == repoA_session.target_tag
+
+  yield repoA_session
+
+
+def test_diamond_clone(repoA):
+  """
+  Verifies nominal recursive clone of the diamond
+  """
+
+  repoA.update()

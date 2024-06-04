@@ -2,6 +2,7 @@ import os
 import subprocess
 from git import Repo, NoSuchPathError, InvalidGitRepositoryError
 import gordion
+import yaml
 
 
 class Repository:
@@ -26,12 +27,15 @@ class Repository:
     self.target_branch_name = branch
     self.fetched = False
 
-  def update(self) -> None:
+  def update(self, root=None) -> None:
     """
     Updates the repository to the specified commit and optional branch, as long as information will
     not be lost in the process, otherwise it will raise descriptive errors about what to do next.
 
     """
+
+    if root is None:
+      root = self
 
     target_commit = self._verify_tag(self.target_tag)
 
@@ -112,6 +116,33 @@ class Repository:
         # checkout the commit in a detached head state.
         else:
           self.handle.git.checkout(target_commit)
+
+    self._update_children(root)
+
+  def _update_children(self, root):
+    # Clear children
+    self.children = []
+
+    # Open the gordion yaml file for this repository if it exists.
+    yaml_fullfile = os.path.join(self.path, 'gordion.yaml')
+    if os.path.exists(yaml_fullfile):
+      with open(yaml_fullfile, 'r') as file:
+        yaml_data = yaml.safe_load(file)
+
+        # Print the loaded data or process it as needed
+        for child_name, child_info in yaml_data['repositories'].items():
+          # print(f"Repository Name: {repo_name}")
+          # print(f"URL: {repo_info['url']}")
+          # print(f"Tag: {repo_info['tag']}")
+          # print()  # Add a newline for readability between entries
+
+          # Create child repository objects
+          # TODO: non-default child path/name
+          child_path = os.path.join(root.path, 'gordion', child_name)
+          child = Repository(child_path, child_info['url'],
+                             child_info['tag'], root.target_branch_name)
+          child.update(root)
+          self.children.append(child)
 
   def _verify_head_wont_be_lost(self, target_commit):
     """
