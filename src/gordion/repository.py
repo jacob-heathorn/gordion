@@ -114,6 +114,21 @@ class Repository:
 
     self._update_children(branch_name, root)
 
+  def _check_duplicates(self, other, tag):
+    host, username, repo_name = gordion.extract_repo_details(self.handle.remotes.origin.url)
+    other_host, other_username, other_repo_name = gordion.extract_repo_details(
+        other.handle.remotes.origin.url)
+
+    # Check if the remote repository is the same
+    if host == other_host and username == other_username and repo_name == other_repo_name:
+      # Make sure the repository has the same local path.
+      if self.path != other.path:
+        raise gordion.UpdateDuplicateRepoPathError(self, other)
+
+      # Make sure the repository has the same tag.
+      if tag != other.handle.head.commit.hexsha:
+        raise gordion.UpdateDuplicateRepoTagError(self, other, tag)
+
   def _update_children(self, branch_name: str, root):
     # Clear children
     self.children = []
