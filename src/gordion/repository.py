@@ -17,18 +17,10 @@ class Repository:
     self.url = url
     self.yeditor = None
 
-    if Repository._exists(self.path):
-      self.handle = Repo(self.path)
-
-      yaml_fullfile = os.path.join(self.path, 'gordion.yaml')
-      if os.path.exists(yaml_fullfile):
-        self.yeditor = self.yeditor = gordion.YamlEditor(yaml_fullfile)
-
-      if self.url is None:
-        self.url = self.handle.remotes.origin.url
-
-      else:
-        assert self.url == self.handle.remotes.origin.url
+    # If the url is not specified, then we expect the repository to already exist.
+    if not self.url:
+      assert Repository._exists(self.path)
+      self.ensure()
 
   def ensure(self):
     """
@@ -42,9 +34,15 @@ class Repository:
       args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
+    # Create underlying repository handle
     self.handle = Repo(self.path)
 
-    # TODO this piece shows up twice.
+    # If url is not set, get it from the handle, otherwise ensure it matches the user set url.
+    if self.url is None:
+      self.url = self.handle.remotes.origin.url
+    else:
+      assert self.url == self.handle.remotes.origin.url
+
     yaml_fullfile = os.path.join(self.path, 'gordion.yaml')
     if os.path.exists(yaml_fullfile):
       self.yeditor = self.yeditor = gordion.YamlEditor(yaml_fullfile)

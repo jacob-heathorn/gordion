@@ -59,7 +59,17 @@ def test_tag_mismatch(repoA):
   repo_d = gordion.Repository(repo_d_path)
   repo_d.handle.index.commit("Empty commit for test_tag_mismatch")
 
-  # # Make B point to D's new commit but not C
-  # repo_b_path = os.path.join(repoA.path, 'gordion', 'gordion_demo_b')
-  # repo_b = gordion.Repository(repo_b_path)
-  # repo_b.yeditor.write_repository_tag('gordion_demo_d', repo_d.handle.head.commit.hexsha)
+  # Make B point to D's new commit but not C
+  repo_b_path = os.path.join(repoA.path, 'gordion', 'gordion_demo_b')
+  repo_b = gordion.Repository(repo_b_path)
+  repo_b.yeditor.write_repository_tag('gordion_demo_d', repo_d.handle.head.commit.hexsha)
+  repo_b.handle.index.add(os.path.join(repo_b_path, 'gordion.yaml'))
+  repo_b.handle.index.commit("Point to latest D")
+  repoA.yeditor.write_repository_tag('gordion_demo_b', repo_b.handle.head.commit.hexsha)
+  repoA.handle.index.add(os.path.join(repoA.path, 'gordion.yaml'))
+  repoA.handle.index.commit("Point to latest B")
+
+  # TOOD uncomment below, use parent to get gordion.yaml to make error message better.
+
+  # # Now update, it should raise error, tag mismatch
+  # repoA.update(repoA.handle.head.commit.hexsha, 'develop')
