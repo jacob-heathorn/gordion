@@ -70,6 +70,7 @@ def test_tag_mismatch(repoA):
   repoA.handle.index.commit("Point to latest B")
 
   # TOOD uncomment below, use parent to get gordion.yaml to make error message better.
+  # TODO: make url an arg to ensure, make path the only arg to repo.
 
   # # Now update, it should raise error, tag mismatch
   # repoA.update(repoA.handle.head.commit.hexsha, 'develop')
