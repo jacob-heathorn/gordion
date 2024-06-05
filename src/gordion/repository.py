@@ -2,7 +2,6 @@ import os
 import subprocess
 from git import Repo, NoSuchPathError, InvalidGitRepositoryError
 import gordion
-import yaml
 
 
 class Repository:
@@ -11,11 +10,25 @@ class Repository:
 
   """
 
-  def __init__(self, path: str, url: str) -> None:
+  def __init__(self, path: str, url: str = None) -> None:
     self.path = path
-    self.url = url
     self.fetched = False
     self.children = []
+    self.url = url
+    self.yeditor = None
+
+    if Repository._exists(self.path):
+      self.handle = Repo(self.path)
+
+      yaml_fullfile = os.path.join(self.path, 'gordion.yaml')
+      if os.path.exists(yaml_fullfile):
+        self.yeditor = self.yeditor = gordion.YamlEditor(yaml_fullfile)
+
+      if self.url is None:
+        self.url = self.handle.remotes.origin.url
+
+      else:
+        assert self.url == self.handle.remotes.origin.url
 
   def ensure(self):
     """
@@ -30,6 +43,11 @@ class Repository:
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     self.handle = Repo(self.path)
+
+    # TODO this piece shows up twice.
+    yaml_fullfile = os.path.join(self.path, 'gordion.yaml')
+    if os.path.exists(yaml_fullfile):
+      self.yeditor = self.yeditor = gordion.YamlEditor(yaml_fullfile)
 
   def update(self, tag: str, branch_name: str, root=None) -> None:
     """
@@ -143,21 +161,16 @@ class Repository:
     self.children = []
 
     # Open the gordion yaml file for this repository if it exists.
-    yaml_fullfile = os.path.join(self.path, 'gordion.yaml')
-    if os.path.exists(yaml_fullfile):
-      with open(yaml_fullfile, 'r') as file:
-        yaml_data = yaml.safe_load(file)
-
-        # Print the loaded data or process it as needed
-        for child_name, child_info in yaml_data['repositories'].items():
-          # Create child repository objects
-          # TODO: non-default child path/name
-          child_path = os.path.join(root.path, 'gordion', child_name)
-          child = Repository(child_path, child_info['url'])
-          child._check_duplicates(root, child_info['tag'])
-          child.ensure()
-          child.update(child_info['tag'], branch_name, root)
-          self.children.append(child)
+    if self.yeditor:
+      for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
+        # Create child repository objects
+        # TODO: non-default child path/name
+        child_path = os.path.join(root.path, 'gordion', child_name)
+        child = Repository(child_path, child_info['url'])
+        child._check_duplicates(root, child_info['tag'])
+        child.ensure()
+        child.update(child_info['tag'], branch_name, root)
+        self.children.append(child)
 
   def _verify_head_wont_be_lost(self, commit):
     """

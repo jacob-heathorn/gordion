@@ -49,9 +49,17 @@ def repoA(repoA_session):
   yield repoA_session
 
 
-def test_diamond_clone(repoA):
+def test_tag_mismatch(repoA):
   """
-  Verifies nominal recursive clone of the diamond
+  Verifies update will error if two of the same repository reference have different tags.
   """
 
-  repoA.update(repoA.handle.head.commit.hexsha, 'develop')
+  # Add a commit to repository D
+  repo_d_path = os.path.join(repoA.path, 'gordion', 'gordion_demo_d')
+  repo_d = gordion.Repository(repo_d_path)
+  repo_d.handle.index.commit("Empty commit for test_tag_mismatch")
+
+  # # Make B point to D's new commit but not C
+  # repo_b_path = os.path.join(repoA.path, 'gordion', 'gordion_demo_b')
+  # repo_b = gordion.Repository(repo_b_path)
+  # repo_b.yeditor.write_repository_tag('gordion_demo_d', repo_d.handle.head.commit.hexsha)
