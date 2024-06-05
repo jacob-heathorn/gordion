@@ -13,17 +13,22 @@ class Repository:
 
   def __init__(self, path: str, url: str) -> None:
     self.path = path
+    self.url = url
+    self.fetched = False
 
+  def ensure(self):
+    """
+    Clones the repository if necessary and creates the underlying git repository handle.
+    """
     # Clone if necessary.
-    if not Repository._exists(path):
+    if not Repository._exists(self.path):
       cache = gordion.Cache()
-      mirror_path = cache.ensure_mirror(url)
+      mirror_path = cache.ensure_mirror(self.url)
 
-      args = ['git', 'clone', '--reference', mirror_path, url, self.path]
+      args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     self.handle = Repo(self.path)
-    self.fetched = False
 
   def update(self, tag: str, branch_name: str, root=None) -> None:
     """
@@ -145,6 +150,8 @@ class Repository:
           # TODO: non-default child path/name
           child_path = os.path.join(root.path, 'gordion', child_name)
           child = Repository(child_path, child_info['url'])
+          # TODO check duplicates here.
+          child.ensure()
           child.update(child_info['tag'], branch_name, root)
           self.children.append(child)
 

@@ -30,6 +30,7 @@ def repoA_session():
 
   # Create the repo object, this will clone if necessary
   repo = gordion.Repository(path, url)
+  repo.ensure()
 
   yield repo
 
