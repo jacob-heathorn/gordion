@@ -1,4 +1,5 @@
 import yaml
+import os
 
 
 class YamlEditor:
@@ -9,8 +10,15 @@ class YamlEditor:
 
   def __init__(self, fullfile: str) -> None:
     self.fullfile = fullfile
-    with open(self.fullfile, 'r') as file:
-      self.yaml_data = yaml.safe_load(file)
+    self.reload()
+
+  def exists(self):
+    return os.path.exists(self.fullfile)
+
+  def reload(self):
+    if self.exists():
+      with open(self.fullfile, 'r') as file:
+        self.yaml_data = yaml.safe_load(file)
 
   def write_repository_tag(self, name: str, tag: str):
     # Check if the repository exists

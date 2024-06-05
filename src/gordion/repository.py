@@ -10,42 +10,41 @@ class Repository:
 
   """
 
-  def __init__(self, path: str, url: str = None) -> None:
+  def __init__(self, path: str) -> None:
     self.path = path
+    self.url = ''
     self.fetched = False
-    self.children = []
-    self.url = url
-    self.yeditor = None
+    self.children: list[Repository] = []
+    self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
 
-    # If the url is not specified, then we expect the repository to already exist.
-    if not self.url:
-      assert Repository._exists(self.path)
+    if Repository._exists(self.path):
       self.ensure()
 
-  def ensure(self):
+  def ensure(self, url: str = ''):
     """
     Clones the repository if necessary and creates the underlying git repository handle.
     """
+
     # Clone if necessary.
     if not Repository._exists(self.path):
+      assert url
+      self.url = url
       cache = gordion.Cache()
       mirror_path = cache.ensure_mirror(self.url)
 
       args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
-    # Create underlying repository handle
+    # Create underlying repository handle.
     self.handle = Repo(self.path)
 
     # If url is not set, get it from the handle, otherwise ensure it matches the user set url.
-    if self.url is None:
+    if not self.url:
       self.url = self.handle.remotes.origin.url
     else:
       assert self.url == self.handle.remotes.origin.url
 
-    yaml_fullfile = os.path.join(self.path, 'gordion.yaml')
-    if os.path.exists(yaml_fullfile):
-      self.yeditor = self.yeditor = gordion.YamlEditor(yaml_fullfile)
+    self.yeditor.reload()
 
   def update(self, tag: str, branch_name: str, root=None) -> None:
     """
@@ -134,39 +133,42 @@ class Repository:
         else:
           self.handle.git.checkout(commit)
 
+    self.yeditor.reload()
     self._update_children(branch_name, root)
 
-  def _check_duplicates(self, other, tag):
-    host, username, repo_name = gordion.extract_repo_details(self.url)
+  @staticmethod
+  def _check_duplicates(path: str, url: str, tag: str, other):
+    host, username, repo_name = gordion.extract_repo_details(url)
     other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
 
     # Check if the remote repository is the same
     if host == other_host and username == other_username and repo_name == other_repo_name:
       # Make sure the repository has the same local path.
-      if self.path != other.path:
-        raise gordion.UpdateDuplicateRepoPathError(self, other)
+      if path != other.path:
+        raise gordion.UpdateDuplicateRepoPathError(path, other)
 
       # Make sure the repository has the same tag.
       if tag != other.handle.head.commit.hexsha:
-        raise gordion.UpdateDuplicateRepoTagError(self, other, tag)
+        raise gordion.UpdateDuplicateRepoTagError(path, tag, other)
 
     # Check against the other's children
     for other_child in other.children:
-      self._check_duplicates(other_child, tag)
+      Repository._check_duplicates(path, url, tag, other_child)
 
   def _update_children(self, branch_name: str, root):
     # Clear children
     self.children = []
 
     # Open the gordion yaml file for this repository if it exists.
-    if self.yeditor:
+    if self.yeditor.exists():
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
         # Create child repository objects
         # TODO: non-default child path/name
+
         child_path = os.path.join(root.path, 'gordion', child_name)
-        child = Repository(child_path, child_info['url'])
-        child._check_duplicates(root, child_info['tag'])
-        child.ensure()
+        Repository._check_duplicates(child_path, child_info['url'], child_info['tag'], root)
+        child = Repository(child_path)
+        child.ensure(child_info['url'])
         child.update(child_info['tag'], branch_name, root)
         self.children.append(child)
 
