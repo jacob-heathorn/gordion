@@ -15,6 +15,7 @@ class Repository:
     self.path = path
     self.url = url
     self.fetched = False
+    self.children = []
 
   def ensure(self):
     """
@@ -120,9 +121,8 @@ class Repository:
     self._update_children(branch_name, root)
 
   def _check_duplicates(self, other, tag):
-    host, username, repo_name = gordion.extract_repo_details(self.handle.remotes.origin.url)
-    other_host, other_username, other_repo_name = gordion.extract_repo_details(
-        other.handle.remotes.origin.url)
+    host, username, repo_name = gordion.extract_repo_details(self.url)
+    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
 
     # Check if the remote repository is the same
     if host == other_host and username == other_username and repo_name == other_repo_name:
@@ -133,6 +133,10 @@ class Repository:
       # Make sure the repository has the same tag.
       if tag != other.handle.head.commit.hexsha:
         raise gordion.UpdateDuplicateRepoTagError(self, other, tag)
+
+    # Check against the other's children
+    for other_child in other.children:
+      self._check_duplicates(other_child, tag)
 
   def _update_children(self, branch_name: str, root):
     # Clear children
@@ -150,7 +154,7 @@ class Repository:
           # TODO: non-default child path/name
           child_path = os.path.join(root.path, 'gordion', child_name)
           child = Repository(child_path, child_info['url'])
-          # TODO check duplicates here.
+          child._check_duplicates(root, child_info['tag'])
           child.ensure()
           child.update(child_info['tag'], branch_name, root)
           self.children.append(child)

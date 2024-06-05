@@ -46,10 +46,10 @@ class UpdateRepoIsDirtyError(UpdateError):
 
 class UpdateDuplicateRepoPathError(UpdateError):
   def __init__(self, repo, other_repo):
-    reason = (f"The repository({other_repo.handle.remotes.origin.url}) is already cloned at "
+    reason = (f"The repository({other_repo.url}) is already cloned at "
               f"{other_repo.path}. You are trying to clone it again to {repo.path}. You cannot "
               f"do this.")
-    suggestion = ("You need to make sure all listings of the same repository have the same"
+    suggestion = ("You need to make sure all listings of the same repository have the same "
                   "local path in the gordion.yaml file.")
     super().__init__(repo.path, reason, suggestion)
 
@@ -58,9 +58,9 @@ class UpdateDuplicateRepoPathError(UpdateError):
 
 class UpdateDuplicateRepoTagError(UpdateError):
   def __init__(self, repo, other_repo, tag):
-    reason = (f"The repository({other_repo.path}) is already checked out at"
-              f"tag({other_repo.handle.head.commit.hexsha}). You are trying to overwrite the"
+    reason = (f"The repository({other_repo.path}) is already checked out at "
+              f"{other_repo.handle.head.commit.hexsha}. You are trying to overwrite the "
               f"commit to {tag}.")
-    suggestion = ("You need to make sure all listings of the same repository have the same"
+    suggestion = ("You need to make sure all listings of the same repository have the same "
                   "tag in the gordion.yaml files.")
     super().__init__(repo.path, reason, suggestion)
