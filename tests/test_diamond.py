@@ -54,28 +54,33 @@ def test_tag_mismatch(repoA):
   Verifies update will error if two of the same repository reference have different tags.
   """
 
-  # Add a commit to repository D
-  repo_d_path = os.path.join(repoA.path, 'gordion', 'gordion_demo_d')
-  repo_d = gordion.Repository(repo_d_path)
+  # Add a commit to repository D.
+  repo_d = repoA.children['gordion_demo_b'].children['gordion_demo_d']
   repo_d.handle.index.commit("Empty commit for test_tag_mismatch")
 
-  # Make B point to D's new commit but not C
-  repo_b_path = os.path.join(repoA.path, 'gordion', 'gordion_demo_b')
-  repo_b = gordion.Repository(repo_b_path)
+  # Make B point to D's new commit but not C.
+  repo_b = repoA.children['gordion_demo_b']
   repo_b.yeditor.write_repository_tag('gordion_demo_d', repo_d.handle.head.commit.hexsha)
-  repo_b.handle.index.add(os.path.join(repo_b_path, 'gordion.yaml'))
+  repo_b.handle.index.add(os.path.join(repo_b.path, 'gordion.yaml'))
   repo_b.handle.index.commit("Point to latest D")
   repoA.yeditor.write_repository_tag('gordion_demo_b', repo_b.handle.head.commit.hexsha)
   repoA.handle.index.add(os.path.join(repoA.path, 'gordion.yaml'))
   repoA.handle.index.commit("Point to latest B")
 
-  # Now update, it should raise error, tag mismatch
-  repoA.update(repoA.handle.head.commit.hexsha, 'develop')
+  # Save some information before the update.
+  b_ref_d = repoA.children['gordion_demo_b'].children['gordion_demo_d']
+  b_ref_d_tag = repoA.children['gordion_demo_b'].yeditor.read_repository_tag('gordion_demo_d')
+  c_ref_d = repoA.children['gordion_demo_c'].children['gordion_demo_d']
+  c_ref_d_tag = repoA.children['gordion_demo_c'].yeditor.read_repository_tag('gordion_demo_d')
 
-  # with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
-  #   repoA.update(baseline_commit, "test_single")
-  # expected = gordion.UpdateLocalBranchAheadError(repoA.path, 'test_single', 'origin/test_single', 1)
-  # assert str(context.value) == str(expected)
+  # Now update, it should raise error, tag mismatch.
+  with pytest.raises(gordion.UpdateDuplicateRepoTagError) as context:
+    repoA.update(repoA.handle.head.commit.hexsha, "test_single")
+
+  # Verify the exception.
+  expected = gordion.UpdateDuplicateRepoTagError(c_ref_d, c_ref_d_tag,
+                                                 b_ref_d, b_ref_d_tag)
+  assert str(context.value) == str(expected)
 
 
 # TODO looks like I'll need a force update at this point.
