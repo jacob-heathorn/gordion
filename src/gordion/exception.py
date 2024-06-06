@@ -1,9 +1,6 @@
-import os
-
-
 class UpdateError(Exception):
-  def __init__(self, repo_path, reason, suggestion):
-    self.message = f"Cannot update {repo_path}.\nreason: {reason}\nsuggestion: {suggestion}"
+  def __init__(self, listed_path, reason, suggestion):
+    self.message = f"Cannot update {listed_path}.\nreason: {reason}\nsuggestion: {suggestion}"
     super().__init__(self.message)
 
 
@@ -63,4 +60,4 @@ class UpdateDuplicateRepoTagError(UpdateError):
               f"{target._listed_path()} : {target_tag}\n\t"
               f"{other._listed_path()} : {other_tag}")
     suggestion = ("These need to match.")
-    super().__init__(target._relpath(), reason, suggestion)
+    super().__init__(target._listed_path(), reason, suggestion)

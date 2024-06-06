@@ -69,9 +69,8 @@ class Repository:
       name = self.parent.yeditor.find_listing_name(self.url)
       listing_file = os.path.join(self.parent._relpath(), 'gordion.yaml')
       listed_path = f"{listing_file} : {name}"
-
     else:
-      listed_path = self._relpath
+      listed_path = self._relpath()
 
     return listed_path
 
@@ -83,7 +82,10 @@ class Repository:
     """
 
     commit = self._verify_tag(tag)
-    self._check_duplicate_repo_tag(tag, self._root())
+
+    # Check for duplicate tag
+    root = self._root()
+    self._check_duplicate_repo_tag(tag, root)
 
     # Verify that we don't have an unsaved HEAD that would be lost by the update.
     if self.handle.head.is_detached:
@@ -184,15 +186,17 @@ class Repository:
     """
     Recursively checks the repository tag against another repository and it's children.
     """
-    host, username, repo_name = gordion.extract_repo_details(self.url)
-    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
 
-    # Check if the remote repository is the same
-    if host == other_host and username == other_username and repo_name == other_repo_name:
-      # Make sure the repository has the same tag.
-      if target_tag != other.handle.head.commit.hexsha:
-        raise gordion.UpdateDuplicateRepoTagError(
-            self, target_tag, other, other.handle.head.commit.hexsha)
+    if self is not other:
+      host, username, repo_name = gordion.extract_repo_details(self.url)
+      other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
+
+      # Check if the remote repository is the same
+      if host == other_host and username == other_username and repo_name == other_repo_name:
+        # Make sure the repository has the same tag.
+        if target_tag != other.handle.head.commit.hexsha:
+          raise gordion.UpdateDuplicateRepoTagError(
+              self, target_tag, other, other.handle.head.commit.hexsha)
 
     # Check against the other's children
     for _, other_child in other.children.items():

@@ -47,3 +47,6 @@ class YamlEditor:
     for name, info in self.yaml_data['repositories'].items():
       if url == info['url']:
         return name
+
+    # Should not reach here
+    assert False
