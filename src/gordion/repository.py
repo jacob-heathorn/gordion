@@ -49,6 +49,9 @@ class Repository:
 
     self.yeditor.reload()
 
+  def _relpath(self) -> str:
+    return os.path.relpath(self.path, os.path.dirname(self._root().path))
+
   def update(self, tag: str, branch_name: str) -> None:
     """
     Updates the repository to the specified commit and optional branch, as long as information will
@@ -177,9 +180,8 @@ class Repository:
         child_path = os.path.join(root.path, 'gordion', child_name)
         child_tag = child_info['tag']
         child_url = child_info['url']
-        listing_relative_filepath = os.path.relpath(
-            self.yeditor.fullfile, os.path.dirname(root.path))
-        yaml_listing = f"{listing_relative_filepath}:{child_name}:{child_tag}"
+        listing_file = os.path.join(self._relpath(), 'gordion.yaml')
+        yaml_listing = f"{listing_file} : {child_name} : {child_tag}"
         Repository._check_duplicates(yaml_listing, child_path, child_url, child_tag, root)
         child = Repository(child_path)
         child.parent = self

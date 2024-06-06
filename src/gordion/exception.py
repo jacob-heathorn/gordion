@@ -3,7 +3,7 @@ import os
 
 class UpdateError(Exception):
   def __init__(self, repo_path, reason, suggestion):
-    self.message = f"Cannot update {repo_path}.\nreason: {reason}.\nsuggestion: {suggestion}"
+    self.message = f"Cannot update {repo_path}.\nreason: {reason}\nsuggestion: {suggestion}"
     super().__init__(self.message)
 
 
@@ -67,6 +67,6 @@ class UpdateDuplicateRepoTagError(UpdateError):
       root_name = os.path.basename(other_repo.path)
       other_yaml_listing = f"{root_name}:{other_repo.handle.head.commit.hexsha}"
     reason = (
-        f"Gordion repository mismatch!\n\tnew: {yaml_listing}\n\texisting: {other_yaml_listing}.")
+        f"Gordion repository mismatch!\n\t{yaml_listing}\n\t{other_yaml_listing}")
     suggestion = ("These need to match.")
     super().__init__(path, reason, suggestion)
