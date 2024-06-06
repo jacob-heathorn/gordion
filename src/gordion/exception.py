@@ -56,17 +56,11 @@ class UpdateDuplicateRepoPathError(UpdateError):
                   "local path in the gordion.yaml file.")
     super().__init__(target._relpath(), reason, suggestion)
 
-# TODO use "parent" property to get the gordion file that has the mistake.
-
 
 class UpdateDuplicateRepoTagError(UpdateError):
-  def __init__(self, path, yaml_listing, other_repo):
-
-    other_yaml_listing = other_repo.parent_listing
-    if not other_yaml_listing:
-      root_name = os.path.basename(other_repo.path)
-      other_yaml_listing = f"{root_name}:{other_repo.handle.head.commit.hexsha}"
-    reason = (
-        f"Gordion repository mismatch!\n\t{yaml_listing}\n\t{other_yaml_listing}")
+  def __init__(self, target, target_tag, other, other_tag):
+    reason = (f"Gordion repository mismatch!\n\t"
+              f"{target._listed_path()} : {target_tag}\n\t"
+              f"{other._listed_path()} : {other_tag}")
     suggestion = ("These need to match.")
-    super().__init__(path, reason, suggestion)
+    super().__init__(target._relpath(), reason, suggestion)

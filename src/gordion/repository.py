@@ -15,8 +15,6 @@ class Repository:
     self.url = ''
     self.fetched = False
     self.parent: Repository = parent
-    # TODO: ability to  grab this from the parent with a dictionary?
-    self.parent_listing: str = ''
     self.children: list[Repository] = []
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
 
@@ -56,6 +54,18 @@ class Repository:
   def _relpath(self) -> str:
     return os.path.relpath(self.path, os.path.dirname(self._root().path))
 
+  def _listed_path(self) -> str:
+    listed_path = ''
+    if self.parent:
+      name = self.parent.yeditor.find_listing_name(self.url)
+      listing_file = os.path.join(self.parent._relpath(), 'gordion.yaml')
+      listed_path = f"{listing_file} : {name}"
+
+    else:
+      listed_path = self._relpath
+
+    return listed_path
+
   def update(self, tag: str, branch_name: str) -> None:
     """
     Updates the repository to the specified commit and optional branch, as long as information will
@@ -64,6 +74,7 @@ class Repository:
     """
 
     commit = self._verify_tag(tag)
+    self._check_duplicate_repo_tag(tag, self._root())
 
     # Verify that we don't have an unsaved HEAD that would be lost by the update.
     if self.handle.head.is_detached:
@@ -144,6 +155,9 @@ class Repository:
     self._update_children(branch_name)
 
   def _check_duplicate_repo_path(self, other):
+    """
+    Recursively checks the repository path against another repository and it's children.
+    """
     host, username, repo_name = gordion.extract_repo_details(self.url)
     other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
 
@@ -153,13 +167,27 @@ class Repository:
       if self.path != other.path:
         raise gordion.UpdateDuplicateRepoPathError(self.path, other)
 
-      # # Make sure the repository has the same tag.
-      # if tag != other.handle.head.commit.hexsha:
-      #   raise gordion.UpdateDuplicateRepoTagError(self.path, self.parent_listing, other)
-
     # Check against the other's children
     for other_child in other.children:
       Repository._check_duplicate_repo_path(self, other_child)
+
+  def _check_duplicate_repo_tag(self, target_tag, other):
+    """
+    Recursively checks the repository tag against another repository and it's children.
+    """
+    host, username, repo_name = gordion.extract_repo_details(self.url)
+    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
+
+    # Check if the remote repository is the same
+    if host == other_host and username == other_username and repo_name == other_repo_name:
+      # Make sure the repository has the same tag.
+      if target_tag != other.handle.head.commit.hexsha:
+        raise gordion.UpdateDuplicateRepoTagError(
+            self, target_tag, other, other.handle.head.commit.hexsha)
+
+    # Check against the other's children
+    for other_child in other.children:
+      Repository._check_duplicate_repo_tag(self, target_tag, other_child)
 
   def _root(self):
     """
@@ -181,14 +209,9 @@ class Repository:
         # TODO: non-default child path/name
 
         child_path = os.path.join(root.path, 'gordion', child_name)
-        child_tag = child_info['tag']
-        child_url = child_info['url']
-        listing_file = os.path.join(self._relpath(), 'gordion.yaml')
-        yaml_listing = f"{listing_file} : {child_name} : {child_tag}"
         child = Repository(child_path, self)
-        child.parent_listing = yaml_listing
-        child.ensure(child_url)
-        child.update(child_tag, branch_name)
+        child.ensure(child_info['url'])
+        child.update(child_info['tag'], branch_name)
         self.children.append(child)
 
   def _verify_head_wont_be_lost(self, commit):
