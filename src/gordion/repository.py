@@ -15,6 +15,8 @@ class Repository:
     self.url = ''
     self.fetched = False
     self.parent: Repository = None
+    # TODO: ability to  grab this from the parent with a dictionary?
+    self.parent_listing: str = ''
     self.children: list[Repository] = []
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
 
@@ -135,7 +137,7 @@ class Repository:
     self._update_children(branch_name)
 
   @staticmethod
-  def _check_duplicates(path: str, url: str, tag: str, other):
+  def _check_duplicates(yaml_listing: str, path: str, url: str, tag: str, other):
     host, username, repo_name = gordion.extract_repo_details(url)
     other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
 
@@ -147,11 +149,11 @@ class Repository:
 
       # Make sure the repository has the same tag.
       if tag != other.handle.head.commit.hexsha:
-        raise gordion.UpdateDuplicateRepoTagError(path, tag, other)
+        raise gordion.UpdateDuplicateRepoTagError(path, yaml_listing, other)
 
     # Check against the other's children
     for other_child in other.children:
-      Repository._check_duplicates(path, url, tag, other_child)
+      Repository._check_duplicates(yaml_listing, path, url, tag, other_child)
 
   def _root(self):
     """
@@ -173,11 +175,17 @@ class Repository:
         # TODO: non-default child path/name
 
         child_path = os.path.join(root.path, 'gordion', child_name)
-        Repository._check_duplicates(child_path, child_info['url'], child_info['tag'], root)
+        child_tag = child_info['tag']
+        child_url = child_info['url']
+        listing_relative_filepath = os.path.relpath(
+            self.yeditor.fullfile, os.path.dirname(root.path))
+        yaml_listing = f"{listing_relative_filepath}:{child_name}:{child_tag}"
+        Repository._check_duplicates(yaml_listing, child_path, child_url, child_tag, root)
         child = Repository(child_path)
         child.parent = self
-        child.ensure(child_info['url'])
-        child.update(child_info['tag'], branch_name)
+        child.parent_listing = yaml_listing
+        child.ensure(child_url)
+        child.update(child_tag, branch_name)
         self.children.append(child)
 
   def _verify_head_wont_be_lost(self, commit):

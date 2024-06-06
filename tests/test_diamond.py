@@ -70,7 +70,7 @@ def test_tag_mismatch(repoA):
   repoA.handle.index.commit("Point to latest B")
 
   # Now update, it should raise error, tag mismatch
-  # repoA.update(repoA.handle.head.commit.hexsha, 'develop')
+  repoA.update(repoA.handle.head.commit.hexsha, 'develop')
 
   # with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
   #   repoA.update(baseline_commit, "test_single")

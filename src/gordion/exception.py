@@ -1,6 +1,9 @@
+import os
+
+
 class UpdateError(Exception):
   def __init__(self, repo_path, reason, suggestion):
-    self.message = f"Cannot update {repo_path} because {reason}. {suggestion}."
+    self.message = f"Cannot update {repo_path}.\nreason: {reason}.\nsuggestion: {suggestion}"
     super().__init__(self.message)
 
 
@@ -57,10 +60,13 @@ class UpdateDuplicateRepoPathError(UpdateError):
 
 
 class UpdateDuplicateRepoTagError(UpdateError):
-  def __init__(self, path, tag, other_repo):
-    reason = (f"The repository({other_repo.path}) is already checked out at "
-              f"{other_repo.handle.head.commit.hexsha}. You are trying to overwrite the "
-              f"commit to {tag}.")
-    suggestion = ("You need to make sure all listings of the same repository have the same "
-                  "tag in the gordion.yaml files.")
+  def __init__(self, path, yaml_listing, other_repo):
+
+    other_yaml_listing = other_repo.parent_listing
+    if not other_yaml_listing:
+      root_name = os.path.basename(other_repo.path)
+      other_yaml_listing = f"{root_name}:{other_repo.handle.head.commit.hexsha}"
+    reason = (
+        f"Gordion repository mismatch!\n\tnew: {yaml_listing}\n\texisting: {other_yaml_listing}.")
+    suggestion = ("These need to match.")
     super().__init__(path, reason, suggestion)
