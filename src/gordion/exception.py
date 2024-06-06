@@ -48,13 +48,13 @@ class UpdateRepoIsDirtyError(UpdateError):
 
 
 class UpdateDuplicateRepoPathError(UpdateError):
-  def __init__(self, path, other_repo):
-    reason = (f"The repository({other_repo.url}) is already cloned at "
-              f"{other_repo.path}. You are trying to clone it again to {path}. You cannot "
+  def __init__(self, target, other):
+    reason = (f"The repository({other.url}) is already cloned at "
+              f"{other.path}. You are trying to clone it again to {target.path}. You cannot "
               f"do this.")
     suggestion = ("You need to make sure all listings of the same repository have the same "
                   "local path in the gordion.yaml file.")
-    super().__init__(path, reason, suggestion)
+    super().__init__(target._relpath(), reason, suggestion)
 
 # TODO use "parent" property to get the gordion file that has the mistake.
 
