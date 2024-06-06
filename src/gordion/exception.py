@@ -1,6 +1,10 @@
 class UpdateError(Exception):
-  def __init__(self, listed_path, reason, suggestion):
-    self.message = f"Cannot update {listed_path}.\nreason: {reason}\nsuggestion: {suggestion}"
+  def __init__(self, target, reason, suggestion):
+    self.message = (f"Cannot update {target.name}.\n"
+                    f"system path: {target.path}\n"
+                    f"listed path: {target._listed_path()}\n"
+                    f"reason: {reason}\n"
+                    f"suggestion: {suggestion}")
     super().__init__(self.message)
 
 
@@ -57,7 +61,7 @@ class UpdateDuplicateRepoPathError(UpdateError):
 class UpdateDuplicateRepoTagError(UpdateError):
   def __init__(self, target, target_tag, other, other_tag):
     reason = (f"Gordion repository mismatch!\n\t"
-              f"{target._listed_path()} : {target_tag}\n\t"
-              f"{other._listed_path()} : {other_tag}")
+              f"{target._listed_path()}:{target_tag}\n\t"
+              f"{other._listed_path()}:{other_tag}")
     suggestion = ("These need to match.")
-    super().__init__(target._listed_path(), reason, suggestion)
+    super().__init__(target, reason, suggestion)

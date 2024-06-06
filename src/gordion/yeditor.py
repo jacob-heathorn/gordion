@@ -16,7 +16,8 @@ class YamlEditor:
     return os.path.exists(self.fullfile)
 
   def reload(self):
-    # TODO assert not duplicate names, or urls, or paths
+    # TODO assert not duplicate names, or urls, or paths. Path basename must be the same as name and
+    # is optional.
     if self.exists():
       with open(self.fullfile, 'r') as file:
         self.yaml_data = yaml.safe_load(file)

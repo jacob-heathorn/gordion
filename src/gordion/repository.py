@@ -12,6 +12,7 @@ class Repository:
 
   def __init__(self, path: str, parent=None) -> None:
     self.path = path
+    self.name = os.path.basename(self.path)
     self.url = ''
     self.fetched = False
     self.parent: Repository = parent
@@ -67,10 +68,9 @@ class Repository:
     listed_path = ''
     if self.parent:
       name = self.parent.yeditor.find_listing_name(self.url)
-      listing_file = os.path.join(self.parent._relpath(), 'gordion.yaml')
-      listed_path = f"{listing_file} : {name}"
+      listed_path = f"{self.parent._relpath()} lists {name}"
     else:
-      listed_path = self._relpath()
+      listed_path = f"{self._relpath()} (root)"
 
     return listed_path
 
