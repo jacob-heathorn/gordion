@@ -14,6 +14,7 @@ class Repository:
     self.path = path
     self.url = ''
     self.fetched = False
+    self.parent: Repository = None
     self.children: list[Repository] = []
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
 
@@ -46,15 +47,12 @@ class Repository:
 
     self.yeditor.reload()
 
-  def update(self, tag: str, branch_name: str, root=None) -> None:
+  def update(self, tag: str, branch_name: str) -> None:
     """
     Updates the repository to the specified commit and optional branch, as long as information will
     not be lost in the process, otherwise it will raise descriptive errors about what to do next.
 
     """
-
-    if root is None:
-      root = self
 
     commit = self._verify_tag(tag)
 
@@ -134,7 +132,7 @@ class Repository:
           self.handle.git.checkout(commit)
 
     self.yeditor.reload()
-    self._update_children(branch_name, root)
+    self._update_children(branch_name)
 
   @staticmethod
   def _check_duplicates(path: str, url: str, tag: str, other):
@@ -155,8 +153,17 @@ class Repository:
     for other_child in other.children:
       Repository._check_duplicates(path, url, tag, other_child)
 
-  def _update_children(self, branch_name: str, root):
-    # Clear children
+  def _root(self):
+    """
+    Recursively returns the root reposoitory object.
+    """
+    if self.parent:
+      return self.parent._root()
+    else:
+      return self
+
+  def _update_children(self, branch_name: str):
+    root = self._root()
     self.children = []
 
     # Open the gordion yaml file for this repository if it exists.
@@ -168,8 +175,9 @@ class Repository:
         child_path = os.path.join(root.path, 'gordion', child_name)
         Repository._check_duplicates(child_path, child_info['url'], child_info['tag'], root)
         child = Repository(child_path)
+        child.parent = self
         child.ensure(child_info['url'])
-        child.update(child_info['tag'], branch_name, root)
+        child.update(child_info['tag'], branch_name)
         self.children.append(child)
 
   def _verify_head_wont_be_lost(self, commit):

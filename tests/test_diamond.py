@@ -69,8 +69,10 @@ def test_tag_mismatch(repoA):
   repoA.handle.index.add(os.path.join(repoA.path, 'gordion.yaml'))
   repoA.handle.index.commit("Point to latest B")
 
-  # TOOD uncomment below, use parent to get gordion.yaml to make error message better.
-  # TODO: make url an arg to ensure, make path the only arg to repo.
-
-  # # Now update, it should raise error, tag mismatch
+  # Now update, it should raise error, tag mismatch
   # repoA.update(repoA.handle.head.commit.hexsha, 'develop')
+
+  # with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
+  #   repoA.update(baseline_commit, "test_single")
+  # expected = gordion.UpdateLocalBranchAheadError(repoA.path, 'test_single', 'origin/test_single', 1)
+  # assert str(context.value) == str(expected)
