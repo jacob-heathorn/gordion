@@ -37,12 +37,12 @@ def repoA(repoA_session):
     if branch.name != 'develop':
       repoA_session.handle.delete_head(branch, force=True)
 
-  # Set the object to a known commit on the test_single branch.
-  tag = repoA_session.handle.head.commit.hexsha
+  # Set the object to a known commit on the develop branch.
+  tag = 'c9da3e67006cbb03b6810d2e5b8effebb0f0b674'
   branch_name = 'develop'
 
   # Set the target branch/commit
-  repoA_session.update(tag, branch_name)
+  repoA_session.update(tag, branch_name, force=True)
   assert repoA_session.handle.head.commit.hexsha == tag
   assert repoA_session.handle.active_branch.name == branch_name
 
@@ -56,16 +56,16 @@ def test_tag_mismatch(repoA):
 
   # Add a commit to repository D.
   repo_d = repoA.children['gordion_demo_b'].children['gordion_demo_d']
-  repo_d.handle.index.commit("Empty commit for test_tag_mismatch")
+  repo_d.handle.git.commit('-m', "Empty commit for test_tag_mismatch", allow_empty=True)
 
   # Make B point to D's new commit but not C.
   repo_b = repoA.children['gordion_demo_b']
   repo_b.yeditor.write_repository_tag('gordion_demo_d', repo_d.handle.head.commit.hexsha)
-  repo_b.handle.index.add(os.path.join(repo_b.path, 'gordion.yaml'))
-  repo_b.handle.index.commit("Point to latest D")
+  repo_b.handle.git.add(os.path.join(repo_b.path, 'gordion.yaml'))
+  repo_b.handle.git.commit('-m', "Point to latest D")
   repoA.yeditor.write_repository_tag('gordion_demo_b', repo_b.handle.head.commit.hexsha)
-  repoA.handle.index.add(os.path.join(repoA.path, 'gordion.yaml'))
-  repoA.handle.index.commit("Point to latest B")
+  repoA.handle.git.add(os.path.join(repoA.path, 'gordion.yaml'))
+  repoA.handle.git.commit('-m', "Point to latest B")
 
   # Save some information before the update.
   b_ref_d = repoA.children['gordion_demo_b'].children['gordion_demo_d']
@@ -75,7 +75,7 @@ def test_tag_mismatch(repoA):
 
   # Now update, it should raise error, tag mismatch.
   with pytest.raises(gordion.UpdateDuplicateRepoTagError) as context:
-    repoA.update(repoA.handle.head.commit.hexsha, "test_single")
+    repoA.update(repoA.handle.head.commit.hexsha, "develop")
 
   # Verify the exception.
   expected = gordion.UpdateDuplicateRepoTagError(c_ref_d, c_ref_d_tag,
@@ -83,10 +83,9 @@ def test_tag_mismatch(repoA):
   assert str(context.value) == str(expected)
 
 
-# TODO looks like I'll need a force update at this point.
-# def test_path_mismatch(repoA):
-#   """
-#   Verifies update will error if two repositories are attempted to be cloned at different paths.
-#   """
+def test_path_mismatch(repoA):
+  """
+  Verifies update will error if two repositories are attempted to be cloned at different paths.
+  """
 
-#   pass
+  pass

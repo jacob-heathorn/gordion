@@ -74,7 +74,7 @@ class Repository:
 
     return listed_path
 
-  def update(self, tag: str, branch_name: str) -> None:
+  def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
     Updates the repository to the specified commit and optional branch, as long as information will
     not be lost in the process, otherwise it will raise descriptive errors about what to do next.
@@ -121,9 +121,11 @@ class Repository:
 
           # Make sure the local branch is not ahead of tracking branch, since we're moving the
           # local HEAD, information would be lost.
-          self._verify_local_commits_not_ahead(local_branch, tracking_branch)
+          if not force:
+            self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
           # Good to go move the local branch HEAD to the target commit.
+          print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
           local_branch.checkout()
           self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
@@ -144,9 +146,11 @@ class Repository:
 
             # Make sure the local branch is not ahead of tracking branch, since we're moving the
             # local HEAD, information would be lost.
-            self._verify_local_commits_not_ahead(local_branch, tracking_branch)
+            if not force:
+              self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
             # Good to go move the local branch HEAD to the target commit.
+            print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
             local_branch.checkout()
             self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
@@ -161,7 +165,7 @@ class Repository:
           self.handle.git.checkout(commit)
 
     self.yeditor.reload()
-    self._update_children(branch_name)
+    self._update_children(branch_name, force)
 
   def _check_duplicate_repo_path(self, other):
     """
@@ -200,7 +204,7 @@ class Repository:
     for _, other_child in other.children.items():
       Repository._check_duplicate_repo_tag(self, target_tag, other_child)
 
-  def _update_children(self, branch_name: str):
+  def _update_children(self, branch_name: str, force: bool):
     root = self._root()
     self.children = {}
 
@@ -214,7 +218,7 @@ class Repository:
         child_path = os.path.join(root.path, 'gordion', child_name)
         child = Repository(child_path, self)
         child.ensure(child_info['url'])
-        child.update(child_info['tag'], branch_name)
+        child.update(child_info['tag'], branch_name, force)
         self.children[child_name] = child
 
   def _verify_head_wont_be_lost(self, commit):
