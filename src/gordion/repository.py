@@ -94,7 +94,7 @@ class Repository:
     # Verify we don't have uncommitted chages that could be lost by the update.
     if self.handle.is_dirty(untracked_files=True):
       if commit.hexsha != self.handle.head.commit.hexsha:
-        raise gordion.UpdateRepoIsDirtyError(self.path)
+        raise gordion.UpdateRepoIsDirtyError(self)
 
         # Check if a branch HAS NOT been specified.
     if not branch_name:
@@ -117,12 +117,11 @@ class Repository:
 
           # Make sure the local branch is setup to track the expected remote branch.
           local_branch = self.handle.branches[branch_name]
-          tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
-              self.handle, local_branch)
+          tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
 
           # Make sure the local branch is not ahead of tracking branch, since we're moving the
           # local HEAD, information would be lost.
-          Repository._verify_local_commits_not_ahead(self.handle, local_branch, tracking_branch)
+          self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
           # Good to go move the local branch HEAD to the target commit.
           local_branch.checkout()
@@ -141,12 +140,11 @@ class Repository:
           if branch_name in local_branches:
             # Make sure the local branch is setup to track the expected remote branch.
             local_branch = self.handle.branches[branch_name]
-            tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
-                self.handle, local_branch)
+            tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
 
             # Make sure the local branch is not ahead of tracking branch, since we're moving the
             # local HEAD, information would be lost.
-            Repository._verify_local_commits_not_ahead(self.handle, local_branch, tracking_branch)
+            self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
             # Good to go move the local branch HEAD to the target commit.
             local_branch.checkout()
@@ -176,7 +174,7 @@ class Repository:
     if host == other_host and username == other_username and repo_name == other_repo_name:
       # Make sure the repository has the same local path.
       if self.path != other.path:
-        raise gordion.UpdateDuplicateRepoPathError(self.path, other)
+        raise gordion.UpdateDuplicateRepoPathError(self, other)
 
     # Check against the other's children
     for _, other_child in other.children.items():
@@ -236,29 +234,26 @@ class Repository:
                            head_commit.hexsha in [commit.hexsha for commit in
                                                   branch.commit.iter_parents()]]
         if not remote_branches:
-          raise gordion.UpdateDetachedHeadNotSavedError(self.path)
+          raise gordion.UpdateDetachedHeadNotSavedError(self)
 
-  @staticmethod
-  def _verify_local_commits_not_ahead(repo: Repo, local_branch, remote_branch):
-    merge_base = repo.merge_base(local_branch, remote_branch)
+  def _verify_local_commits_not_ahead(self, local_branch, remote_branch):
+    merge_base = self.handle.merge_base(local_branch, remote_branch)
 
-    commits_ahead = list(repo.iter_commits(
+    commits_ahead = list(self.handle.iter_commits(
         f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
     if commits_ahead:
       raise gordion.UpdateLocalBranchAheadError(
-          repo.working_tree_dir, local_branch.name, remote_branch.name, len(commits_ahead))
+          self, local_branch.name, remote_branch.name, len(commits_ahead))
 
-  @staticmethod
-  def _verify_local_branch_has_correct_tracking_branch(repo: Repo, local_branch):
+  def _verify_local_branch_has_correct_tracking_branch(self, local_branch):
     if local_branch.tracking_branch():
       remote_branch = local_branch.tracking_branch()
       if remote_branch.name != f"origin/{local_branch.name}":
-        raise gordion.UpdateWrongTrackingBranchError(
-            repo.working_tree_dir, local_branch.name, remote_branch.name)
+        raise gordion.UpdateWrongTrackingBranchError(self, local_branch.name, remote_branch.name)
       else:
         return remote_branch
     else:
-      raise gordion.UpdateNoTrackingBranchError(repo.working_tree_dir, local_branch.name)
+      raise gordion.UpdateNoTrackingBranchError(self, local_branch.name)
 
   @staticmethod
   def _does_remote_branch_have_commit(repo: Repo, branch_name: str, commit: Repo.commit) -> bool:

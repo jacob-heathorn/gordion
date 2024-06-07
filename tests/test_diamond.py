@@ -73,8 +73,6 @@ def test_tag_mismatch(repoA):
   c_ref_d = repoA.children['gordion_demo_c'].children['gordion_demo_d']
   c_ref_d_tag = repoA.children['gordion_demo_c'].yeditor.read_repository_tag('gordion_demo_d')
 
-  repoA.update(repoA.handle.head.commit.hexsha, "test_single")
-
   # Now update, it should raise error, tag mismatch.
   with pytest.raises(gordion.UpdateDuplicateRepoTagError) as context:
     repoA.update(repoA.handle.head.commit.hexsha, "test_single")
