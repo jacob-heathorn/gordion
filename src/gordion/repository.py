@@ -206,6 +206,7 @@ class Repository:
 
     # Open the gordion yaml file for this repository if it exists.
     if self.yeditor.exists():
+      assert self.yeditor.yaml_data
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
         # Create child repository objects
         # TODO: non-default child path/name

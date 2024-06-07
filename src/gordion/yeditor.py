@@ -10,6 +10,7 @@ class YamlEditor:
 
   def __init__(self, fullfile: str) -> None:
     self.fullfile = fullfile
+    self.yaml_data = None
     self.reload()
 
   def exists(self):
@@ -18,12 +19,14 @@ class YamlEditor:
   def reload(self):
     # TODO assert not duplicate names, or urls, or paths. Path basename must be the same as name and
     # is optional.
+    self.yaml_data = None
     if self.exists():
       with open(self.fullfile, 'r') as file:
         self.yaml_data = yaml.safe_load(file)
 
   def write_repository_tag(self, name: str, tag: str):
     # Check if the repository exists
+    assert self.yaml_data
     if name in self.yaml_data['repositories']:
       self.yaml_data['repositories'][name]['tag'] = tag
       self.save()
@@ -33,6 +36,7 @@ class YamlEditor:
 
   def read_repository_tag(self, name: str):
     # Check if the repository exists
+    assert self.yaml_data
     if name in self.yaml_data['repositories']:
       return self.yaml_data['repositories'][name]['tag']
     else:
@@ -45,6 +49,7 @@ class YamlEditor:
       yaml.dump(self.yaml_data, file)
 
   def find_listing_name(self, url) -> str:
+    assert self.yaml_data
     for name, info in self.yaml_data['repositories'].items():
       if url == info['url']:
         return name
