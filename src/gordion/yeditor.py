@@ -43,6 +43,24 @@ class YamlEditor:
       # Handle the case where the repository doesn't exist
       raise ValueError(f"Repository '{name}' not found in YAML data.")
 
+  def read_repository_gpath(self, name: str):
+    """
+    Returns the subpath within the gordion direcotry of the repository
+    """
+    assert self.yaml_data
+    if name in self.yaml_data['repositories']:
+      info = self.yaml_data['repositories'][name]
+      gpath = name
+      if 'path' in info and info['path']:
+        gpath = info['path']
+        gpath = os.path.normpath(gpath)
+        if os.path.isabs(gpath):
+          gpath = gpath.lstrip(os.sep)
+      return gpath
+    else:
+      # Handle the case where the repository doesn't exist
+      raise ValueError(f"Repository '{name}' not found in YAML data.")
+
   def save(self):
     # Write the modified data back to the YAML file
     with open(self.fullfile, 'w') as file:

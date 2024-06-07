@@ -213,9 +213,8 @@ class Repository:
       assert self.yeditor.yaml_data
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
         # Create child repository objects
-        # TODO: non-default child path/name
-
-        child_path = os.path.join(root.path, 'gordion', child_name)
+        gpath = self.yeditor.read_repository_gpath(child_name)
+        child_path = os.path.join(root.path, 'gordion', gpath)
         child = Repository(child_path, self)
         child.ensure(child_info['url'])
         child.update(child_info['tag'], branch_name, force)
