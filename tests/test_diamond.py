@@ -104,7 +104,9 @@ def test_non_default_path(repo_a):
   repo_b = repo_a.children['gordion_demo_b']
   assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'heyo', 'gordion_demo_b')
   assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
-  # TODO need to cleanup the origional direcotry of gordion_demo_b
+  assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'gordion_demo_b'))
+  # TODO careful about deleting old repository, make sure it doesn't have stashes, or local commits
+  # that are lost.
 
   # TODO error if name differs from path basedir.
   # Name doesn't have to be unique but gpath does.

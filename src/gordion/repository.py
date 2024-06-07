@@ -2,6 +2,17 @@ import os
 import subprocess
 from git import Repo, NoSuchPathError, InvalidGitRepositoryError
 import gordion
+from typing import List
+import shutil
+
+# TODO move
+
+
+def is_partial(directory, known_dirs):
+  for known_dir in known_dirs:
+    if known_dir.startswith(directory) or directory.startswith(known_dir):
+      return True
+  return False
 
 
 class Repository:
@@ -166,6 +177,33 @@ class Repository:
 
     self.yeditor.reload()
     self._update_children(branch_name, force)
+
+    # Cleanup detached repositories.
+    if self is root:
+      self._clean_detached_repos()
+
+  def _list_child_repository_paths(self) -> List[str]:
+    paths = []
+    for _, repo in self.children.items():
+      paths.append(repo.path)
+      paths.extend(repo._list_child_repository_paths())
+    return paths
+
+  def _clean_detached_repos(self):
+    # Get all the paths of all repositories:
+    root = self._root()
+    child_paths = root._list_child_repository_paths()
+
+    for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
+      for dirname in dirnames:
+        full_dirpath = os.path.join(dirpath, dirname)
+        if os.path.exists(full_dirpath):
+          if not is_partial(full_dirpath, child_paths):
+            print(f"Deleting directory: {full_dirpath}")
+            try:
+              shutil.rmtree(full_dirpath)
+            except OSError as e:
+              print(f"Error deleting directory: {full_dirpath} - {e}")
 
   def _check_duplicate_repo_path(self, other):
     """
