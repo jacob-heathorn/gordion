@@ -41,6 +41,10 @@ def repo_a(repo_a_session):
   This puts the repo_a object back into a well-known state for each test case.
   """
 
+  # Clear uncommitted changes.
+  repo_a_session.handle.git.reset('--hard')
+  repo_a_session.handle.git.clean('-fdx')
+
   # Delete all local branches except develop (can't be deleted) to start fresh.
   repo_a_session.handle.branches['develop'].checkout()
   branches = list(repo_a_session.handle.branches)
