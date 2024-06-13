@@ -39,4 +39,4 @@ class TestCache(unittest.TestCase):
   def test_mirror(self):
     cache = gordion.Cache()
     cache.clean()
-    cache.ensure_mirror('https://github.com/jacob-heathorn/west_demo_a.git')
+    cache.ensure_mirror('https://github.com/jacob-heathorn/gordion_demo_a.git')
