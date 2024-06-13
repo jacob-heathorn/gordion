@@ -5,15 +5,6 @@ import gordion
 from typing import List
 import shutil
 
-# TODO move
-
-
-def is_partial(directory, known_dirs):
-  for known_dir in known_dirs:
-    if known_dir.startswith(directory) or directory.startswith(known_dir):
-      return True
-  return False
-
 
 class Repository:
   """
@@ -198,12 +189,9 @@ class Repository:
       for dirname in dirnames:
         full_dirpath = os.path.join(dirpath, dirname)
         if os.path.exists(full_dirpath):
-          if not is_partial(full_dirpath, child_paths):
+          if not gordion.is_related_path(full_dirpath, child_paths):
             print(f"Deleting directory: {full_dirpath}")
-            try:
-              shutil.rmtree(full_dirpath)
-            except OSError as e:
-              print(f"Error deleting directory: {full_dirpath} - {e}")
+            shutil.rmtree(full_dirpath)
 
   def _check_duplicate_repo_path(self, other):
     """
