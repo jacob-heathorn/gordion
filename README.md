@@ -12,3 +12,7 @@ TODO: finish
 `tox -e unit -- tests/test_repository.py -s --no-cov`
 
 # Install from source
+`python3 -m pip install pipx`
+`pipx ensurepath`
+Change to this directory
+`pipx install --force .`
