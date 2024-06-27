@@ -10,3 +10,5 @@ Run all tox environments: `tox`
 # Debugging
 TODO: finish
 `tox -e unit -- tests/test_repository.py -s --no-cov`
+
+# Install from source

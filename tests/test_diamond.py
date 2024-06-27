@@ -95,7 +95,7 @@ def test_path_mismatch(repo_a):
   pass
 
 
-def test_non_default_path_1(repo_a):
+def test_non_default_path(repo_a):
   """
   TODO
   """
