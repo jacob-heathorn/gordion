@@ -98,7 +98,7 @@ class Repository:
       if commit.hexsha != self.handle.head.commit.hexsha:
         raise gordion.UpdateRepoIsDirtyError(self)
 
-        # Check if a branch HAS NOT been specified.
+    # Check if a branch HAS NOT been specified.
     if not branch_name:
       # Checkout the target commit in a detached HEAD state
       self.handle.git.checkout(commit)
@@ -192,8 +192,17 @@ class Repository:
         if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
                                                                          child_paths)):
           if gordion.Repository._exists(full_dirpath):
-            # TODO: If is git repository, only delete it if it is not dirty, and all local branches have
-            # remote branches and are not ahead of them. Also consider stashes?
+            repo = Repo(full_dirpath)
+            if repo.is_dirty():
+              # TODO warn it is dirty, do not delete.
+              pass
+            else:
+              for branch in repo.branches:
+                # TODO warn if any branches have commits ahead, then do not delete.
+                # Check if branch has correct tracking branch, then verify commits not ahead.
+                # _verify_local_commits_not_ahead
+                pass
+            # TODO warn if stashes exist, do not delete.
             print(f"Deleting directory: {full_dirpath}")
             shutil.rmtree(full_dirpath)
 

@@ -97,7 +97,8 @@ def test_path_mismatch(repo_a):
 
 def test_non_default_path(repo_a):
   """
-  TODO
+  Verifies that a repository can be cloned at a non-default gpath. And that the non-default path can
+  be cleaned up if it is moved back.
   """
 
   # Put repo B at in a non-default path, update and verify it exists, and the origional one has been
@@ -109,12 +110,6 @@ def test_non_default_path(repo_a):
   assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'heyo', 'gordion_demo_b')
   assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
   assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'gordion_demo_b'))
-  # TODO careful about deleting old repository, make sure it doesn't have stashes, or local commits
-  # that are lost.
-
-  # TODO error if name differs from path basedir.
-  # Name doesn't have to be unique but gpath does.
-  # gpath is dirived from name + path in yaml.
 
   # Put repository back to default path, verify old path is deleted.
   repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/gordion_demo_b'
