@@ -123,5 +123,4 @@ def test_non_default_path_1(repo_a):
   repo_b = repo_a.children['gordion_demo_b']
   assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'gordion_demo_b')
   assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
-  #assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'heyo'))
-
+  assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'heyo'))
