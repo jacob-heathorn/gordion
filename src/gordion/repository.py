@@ -191,7 +191,7 @@ class Repository:
         full_dirpath = os.path.join(dirpath, dirname)
         if (os.path.exists(full_dirpath) and not gordion.is_related_path(
                 full_dirpath, child_paths) and gordion.Repository._exists(full_dirpath)):
-          # If is git repository, only delete it if it is not dirty, and all local branches have
+          # TODO: If is git repository, only delete it if it is not dirty, and all local branches have
           # remote branches and are not ahead of them. Also consider stashes?
           print(f"Deleting directory: {full_dirpath}")
           shutil.rmtree(full_dirpath)

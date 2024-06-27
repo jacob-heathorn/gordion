@@ -95,12 +95,12 @@ def test_path_mismatch(repo_a):
   pass
 
 
-def test_non_default_path(repo_a):
+def test_non_default_path_1(repo_a):
   """
   TODO
   """
 
-  # Put repo B at in a non-default path, update and verify it exists, and the oridional one has been
+  # Put repo B at in a non-default path, update and verify it exists, and the origional one has been
   # removed.
   repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/heyo/gordion_demo_b'
   repo_a.yeditor.save()
@@ -115,3 +115,13 @@ def test_non_default_path(repo_a):
   # TODO error if name differs from path basedir.
   # Name doesn't have to be unique but gpath does.
   # gpath is dirived from name + path in yaml.
+
+  # Put repository back to default path, verify old path is deleted.
+  repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/gordion_demo_b'
+  repo_a.yeditor.save()
+  repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+  repo_b = repo_a.children['gordion_demo_b']
+  assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'gordion_demo_b')
+  assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
+  #assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'heyo'))
+
