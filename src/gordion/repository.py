@@ -1,6 +1,6 @@
 import os
 import subprocess
-from git import Repo, NoSuchPathError, InvalidGitRepositoryError
+from git import Repo, Commit, NoSuchPathError, InvalidGitRepositoryError
 import gordion
 from typing import List
 import shutil
@@ -83,7 +83,7 @@ class Repository:
 
     """
 
-    commit = self._verify_tag(tag)
+    commit: Commit = self._verify_tag(tag)
 
     # Check for duplicate tag
     root = self._root()
@@ -324,7 +324,7 @@ class Repository:
     else:
       return commit in remote_branch.commit.iter_parents()
 
-  def _verify_tag(self, tag: str) -> Repo.commit:
+  def _verify_tag(self, tag: str) -> Commit:
     """
     Verifies and returns the commit object for the specified tag if it exists, otherwise throws an
     error. This fuction will perform a fetch if necessary to check if recent remote changes contain
