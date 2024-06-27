@@ -19,8 +19,6 @@ setuptools.setup(
     ],
     install_requires=[
         'setuptools',
-        'gitpython',
-        'pyYAML',
     ],
     python_requires='>=3.8',
     entry_points={'console_scripts': ('gordion = gordion.app.main:main',)},
