@@ -185,13 +185,23 @@ class Repository:
     root = self._root()
     child_paths = root._list_child_repository_paths()
 
+    # Delete git repositories.
     for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
       for dirname in dirnames:
         full_dirpath = os.path.join(dirpath, dirname)
-        if os.path.exists(full_dirpath):
-          if not gordion.is_related_path(full_dirpath, child_paths):
-            print(f"Deleting directory: {full_dirpath}")
-            shutil.rmtree(full_dirpath)
+        if (os.path.exists(full_dirpath) and not gordion.is_related_path(
+                full_dirpath, child_paths) and gordion.Repository._exists(full_dirpath)):
+          # If is git repository, only delete it if it is not dirty, and all local branches have
+          # remote branches and are not ahead of them. Also consider stashes?
+          print(f"Deleting directory: {full_dirpath}")
+          shutil.rmtree(full_dirpath)
+
+    # # Delete empty directories.
+    # for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=False):
+    #   for dirname in dirnames:
+    #     full_dirpath = os.path.join(dirpath, dirname)
+    #     if os.path.exists(full_dirpath) and not os.listdir(full_dirpath):
+    #       os.rmdir(full_dirpath)
 
   def _check_duplicate_repo_path(self, other):
     """

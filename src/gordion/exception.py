@@ -33,7 +33,7 @@ class UpdateWrongTrackingBranchError(UpdateError):
 
 class UpdateDetachedHeadNotSavedError(UpdateError):
   def __init__(self, target):
-    tab = " "*8
+    tab = " " * 8
     reason = (f"The repository is in a detached HEAD state. This is fine except the HEAD is\n{tab}"
               f"a commit that is not saved in a local ore remote branch. This indicates\n{tab}"
               f"that you have made local commits while in the detached HEAD state, which is\n{tab}"
