@@ -38,8 +38,7 @@ class Repository:
       self.url = url
       if Repository._exists(self.path):
         if self.url != self.handle.remotes.origin.url:
-          # TODO shared function when removing a repository, need to check information not lost.
-          shutil.rmtree(self.path)
+          gordion.Repository._safe_remove_repo(self.path)
 
     # Check for a duplicates repository cloned at different paths.
     self._check_duplicate_repo_path(self._root())
@@ -182,6 +181,29 @@ class Repository:
       paths.extend(repo._list_child_repository_paths())
     return paths
 
+  @staticmethod
+  def _safe_remove_repo(path):
+    assert gordion.Repository._exists(path)
+    repo = Repo(path)
+
+    # Check if repository has local changes.
+    if repo.is_dirty():
+      # TODO warn dirty, don't delete
+      return
+
+    # Check if any branch has commits ahead of the corresponding remote branch.
+    for branch in repo.branches:
+      # TODO warn if any branches have commits ahead, then do not delete.
+      # Check if branch has correct tracking branch, then verify commits not ahead.
+      # _verify_local_commits_not_ahead
+      pass
+
+    # TODO do not delete if stashes exist.
+
+    # If we reach here, it's safe to delete the repository
+    print(f"Deleting directory: {path}")
+    shutil.rmtree(path)
+
   def _clean_detached_repos(self):
     # Get all the paths of all repositories:
     root = self._root()
@@ -194,19 +216,7 @@ class Repository:
         if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
                                                                          child_paths)):
           if gordion.Repository._exists(full_dirpath):
-            repo = Repo(full_dirpath)
-            if repo.is_dirty():
-              # TODO warn it is dirty, do not delete.
-              pass
-            else:
-              for branch in repo.branches:
-                # TODO warn if any branches have commits ahead, then do not delete.
-                # Check if branch has correct tracking branch, then verify commits not ahead.
-                # _verify_local_commits_not_ahead
-                pass
-            # TODO warn if stashes exist, do not delete.
-            print(f"Deleting directory: {full_dirpath}")
-            shutil.rmtree(full_dirpath)
+            gordion.Repository._safe_remove_repo(full_dirpath)
 
     # Delete everything else that is not related to the gordion paths.
     for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
@@ -215,6 +225,7 @@ class Repository:
         if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
                                                                          child_paths)):
           print(f"Deleting directory: {full_dirpath}")
+          assert not gordion.Repository._exists(full_dirpath)  # Removed above.
           shutil.rmtree(full_dirpath)
 
   def _check_duplicate_repo_path(self, other):
