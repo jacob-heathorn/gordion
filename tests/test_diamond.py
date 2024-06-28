@@ -87,12 +87,19 @@ def test_tag_mismatch(repo_a):
   assert str(context.value) == str(expected)
 
 
-def test_path_mismatch(repo_a):
+def test_duplicate_repo_path_mismatch(repo_a):
   """
-  Verifies update will error if two repositories are attempted to be cloned at different paths.
+  Verifies update will error if the same repository is attempted to be cloned at different paths.
   """
-  # TODO
-  pass
+
+  repo_b = repo_a.children['gordion_demo_b']
+  repo_c = repo_a.children['gordion_demo_c']
+
+  with pytest.raises(gordion.UpdateDuplicateRepoPathError) as context:
+    repo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
+
+  expected = gordion.UpdateDuplicateRepoPathError(repo_c, repo_b)
+  assert str(context.value) == str(expected)
 
 
 def test_non_default_path(repo_a):

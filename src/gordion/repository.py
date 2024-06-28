@@ -37,7 +37,9 @@ class Repository:
     else:
       self.url = url
       if Repository._exists(self.path):
-        assert self.url == self.handle.remotes.origin.url
+        if self.url != self.handle.remotes.origin.url:
+          # TODO shared function when removing a repository, need to check information not lost.
+          shutil.rmtree(self.path)
 
     # Check for a duplicates repository cloned at different paths.
     self._check_duplicate_repo_path(self._root())
@@ -69,8 +71,8 @@ class Repository:
   def _listed_path(self) -> str:
     listed_path = ''
     if self.parent:
-      name = self.parent.yeditor.find_listing_name(self.url)
-      listed_path = f"{self.parent._relpath()} lists {name}"
+      gpath = self.parent.yeditor.read_repository_gpath(self.name)
+      listed_path = f"{self.parent._relpath()} lists {gpath}"
     else:
       listed_path = f"{self._relpath()} (root)"
 

@@ -65,12 +65,3 @@ class YamlEditor:
     # Write the modified data back to the YAML file
     with open(self.fullfile, 'w') as file:
       yaml.dump(self.yaml_data, file)
-
-  def find_listing_name(self, url) -> str:
-    assert self.yaml_data
-    for name, info in self.yaml_data['repositories'].items():
-      if url == info['url']:
-        return name
-
-    # Should not reach here
-    assert False
