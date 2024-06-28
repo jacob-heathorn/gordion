@@ -126,3 +126,24 @@ def test_non_default_path(repo_a):
   assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'gordion_demo_b')
   assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
   assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'heyo'))
+
+
+def test_unsafe_remove_dirty(repo_a):
+  """
+  Verifies that an error is generated if the update will attempt to cleanup(remove) a repository
+  that has dirty changes.
+  """
+
+  # Make the demo_c dirty by adding an empty file.
+  repo_c = repo_a.children['gordion_demo_c']
+  touchfile = os.path.join(repo_c.path, 'touch.txt')
+  with open(touchfile, 'w'):
+    pass
+
+  assert repo_c.handle.is_dirty(untracked_files=True)
+
+  with pytest.raises(gordion.UnsafeRemoveDirty) as context:
+    repo_a.update('55f619c7af1cdc3ed13487c3aab050b492e655eb', 'test_unsafe_remove_dirty')
+
+  expected = gordion.UnsafeRemoveDirty(repo_c.path)
+  assert str(context.value) == str(expected)

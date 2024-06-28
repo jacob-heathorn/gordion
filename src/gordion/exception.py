@@ -70,3 +70,11 @@ class UpdateDuplicateRepoTagError(UpdateError):
               f"{other._listed_path()}:{other_tag}")
     suggestion = ("The tags need to match. I guess that's kinda the whole point of this thing.")
     super().__init__(target, reason, suggestion)
+
+
+class UnsafeRemoveDirty(Exception):
+  def __init__(self, path):
+    self.message = (f"Cannot remove repository:\n"
+                    f"{path}\n"
+                    f"because it is dirty")
+    super().__init__(self.message)

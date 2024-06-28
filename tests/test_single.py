@@ -57,7 +57,7 @@ def repo_a(repo_a_session):
   branch_name = 'test_single'
 
   # Set the target branch/commit
-  repo_a_session.update(tag, branch_name)
+  repo_a_session.update(tag, branch_name, force=True)
   assert repo_a_session.handle.head.commit.hexsha == tag
   assert repo_a_session.handle.active_branch.name == branch_name
 

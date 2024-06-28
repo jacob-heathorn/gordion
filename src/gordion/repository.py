@@ -172,7 +172,7 @@ class Repository:
 
     # Cleanup detached repositories.
     if self is root:
-      self._clean_detached_repos()
+      self._clean_detached_repos(force)
 
   def _list_child_repository_paths(self) -> List[str]:
     paths = []
@@ -182,14 +182,14 @@ class Repository:
     return paths
 
   @staticmethod
-  def _safe_remove_repo(path):
+  def _safe_remove_repo(path, force: bool = False):
     assert gordion.Repository._exists(path)
     repo = Repo(path)
 
     # Check if repository has local changes.
-    if repo.is_dirty():
-      # TODO warn dirty, don't delete
-      return
+    if repo.is_dirty(untracked_files=True):
+      if not force:
+        raise gordion.UnsafeRemoveDirty(path)
 
     # Check if any branch has commits ahead of the corresponding remote branch.
     for branch in repo.branches:
@@ -204,7 +204,7 @@ class Repository:
     print(f"Deleting directory: {path}")
     shutil.rmtree(path)
 
-  def _clean_detached_repos(self):
+  def _clean_detached_repos(self, force: bool = False):
     # Get all the paths of all repositories:
     root = self._root()
     child_paths = root._list_child_repository_paths()
@@ -216,7 +216,7 @@ class Repository:
         if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
                                                                          child_paths)):
           if gordion.Repository._exists(full_dirpath):
-            gordion.Repository._safe_remove_repo(full_dirpath)
+            gordion.Repository._safe_remove_repo(full_dirpath, force)
 
     # Delete everything else that is not related to the gordion paths.
     for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
