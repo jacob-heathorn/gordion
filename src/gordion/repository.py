@@ -38,7 +38,11 @@ class Repository:
       self.url = url
       if Repository._exists(self.path):
         if self.url != self.handle.remotes.origin.url:
+          self._check_different_repo_same_path(self._root())
           gordion.Repository._safe_remove_repo(self.path)
+
+    # Check for different repositories cloned to the same path.
+    self._check_different_repo_same_path(self._root())
 
     # Check for a duplicates repository cloned at different paths.
     self._check_duplicate_repo_path(self._root())
@@ -227,6 +231,23 @@ class Repository:
           print(f"Deleting directory: {full_dirpath}")
           assert not gordion.Repository._exists(full_dirpath)  # Removed above.
           shutil.rmtree(full_dirpath)
+
+  def _check_different_repo_same_path(self, other):
+    """
+    Recursively checks the repository path against another repository and it's children.
+    """
+    host, username, repo_name = gordion.extract_repo_details(self.url)
+    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
+
+    # Check if the remote repository is the same
+    if host != other_host or username != other_username or repo_name != other_repo_name:
+      # Make sure the repository does not have the same local path.
+      if self.path == other.path:
+        raise gordion.UpdateDifferentRepoSamePathError(self, other)
+
+    # Check against the other's children
+    for _, other_child in other.children.items():
+      Repository._check_different_repo_same_path(self, other_child)
 
   def _check_duplicate_repo_path(self, other):
     """

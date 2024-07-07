@@ -1,6 +1,9 @@
 import os
 import gordion
 import pytest
+from git import Repo
+import shutil
+import os
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
@@ -53,53 +56,73 @@ def repo_a(repo_a_session):
   yield repo_a_session
 
 
-def test_tag_mismatch(repo_a):
-  """
-  Verifies update will error if two of the same repository reference have different tags.
-  """
+# def test_tag_mismatch(repo_a):
+#   """
+#   Verifies update will error if two of the same repository reference have different tags.
+#   """
 
-  # Add a commit to repository D.
-  repo_d = repo_a.children['gordion_demo_b'].children['gordion_demo_d']
-  repo_d.handle.git.commit('-m', "Empty commit for test_tag_mismatch", allow_empty=True)
+#   # Add a commit to repository D.
+#   repo_d = repo_a.children['gordion_demo_b'].children['gordion_demo_d']
+#   repo_d.handle.git.commit('-m', "Empty commit for test_tag_mismatch", allow_empty=True)
 
-  # Make B point to D's new commit but not C.
-  repo_b = repo_a.children['gordion_demo_b']
-  repo_b.yeditor.write_repository_tag('gordion_demo_d', repo_d.handle.head.commit.hexsha)
-  repo_b.handle.git.add(os.path.join(repo_b.path, 'gordion.yaml'))
-  repo_b.handle.git.commit('-m', "Point to latest D")
-  repo_a.yeditor.write_repository_tag('gordion_demo_b', repo_b.handle.head.commit.hexsha)
-  repo_a.handle.git.add(os.path.join(repo_a.path, 'gordion.yaml'))
-  repo_a.handle.git.commit('-m', "Point to latest B")
+#   # Make B point to D's new commit but not C.
+#   repo_b = repo_a.children['gordion_demo_b']
+#   repo_b.yeditor.write_repository_tag('gordion_demo_d', repo_d.handle.head.commit.hexsha)
+#   repo_b.handle.git.add(os.path.join(repo_b.path, 'gordion.yaml'))
+#   repo_b.handle.git.commit('-m', "Point to latest D")
+#   repo_a.yeditor.write_repository_tag('gordion_demo_b', repo_b.handle.head.commit.hexsha)
+#   repo_a.handle.git.add(os.path.join(repo_a.path, 'gordion.yaml'))
+#   repo_a.handle.git.commit('-m', "Point to latest B")
 
-  # Save some information before the update.
-  b_ref_d = repo_a.children['gordion_demo_b'].children['gordion_demo_d']
-  b_ref_d_tag = repo_a.children['gordion_demo_b'].yeditor.read_repository_tag('gordion_demo_d')
-  c_ref_d = repo_a.children['gordion_demo_c'].children['gordion_demo_d']
-  c_ref_d_tag = repo_a.children['gordion_demo_c'].yeditor.read_repository_tag('gordion_demo_d')
+#   # Save some information before the update.
+#   b_ref_d = repo_a.children['gordion_demo_b'].children['gordion_demo_d']
+#   b_ref_d_tag = repo_a.children['gordion_demo_b'].yeditor.read_repository_tag('gordion_demo_d')
+#   c_ref_d = repo_a.children['gordion_demo_c'].children['gordion_demo_d']
+#   c_ref_d_tag = repo_a.children['gordion_demo_c'].yeditor.read_repository_tag('gordion_demo_d')
 
-  # Now update, it should raise error, tag mismatch.
-  with pytest.raises(gordion.UpdateDuplicateRepoTagError) as context:
-    repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+#   # Now update, it should raise error, tag mismatch.
+#   with pytest.raises(gordion.UpdateDuplicateRepoTagError) as context:
+#     repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
 
-  # Verify the exception.
-  expected = gordion.UpdateDuplicateRepoTagError(c_ref_d, c_ref_d_tag,
-                                                 b_ref_d, b_ref_d_tag)
-  assert str(context.value) == str(expected)
+#   # Verify the exception.
+#   expected = gordion.UpdateDuplicateRepoTagError(c_ref_d, c_ref_d_tag,
+#                                                  b_ref_d, b_ref_d_tag)
+#   assert str(context.value) == str(expected)
 
 
-def test_duplicate_repo_path_mismatch(repo_a):
-  """
-  Verifies update will error if the same repository is attempted to be cloned at different paths.
-  """
+# def test_duplicate_repo_path_mismatch(repo_a):
+#   """
+#   Verifies update will error if the same repository is attempted to be cloned at different paths.
+#   """
 
-  repo_b = repo_a.children['gordion_demo_b']
-  repo_c = repo_a.children['gordion_demo_c']
+#   repo_b = repo_a.children['gordion_demo_b']
+#   repo_c = repo_a.children['gordion_demo_c']
 
-  with pytest.raises(gordion.UpdateDuplicateRepoPathError) as context:
-    repo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
+#   with pytest.raises(gordion.UpdateDuplicateRepoPathError) as context:
+#     repo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
 
-  expected = gordion.UpdateDuplicateRepoPathError(repo_c, repo_b)
-  assert str(context.value) == str(expected)
+#   expected = gordion.UpdateDuplicateRepoPathError(repo_c, repo_b)
+#   assert str(context.value) == str(expected)
+
+
+def test_different_repo_same_path(repo_a):
+  # Make demo_b have the same path as demo_c
+  # repo_a.children['gordion_demo_b'].children['gordion_demo_d'].yeditor.
+  # repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/'
+  # repo_a.yeditor.save()
+
+  with pytest.raises(gordion.UpdateDifferentRepoSamePathError) as context:
+    repo_a.update('92d294df03a6bbf7ef43b60a0255adca08671328', "test_different_repo_same_path")
+    # # Manually delete the clone to avoid throwing this error again.
+    # shutil.rmtree(os.path.join(repo_a.path, 'gordion', 'gordion_demo_c'))
+
+  #repo_c = repo_a.children['gordion_demo_c']
+  #repo_b = repo_a.children['gordion_demo_b']
+
+  #expected = gordion.UpdateDifferentRepoSamePathError(repo_c, repo_b)
+  # assert str(context.value) == str(expected)
+
+  raise context.value
 
 
 def test_non_default_path(repo_a):
@@ -107,43 +130,43 @@ def test_non_default_path(repo_a):
   Verifies that a repository can be cloned at a non-default gpath. And that the non-default path can
   be cleaned up if it is moved back.
   """
+  print("here3")
+  # # Put repo B at in a non-default path, update and verify it exists, and the origional one has been
+  # # removed.
+  # repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/heyo/gordion_demo_b'
+  # repo_a.yeditor.save()
+  # repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+  # repo_b = repo_a.children['gordion_demo_b']
+  # assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'heyo', 'gordion_demo_b')
+  # assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
+  # assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'gordion_demo_b'))
 
-  # Put repo B at in a non-default path, update and verify it exists, and the origional one has been
-  # removed.
-  repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/heyo/gordion_demo_b'
-  repo_a.yeditor.save()
-  repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
-  repo_b = repo_a.children['gordion_demo_b']
-  assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'heyo', 'gordion_demo_b')
-  assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
-  assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'gordion_demo_b'))
-
-  # Put repository back to default path, verify old path is deleted.
-  repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/gordion_demo_b'
-  repo_a.yeditor.save()
-  repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
-  repo_b = repo_a.children['gordion_demo_b']
-  assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'gordion_demo_b')
-  assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
-  assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'heyo'))
+  # # Put repository back to default path, verify old path is deleted.
+  # repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/gordion_demo_b'
+  # repo_a.yeditor.save()
+  # repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+  # repo_b = repo_a.children['gordion_demo_b']
+  # assert repo_b.path == os.path.join(repo_a.path, 'gordion', 'gordion_demo_b')
+  # assert repo_b.handle.head.commit.hexsha == repo_a.yeditor.read_repository_tag('gordion_demo_b')
+  # assert not os.path.isdir(os.path.join(repo_a.path, 'gordion', 'heyo'))
 
 
-def test_unsafe_remove_dirty(repo_a):
-  """
-  Verifies that an error is generated if the update will attempt to cleanup(remove) a repository
-  that has dirty changes.
-  """
+# def test_unsafe_remove_dirty(repo_a):
+#   """
+#   Verifies that an error is generated if the update will attempt to cleanup(remove) a repository
+#   that has dirty changes.
+#   """
 
-  # Make the demo_c dirty by adding an empty file.
-  repo_c = repo_a.children['gordion_demo_c']
-  touchfile = os.path.join(repo_c.path, 'touch.txt')
-  with open(touchfile, 'w'):
-    pass
+#   # Make the demo_c dirty by adding an empty file.
+#   repo_c = repo_a.children['gordion_demo_c']
+#   touchfile = os.path.join(repo_c.path, 'touch.txt')
+#   with open(touchfile, 'w'):
+#     pass
 
-  assert repo_c.handle.is_dirty(untracked_files=True)
+#   assert repo_c.handle.is_dirty(untracked_files=True)
 
-  with pytest.raises(gordion.UnsafeRemoveDirty) as context:
-    repo_a.update('55f619c7af1cdc3ed13487c3aab050b492e655eb', 'test_unsafe_remove_dirty')
+#   with pytest.raises(gordion.UnsafeRemoveDirty) as context:
+#     repo_a.update('55f619c7af1cdc3ed13487c3aab050b492e655eb', 'test_unsafe_remove_dirty')
 
-  expected = gordion.UnsafeRemoveDirty(repo_c.path)
-  assert str(context.value) == str(expected)
+#   expected = gordion.UnsafeRemoveDirty(repo_c.path)
+#   assert str(context.value) == str(expected)

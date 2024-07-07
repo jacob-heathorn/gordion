@@ -63,6 +63,19 @@ class UpdateDuplicateRepoPathError(UpdateError):
     super().__init__(target, reason, suggestion)
 
 
+class UpdateDifferentRepoSamePathError(UpdateError):
+  def __init__(self, target, other):
+    tab = " " * 8
+    reason = (f"The repository({other.url}) is already cloned at\n{tab}"
+              f"{other.path}.\n{tab}"
+              f"You are trying to clone {target.url} to the same path.\n{tab}"
+              "You cannot do this.")
+    tab = " " * 12
+    suggestion = (f"You need to make sure repositories have unique paths in the\n{tab}"
+                  "gordion.yaml files. You may need to manually delete this repository.")
+    super().__init__(target, reason, suggestion)
+
+
 class UpdateDuplicateRepoTagError(UpdateError):
   def __init__(self, target, target_tag, other, other_tag):
     reason = (f"Gordion repository tag mismatch!\n\t"
