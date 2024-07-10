@@ -1,7 +1,9 @@
 import os
 import subprocess
-from git import Repo, NoSuchPathError, InvalidGitRepositoryError
+from git import Repo, Commit, NoSuchPathError, InvalidGitRepositoryError
 import gordion
+from typing import List
+import shutil
 
 
 class Repository:
@@ -10,53 +12,105 @@ class Repository:
 
   """
 
-  def __init__(self, path: str, url: str, tag: str, branch: str) -> None:
+  def __init__(self, path: str, parent=None) -> None:
     self.path = path
+    self.name = os.path.basename(self.path)
+    self.url = ''
+    self.fetched = False
+    self.parent: Repository = parent
+    self.children: dict[str, Repository] = {}
+    self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
+
+    if Repository._exists(self.path):
+      self.ensure()
+
+  def ensure(self, url: str = ''):
+    """
+    Clones the repository if necessary and creates the underlying git repository handle.
+    """
+
+    # Derive url if necessary.
+    if not url:
+      assert Repository._exists(self.path)
+      self.handle = Repo(self.path)
+      self.url = self.handle.remotes.origin.url
+    else:
+      self.url = url
+      if Repository._exists(self.path):
+        if self.url != self.handle.remotes.origin.url:
+          gordion.Repository._safe_remove_repo(self.path)
+
+    # Check for a duplicates repository cloned at different paths.
+    self._check_duplicate_repo_path(self._root())
 
     # Clone if necessary.
-    if not Repository._exists(path):
+    if not Repository._exists(self.path):
       cache = gordion.Cache()
-      mirror_path = cache.ensure_mirror(url)
+      mirror_path = cache.ensure_mirror(self.url)
 
-      args = ['git', 'clone', '--reference', mirror_path, url, self.path]
+      args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
+    # Reload objects.
     self.handle = Repo(self.path)
-    self.target_tag = tag
-    self.target_branch_name = branch
-    self.fetched = False
+    self.yeditor.reload()
 
-  def update(self) -> None:
+  def _root(self):
+    """
+    Recursively returns the root repository object.
+    """
+    if self.parent:
+      return self.parent._root()
+    else:
+      return self
+
+  def _relpath(self) -> str:
+    return os.path.relpath(self.path, os.path.dirname(self._root().path))
+
+  def _listed_path(self) -> str:
+    listed_path = ''
+    if self.parent:
+      gpath = self.parent.yeditor.read_repository_gpath(self.name)
+      listed_path = f"{self.parent._relpath()} lists {gpath}"
+    else:
+      listed_path = f"{self._relpath()} (root)"
+
+    return listed_path
+
+  def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
     Updates the repository to the specified commit and optional branch, as long as information will
     not be lost in the process, otherwise it will raise descriptive errors about what to do next.
 
     """
 
-    target_commit = self._verify_tag(self.target_tag)
+    commit: Commit = self._verify_tag(tag)
+
+    # Check for duplicate tag
+    root = self._root()
+    self._check_duplicate_repo_tag(tag, root)
 
     # Verify that we don't have an unsaved HEAD that would be lost by the update.
     if self.handle.head.is_detached:
-      self._verify_head_wont_be_lost(target_commit)
+      self._verify_head_wont_be_lost(commit)
 
     # Verify we don't have uncommitted chages that could be lost by the update.
     if self.handle.is_dirty(untracked_files=True):
-      if target_commit.hexsha != self.handle.head.commit.hexsha:
-        raise gordion.UpdateRepoIsDirtyError(self.path)
+      if commit.hexsha != self.handle.head.commit.hexsha:
+        raise gordion.UpdateRepoIsDirtyError(self)
 
-        # Check if a target branch HAS NOT been specified.
-    if not self.target_branch_name:
+    # Check if a branch HAS NOT been specified.
+    if not branch_name:
       # Checkout the target commit in a detached HEAD state
-      self.handle.git.checkout(target_commit)
+      self.handle.git.checkout(commit)
 
     # A branch HAS been specified
     else:
       # Check if a local branch by the target name has the target commit.
-      if Repository._does_local_branch_have_commit(self.handle, self.target_branch_name,
-                                                   target_commit):
-        local_branch = self.handle.branches[self.target_branch_name]
+      if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
+        local_branch = self.handle.branches[branch_name]
         # Check if target commit is HEAD of local branch.
-        if target_commit.hexsha == local_branch.commit.hexsha:
+        if commit.hexsha == local_branch.commit.hexsha:
           local_branch.checkout()
 
         # Target commit is in local branch history.
@@ -65,55 +119,169 @@ class Repository:
           self.fetch_once()
 
           # Make sure the local branch is setup to track the expected remote branch.
-          local_branch = self.handle.branches[self.target_branch_name]
-          tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
-              self.handle, local_branch)
+          local_branch = self.handle.branches[branch_name]
+          tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
 
           # Make sure the local branch is not ahead of tracking branch, since we're moving the
           # local HEAD, information would be lost.
-          Repository._verify_local_commits_not_ahead(self.handle, local_branch, tracking_branch)
+          if not force:
+            self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
           # Good to go move the local branch HEAD to the target commit.
+          print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
           local_branch.checkout()
-          self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+          self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
       # Tag is not on a local branch
       else:
         self.fetch_once()
 
         # Check if a remote branch by the target name has the target commit.
-        if Repository._does_remote_branch_have_commit(self.handle, self.target_branch_name,
-                                                      target_commit):
+        if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
 
           # Check if there is a local branch to match the remote branch.
           local_branches = [branch.name for branch in self.handle.branches]
 
-          if self.target_branch_name in local_branches:
+          if branch_name in local_branches:
             # Make sure the local branch is setup to track the expected remote branch.
-            local_branch = self.handle.branches[self.target_branch_name]
-            tracking_branch = Repository._verify_local_branch_has_correct_tracking_branch(
-                self.handle, local_branch)
+            local_branch = self.handle.branches[branch_name]
+            tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
 
             # Make sure the local branch is not ahead of tracking branch, since we're moving the
             # local HEAD, information would be lost.
-            Repository._verify_local_commits_not_ahead(self.handle, local_branch, tracking_branch)
+            if not force:
+              self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
             # Good to go move the local branch HEAD to the target commit.
+            print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
             local_branch.checkout()
-            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+            self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
           # There is no local branch yet, create it, and reset it to the target commit.
           else:
-            self.handle.git.checkout('-b', self.target_branch_name,
-                                     f'origin/{self.target_branch_name}')
-            self.handle.head.reset(commit=target_commit, index=True, working_tree=True)
+            self.handle.git.checkout('-b', branch_name, f'origin/{branch_name}')
+            self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
         # We could not find the commit on a local or remote branch by the designated name, so just
         # checkout the commit in a detached head state.
         else:
-          self.handle.git.checkout(target_commit)
+          self.handle.git.checkout(commit)
 
-  def _verify_head_wont_be_lost(self, target_commit):
+    self.yeditor.reload()
+    self._update_children(branch_name, force)
+
+    # Cleanup detached repositories.
+    if self is root:
+      self._clean_detached_repos(force)
+
+  def _list_child_repository_paths(self) -> List[str]:
+    paths = []
+    for _, repo in self.children.items():
+      paths.append(repo.path)
+      paths.extend(repo._list_child_repository_paths())
+    return paths
+
+  @staticmethod
+  def _safe_remove_repo(path, force: bool = False):
+    assert gordion.Repository._exists(path)
+    repo = Repo(path)
+
+    # Check if repository has local changes.
+    if repo.is_dirty(untracked_files=True):
+      if not force:
+        raise gordion.UnsafeRemoveDirty(path)
+
+    # Check if any branch has commits ahead of the corresponding remote branch.
+    for branch in repo.branches:
+      # TODO warn if any branches have commits ahead, then do not delete.
+      # Check if branch has correct tracking branch, then verify commits not ahead.
+      # _verify_local_commits_not_ahead
+      pass
+
+    # TODO do not delete if stashes exist.
+
+    # If we reach here, it's safe to delete the repository
+    print(f"Deleting directory: {path}")
+    shutil.rmtree(path)
+
+  def _clean_detached_repos(self, force: bool = False):
+    # Get all the paths of all repositories:
+    root = self._root()
+    child_paths = root._list_child_repository_paths()
+
+    # Delete git repositories.
+    for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
+      for dirname in dirnames:
+        full_dirpath = os.path.join(dirpath, dirname)
+        if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
+                                                                         child_paths)):
+          if gordion.Repository._exists(full_dirpath):
+            gordion.Repository._safe_remove_repo(full_dirpath, force)
+
+    # Delete everything else that is not related to the gordion paths.
+    for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
+      for dirname in dirnames:
+        full_dirpath = os.path.join(dirpath, dirname)
+        if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
+                                                                         child_paths)):
+          print(f"Deleting directory: {full_dirpath}")
+          assert not gordion.Repository._exists(full_dirpath)  # Removed above.
+          shutil.rmtree(full_dirpath)
+
+  def _check_duplicate_repo_path(self, other):
+    """
+    Recursively checks the repository path against another repository and it's children.
+    """
+    host, username, repo_name = gordion.extract_repo_details(self.url)
+    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
+
+    # Check if the remote repository is the same
+    if host == other_host and username == other_username and repo_name == other_repo_name:
+      # Make sure the repository has the same local path.
+      if self.path != other.path:
+        raise gordion.UpdateDuplicateRepoPathError(self, other)
+
+    # Check against the other's children
+    for _, other_child in other.children.items():
+      Repository._check_duplicate_repo_path(self, other_child)
+
+  def _check_duplicate_repo_tag(self, target_tag, other):
+    """
+    Recursively checks the repository tag against another repository and it's children.
+    """
+
+    if self is not other:
+      host, username, repo_name = gordion.extract_repo_details(self.url)
+      other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
+
+      # Check if the remote repository is the same
+      if host == other_host and username == other_username and repo_name == other_repo_name:
+        # Make sure the repository has the same tag.
+        if target_tag != other.handle.head.commit.hexsha:
+          raise gordion.UpdateDuplicateRepoTagError(
+              self, target_tag, other, other.handle.head.commit.hexsha)
+
+    # Check against the other's children
+    for _, other_child in other.children.items():
+      Repository._check_duplicate_repo_tag(self, target_tag, other_child)
+
+  def _update_children(self, branch_name: str, force: bool):
+    root = self._root()
+    self.children = {}
+
+    # Open the gordion yaml file for this repository if it exists.
+    if self.yeditor.exists():
+      assert self.yeditor.yaml_data
+      for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
+        # Create child repository objects
+        gpath = self.yeditor.read_repository_gpath(child_name)
+        child_path = os.path.join(root.path, 'gordion', gpath)
+        child = Repository(child_path, self)
+        child.ensure(child_info['url'])
+        child.update(child_info['tag'], branch_name, force)
+        self.children[child_name] = child
+
+  def _verify_head_wont_be_lost(self, commit):
     """
     This function should be used while in a detached head sate. It Raises an error if update will
     move the HEAD AND the HEAD is a commit that is not saved on a local or remote branch somewhere.
@@ -121,7 +289,7 @@ class Repository:
     head_commit = self.handle.head.commit
 
     # Check if the target commit is different from the HEAD commit
-    if target_commit.hexsha != head_commit.hexsha:
+    if commit.hexsha != head_commit.hexsha:
       # Check if the local HEAD commit is contained in a local or remote branch
       local_branches = [branch for branch in self.handle.branches if head_commit.hexsha in [
           commit.hexsha for commit in branch.commit.iter_parents()]]
@@ -131,29 +299,26 @@ class Repository:
                            head_commit.hexsha in [commit.hexsha for commit in
                                                   branch.commit.iter_parents()]]
         if not remote_branches:
-          raise gordion.UpdateDetachedHeadNotSavedError(self.path)
+          raise gordion.UpdateDetachedHeadNotSavedError(self)
 
-  @staticmethod
-  def _verify_local_commits_not_ahead(repo: Repo, local_branch, remote_branch):
-    merge_base = repo.merge_base(local_branch, remote_branch)
+  def _verify_local_commits_not_ahead(self, local_branch, remote_branch):
+    merge_base = self.handle.merge_base(local_branch, remote_branch)
 
-    commits_ahead = list(repo.iter_commits(
+    commits_ahead = list(self.handle.iter_commits(
         f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
     if commits_ahead:
       raise gordion.UpdateLocalBranchAheadError(
-          repo.working_tree_dir, local_branch.name, remote_branch.name, len(commits_ahead))
+          self, local_branch.name, remote_branch.name, len(commits_ahead))
 
-  @staticmethod
-  def _verify_local_branch_has_correct_tracking_branch(repo: Repo, local_branch):
+  def _verify_local_branch_has_correct_tracking_branch(self, local_branch):
     if local_branch.tracking_branch():
       remote_branch = local_branch.tracking_branch()
       if remote_branch.name != f"origin/{local_branch.name}":
-        raise gordion.UpdateWrongTrackingBranchError(
-            repo.working_tree_dir, local_branch.name, remote_branch.name)
+        raise gordion.UpdateWrongTrackingBranchError(self, local_branch.name, remote_branch.name)
       else:
         return remote_branch
     else:
-      raise gordion.UpdateNoTrackingBranchError(repo.working_tree_dir, local_branch.name)
+      raise gordion.UpdateNoTrackingBranchError(self, local_branch.name)
 
   @staticmethod
   def _does_remote_branch_have_commit(repo: Repo, branch_name: str, commit: Repo.commit) -> bool:
@@ -172,7 +337,7 @@ class Repository:
     else:
       return commit in remote_branch.commit.iter_parents()
 
-  def _verify_tag(self, tag: str) -> Repo.commit:
+  def _verify_tag(self, tag: str) -> Commit:
     """
     Verifies and returns the commit object for the specified tag if it exists, otherwise throws an
     error. This fuction will perform a fetch if necessary to check if recent remote changes contain

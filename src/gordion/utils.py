@@ -61,3 +61,24 @@ def extract_repo_details(url):
   repo_name = repo_name.rstrip('.git')
 
   return host, username, repo_name
+
+
+def is_related_path(directory, paths):
+  """
+  Returns true if the directory is an exact match, is an ancestor, or is a descendant of one of the
+  paths.
+
+  e.g.
+    /this/is/a/path
+
+    cases:
+      /this/is/a/path -> true (exact match)
+      /this/is -> true (ancestor)
+      /this/is/a/path/below -> true (descendant)
+      /this/is/b -> false (none)
+  """
+
+  for path in paths:
+    if path.startswith(directory) or directory.startswith(path):
+      return True
+  return False
