@@ -89,6 +89,6 @@ class NotAGordionRepositoryError(Exception):
 class DanglingGordionRepositoryError(Exception):
   def __init__(self, current_repo_path, disconnected_parent_path):
     self.message = (f"You are in repository<{current_repo_path}>.\n"
-                    f"There is a parent gordion repository{disconnected_parent_path}> but it does\n"
-                    f"not list this repository. This repository appears to be dangling, and should be deleted.")
+                    f"There is a parent gordion repository<{disconnected_parent_path}> but it does\n"
+                    f"not list this repository. Therefore this repository appears to be dangling, and should be deleted.")
     super().__init__(self.message)

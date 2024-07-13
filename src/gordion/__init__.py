@@ -7,5 +7,5 @@ from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
 from .exception import UpdateRepoIsDirtyError, UpdateDuplicateRepoPathError
 from .exception import UpdateDuplicateRepoTagError, UnsafeRemoveDirty
-from .exception import NotAGordionRepositoryError
+from .exception import NotAGordionRepositoryError, DanglingGordionRepositoryError
 from .yeditor import YamlEditor
