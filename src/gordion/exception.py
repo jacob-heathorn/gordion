@@ -1,3 +1,6 @@
+import gordion
+
+
 class UpdateError(Exception):
   def __init__(self, target, reason, suggestion):
     self.message = (f"Cannot update {target.name}.\n"
@@ -88,7 +91,9 @@ class NotAGordionRepositoryError(Exception):
 
 class DanglingGordionRepositoryError(Exception):
   def __init__(self, current_repo_path, disconnected_parent_path):
-    self.message = (f"You are in repository<{current_repo_path}>.\n"
-                    f"There is a parent gordion repository<{disconnected_parent_path}> but it does\n"
-                    f"not list this repository. Therefore this repository appears to be dangling, and should be deleted.")
+    self.message = gordion.utils.wrap_string((
+      f"You are in repository<{current_repo_path}>. There is a parent gordion "
+      f"repository<{disconnected_parent_path}> but it does not list this repository. Therefore "
+      f"this repository appears to be dangling and should be deleted."
+    ))
     super().__init__(self.message)
