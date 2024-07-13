@@ -78,3 +78,9 @@ class UnsafeRemoveDirty(Exception):
                     f"{path}\n"
                     f"because it is dirty")
     super().__init__(self.message)
+
+
+class NotAGordionRepositoryError(Exception):
+  def __init__(self, cwd):
+    self.message = f"{cwd} is not within a gordion repository tree!"
+    super().__init__(self.message)

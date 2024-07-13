@@ -82,3 +82,15 @@ def is_related_path(directory, paths):
     if path.startswith(directory) or directory.startswith(path):
       return True
   return False
+
+
+def find_ancestor_dir(cwd, target_dir_name):
+  """TODO"""
+  # Loop to move up the directory tree
+  while cwd != os.path.dirname(cwd):  # Continue until the root directory is reached
+    parent_dir = os.path.dirname(cwd)
+    if os.path.basename(parent_dir) == target_dir_name:
+      return parent_dir  # Return the matching ancestor directory
+    cwd = parent_dir
+
+  return None  # Return None if no matching ancestor is found
