@@ -20,7 +20,7 @@ def get_repository_root(cwd: str):
 def is_gordion_repository(path: str) -> bool:
   if gordion.Repository._exists(path):
     repo = gordion.Repository(path)
-    if repo.yeditor is not None:
+    if repo.yeditor.exists():
       return True
 
   return False
@@ -28,13 +28,13 @@ def is_gordion_repository(path: str) -> bool:
 
 def gordion_root(cwd: str):
   repo_root = get_repository_root(os.getcwd())
-  #print(f"repo_root: {repo_root}")
+  # print(f"repo_root: {repo_root}")
 
   if repo_root is None:
     if is_gordion_repository(repo_root):
       return repo_root
     else:
-      raise gordion.NotAGordionRepositoryError(cwd)
+      raise gordion.NotAGordionRepositoryError()
   else:
     # Find parent gordion folder
     parent_gordion_path = gordion.find_ancestor_dir(repo_root, 'gordion')
@@ -42,9 +42,9 @@ def gordion_root(cwd: str):
       if is_gordion_repository(repo_root):
         return repo_root
       else:
-        raise gordion.NotAGordionRepositoryError(cwd)
+        raise gordion.NotAGordionRepositoryError()
     else:
-      #print(f"parent_gordion_path: {parent_gordion_path}")
+      # print(f"parent_gordion_path: {parent_gordion_path}")
       # Check that the parent gordion folder is in a repository whose root is one level above.
       parent_root = get_repository_root(parent_gordion_path)
       if parent_root != os.path.dirname(parent_gordion_path):
@@ -54,12 +54,12 @@ def gordion_root(cwd: str):
         # Check that the parent yaml file lists the original repo_root
         repo_root_relative = os.path.relpath(repo_root, parent_gordion_path)
         parent = gordion.Repository(parent_root)
-        if parent.yeditor is not None:
+        if parent.yeditor.exists():
           for name, entry in parent.yeditor.yaml_data['repositories'].items():
-            #print(f"name: {name}")
-            #print(f"entry gpath: {parent.yeditor.read_repository_gpath(name)}, repo_root_relative: {repo_root_relative}")
+            # print(f"name: {name}")
+            # print(f"entry gpath: {parent.yeditor.read_repository_gpath(name)}, repo_root_relative: {repo_root_relative}")
             if parent.yeditor.read_repository_gpath(name) == repo_root_relative:
-              #print("Found parent entry")
+              # print("Found parent entry")
               return parent.path
 
 
@@ -74,7 +74,10 @@ def main(argv=None):
 
   if args.root:
     cwd = os.getcwd()
-    print(f"{gordion_root(cwd)}")
+    try:
+      print(f"{gordion_root(cwd)}")
+    except Exception as e:
+      gordion.utils.print_exception(e)
 
 
 if __name__ == "__main__":

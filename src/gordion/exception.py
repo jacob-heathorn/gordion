@@ -81,6 +81,6 @@ class UnsafeRemoveDirty(Exception):
 
 
 class NotAGordionRepositoryError(Exception):
-  def __init__(self, cwd):
-    self.message = f"{cwd} is not within a gordion repository tree!"
+  def __init__(self):
+    self.message = "You are not in a gordion repository!"
     super().__init__(self.message)

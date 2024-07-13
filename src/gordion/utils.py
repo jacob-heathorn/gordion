@@ -94,3 +94,12 @@ def find_ancestor_dir(cwd, target_dir_name):
     cwd = parent_dir
 
   return None  # Return None if no matching ancestor is found
+
+
+def print_exception(e):
+  # ANSI escape sequence for red text
+  RED = '\033[91m'
+  # ANSI escape sequence to reset color
+  RESET = '\033[0m'
+  # Print the exception message in red
+  print(f"{RED}Error: {e}{RESET}")
