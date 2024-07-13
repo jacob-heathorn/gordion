@@ -1,6 +1,7 @@
 import contextlib
 import os
 from urllib.parse import urlparse
+import traceback
 
 
 # Context manager for pushd. Example from
@@ -96,10 +97,10 @@ def find_ancestor_dir(cwd, target_dir_name):
   return None  # Return None if no matching ancestor is found
 
 
-def print_exception(e):
-  # ANSI escape sequence for red text
+def print_exception(e, trace: bool = False):
+  formatted_traceback = ''.join(traceback.format_exception(None, e, e.__traceback__))
   RED = '\033[91m'
-  # ANSI escape sequence to reset color
   RESET = '\033[0m'
-  # Print the exception message in red
-  print(f"{RED}Error: {e}{RESET}")
+  if trace:
+    print(f"{formatted_traceback}\n")
+  print(f"{RED}{e}{RESET}")
