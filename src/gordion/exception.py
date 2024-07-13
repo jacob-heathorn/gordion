@@ -77,15 +77,17 @@ class UpdateDuplicateRepoTagError(UpdateError):
 
 class UnsafeRemoveDirty(Exception):
   def __init__(self, path):
-    self.message = (f"Cannot remove repository:\n"
-                    f"{path}\n"
-                    f"because it is dirty")
+    self.message = gordion.utils.wrap_string((
+      f"Cannot remove repository<{path}> because it is dirty."
+    ))
     super().__init__(self.message)
 
 
 class NotAGordionRepositoryError(Exception):
   def __init__(self):
-    self.message = "You are not in a gordion repository!"
+    self.message = gordion.utils.wrap_string((
+      "You are not in a gordion repository!"
+    ))
     super().__init__(self.message)
 
 

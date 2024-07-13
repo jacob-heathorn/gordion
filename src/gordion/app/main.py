@@ -50,7 +50,7 @@ def gordion_root(cwd: str):
     else:
       # Get the parent git repository containing the parent gordion folder.
       parent_root = get_repository_root(parent_gordion_path)
-      
+
       # If the parent git repository is not one level above the /gordion folder, then it is not
       # managing it. Just return the current repository if it is gordion.
       if parent_root != os.path.dirname(parent_gordion_path):
