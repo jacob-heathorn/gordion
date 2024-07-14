@@ -26,7 +26,7 @@ def is_gordion_repository(path: str) -> bool:
   return False
 
 
-def gordion_root(cwd: str):
+def gordion_root():
   current_repo_path = get_repository_root(os.getcwd())
 
   # If we are not in a git repository, then we are not in a gordion repository.
@@ -97,9 +97,8 @@ def main(argv=None):
     pass
 
   if args.root:
-    cwd = os.getcwd()
     try:
-      print(f"{gordion_root(cwd)}")
+      print(f"{gordion_root()}")
     except Exception as e:
       gordion.utils.print_exception(e)
 
