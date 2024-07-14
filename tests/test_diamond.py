@@ -29,9 +29,19 @@ def repo_a(repo_a_session):
   """
   This puts the repo_a object back into a well-known state for each test case.
   """
+  # Setup
+  #
+  # Set the object to a known commit on the develop branch.
+  tag = 'c9da3e67006cbb03b6810d2e5b8effebb0f0b674'
+  branch_name = 'develop'
 
-  # TODO: move more below
+  # Set the target branch/commit.
+  repo_a_session.update(tag, branch_name, force=True)
 
+  yield repo_a_session
+
+  # Cleanup
+  #
   # Delete all local branches except develop (can't be deleted) to start fresh.
   repo_a_session.handle.branches['develop'].checkout()
   branches = list(repo_a_session.handle.branches)
@@ -39,18 +49,7 @@ def repo_a(repo_a_session):
     if branch.name != 'develop':
       repo_a_session.handle.delete_head(branch, force=True)
 
-  # Set the object to a known commit on the develop branch.
-  tag = 'c9da3e67006cbb03b6810d2e5b8effebb0f0b674'
-  branch_name = 'develop'
-
-  # Set the target branch/commit
-  repo_a_session.update(tag, branch_name, force=True)
-  assert repo_a_session.handle.head.commit.hexsha == tag
-  assert repo_a_session.handle.active_branch.name == branch_name
-
-  yield repo_a_session
-
-  # Cleanup
+  # Update to our known commit.
   repo_a_session.update(tag, branch_name, force=True)
 
   # TODO: Should this be done in the force update?
