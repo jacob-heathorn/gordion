@@ -93,14 +93,19 @@ def main(argv=None):
   parser.add_argument('-r', '--root', action='store_true', help='Print the gordion root')
   args = parser.parse_args()
 
-  if args.update:
-    pass
+  try:
 
-  if args.root:
-    try:
+    if args.update:
+      root_path = gordion_root()
+      with gordion.utils.pushd(root_path):
+        root = gordion.Repository(root_path)
+        root.update(root.handle.head.commit.hexsha, root.handle.active_branch.name)
+
+    if args.root:
       print(f"{gordion_root()}")
-    except Exception as e:
-      gordion.utils.print_exception(e)
+
+  except Exception as e:
+    gordion.utils.print_exception(e)
 
 
 if __name__ == "__main__":

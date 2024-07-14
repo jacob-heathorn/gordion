@@ -30,9 +30,7 @@ def repo_a(repo_a_session):
   This puts the repo_a object back into a well-known state for each test case.
   """
 
-  # Clear uncommitted changes.
-  repo_a_session.handle.git.reset('--hard')
-  repo_a_session.handle.git.clean('-fdx')
+  # TODO: move more below
 
   # Delete all local branches except develop (can't be deleted) to start fresh.
   repo_a_session.handle.branches['develop'].checkout()
@@ -51,6 +49,23 @@ def repo_a(repo_a_session):
   assert repo_a_session.handle.active_branch.name == branch_name
 
   yield repo_a_session
+
+  # Cleanup
+  repo_a_session.update(tag, branch_name, force=True)
+
+  # TODO: Should this be done in the force update?
+  def cleanup_repo(path):
+    if os.path.exists(path):
+      print(f"Git clean {path}")
+      repo = gordion.Repository(path)
+      repo.ensure()
+      repo.handle.git.reset('--hard')
+      repo.handle.git.clean('-fdx')
+
+  cleanup_repo(repo_a_session.path)
+  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_b'))
+  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_c'))
+  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_d'))
 
 
 def test_tag_mismatch(repo_a):
