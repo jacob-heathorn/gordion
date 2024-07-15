@@ -49,10 +49,7 @@ def repo_a(repo_a_session):
     if branch.name != 'develop':
       repo_a_session.handle.delete_head(branch, force=True)
 
-  # Update to our known commit.
-  repo_a_session.update(tag, branch_name, force=True)
-
-  # TODO: Should this be done in the force update?
+  # Git clean.
   def cleanup_repo(path):
     if os.path.exists(path):
       print(f"Git clean {path}")
@@ -65,6 +62,9 @@ def repo_a(repo_a_session):
   cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_b'))
   cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_c'))
   cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_d'))
+
+  # Update to our known commit.
+  repo_a_session.update(tag, branch_name, force=True)
 
 
 def test_tag_mismatch(repo_a):

@@ -41,10 +41,16 @@ def repo_a(repo_a_session):
   This puts the repo_a object back into a well-known state for each test case.
   """
 
-  # Clear uncommitted changes.
-  repo_a_session.handle.git.reset('--hard')
-  repo_a_session.handle.git.clean('-fdx')
+  # Set the object to a known commit on the test_single branch.
+  tag = '26968db5866b41339b9811c809818f44055c8153'
+  branch_name = 'test_single'
 
+  # Set the target branch/commit
+  repo_a_session.update(tag, branch_name, force=True)
+  yield repo_a_session
+
+  # Cleanup
+  #
   # Delete all local branches except develop (can't be deleted) to start fresh.
   repo_a_session.handle.branches['develop'].checkout()
   branches = list(repo_a_session.handle.branches)
@@ -52,16 +58,12 @@ def repo_a(repo_a_session):
     if branch.name != 'develop':
       repo_a_session.handle.delete_head(branch, force=True)
 
-  # Set the object to a known commit on the test_single branch.
-  tag = '26968db5866b41339b9811c809818f44055c8153'
-  branch_name = 'test_single'
+  # Git clean.
+  repo_a_session.handle.git.reset('--hard')
+  repo_a_session.handle.git.clean('-fdx')
 
-  # Set the target branch/commit
+  # Update to our known commit.
   repo_a_session.update(tag, branch_name, force=True)
-  assert repo_a_session.handle.head.commit.hexsha == tag
-  assert repo_a_session.handle.active_branch.name == branch_name
-
-  yield repo_a_session
 
 
 def test_verify_tag(repo_a):

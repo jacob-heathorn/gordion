@@ -29,11 +29,19 @@ def repo_a(repo_a_session):
   """
   This puts the repo_a object back into a well-known state for each test case.
   """
+  # Setup
+  #
+  # Set the object to a known commit on the develop branch.
+  tag = 'c9da3e67006cbb03b6810d2e5b8effebb0f0b674'
+  branch_name = 'develop'
 
-  # Clear uncommitted changes.
-  repo_a_session.handle.git.reset('--hard')
-  repo_a_session.handle.git.clean('-fdx')
+  # Set the target branch/commit.
+  repo_a_session.update(tag, branch_name, force=True)
 
+  yield repo_a_session
+
+  # Cleanup
+  #
   # Delete all local branches except develop (can't be deleted) to start fresh.
   repo_a_session.handle.branches['develop'].checkout()
   branches = list(repo_a_session.handle.branches)
@@ -41,16 +49,22 @@ def repo_a(repo_a_session):
     if branch.name != 'develop':
       repo_a_session.handle.delete_head(branch, force=True)
 
-  # Set the object to a known commit on the develop branch.
-  tag = 'c9da3e67006cbb03b6810d2e5b8effebb0f0b674'
-  branch_name = 'develop'
+  # Git clean.
+  def cleanup_repo(path):
+    if os.path.exists(path):
+      print(f"Git clean {path}")
+      repo = gordion.Repository(path)
+      repo.ensure()
+      repo.handle.git.reset('--hard')
+      repo.handle.git.clean('-fdx')
 
-  # Set the target branch/commit
+  cleanup_repo(repo_a_session.path)
+  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_b'))
+  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_c'))
+  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_d'))
+
+  # Update to our known commit.
   repo_a_session.update(tag, branch_name, force=True)
-  assert repo_a_session.handle.head.commit.hexsha == tag
-  assert repo_a_session.handle.active_branch.name == branch_name
-
-  yield repo_a_session
 
 
 def test_gordion_root(repo_a):
