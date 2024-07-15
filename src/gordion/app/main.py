@@ -99,7 +99,10 @@ def main(argv=None):
       root_path = gordion_root()
       with gordion.utils.pushd(root_path):
         root = gordion.Repository(root_path)
-        root.update(root.handle.head.commit.hexsha, root.handle.active_branch.name)
+        branch = None
+        if not root.handle.head.is_detached:
+          branch = root.handle.active_branch.name
+        root.update(root.handle.head.commit.hexsha, branch)
 
     if args.root:
       print(f"{gordion_root()}")
