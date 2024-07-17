@@ -1,6 +1,7 @@
 import os
 import gordion
 import pytest
+from tests.conftest import recursive_git_blast
 
 
 @pytest.fixture
@@ -20,29 +21,7 @@ def repo_a(repo_a_session):
   yield repo_a_session
 
   # Cleanup
-  #
-  # Delete all local branches except develop (can't be deleted) to start fresh.
-  repo_a_session.handle.branches['develop'].checkout()
-  branches = list(repo_a_session.handle.branches)
-  for branch in branches:
-    if branch.name != 'develop':
-      repo_a_session.handle.delete_head(branch, force=True)
-
-  # Git clean.
-  def cleanup_repo(path):
-    if os.path.exists(path):
-      repo = gordion.Repository(path)
-      repo.ensure()
-      repo.handle.git.reset('--hard')
-      repo.handle.git.clean('-fdx')
-
-  cleanup_repo(repo_a_session.path)
-
-  for item in os.listdir(os.path.join(repo_a_session.path, 'gordion')):
-    item_path = os.path.join(os.path.join(repo_a_session.path, 'gordion'), item)
-    if os.path.isdir(item_path):
-      if gordion.Repository._exists(item_path):
-        cleanup_repo(item_path)
+  recursive_git_blast(repo_a_session.path)
 
 
 def test_tag_mismatch(repo_a):

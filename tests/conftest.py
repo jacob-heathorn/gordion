@@ -22,3 +22,32 @@ def repo_a_session():
   repo.ensure(url)
 
   yield repo
+
+
+def git_clean(path):
+  if os.path.exists(path):
+    repo = gordion.Repository(path)
+    repo.ensure()
+    repo.handle.git.reset('--hard')
+    repo.handle.git.clean('-fdx')
+
+
+def git_delete_non_develop_branches(path):
+  if os.path.exists(path):
+    repo = gordion.Repository(path)
+    repo.ensure()
+    repo.handle.branches['develop'].checkout()
+    branches = list(repo.handle.branches)
+    for branch in branches:
+      if branch.name != 'develop':
+        repo.handle.delete_head(branch, force=True)
+
+
+def recursive_git_blast(path):
+  for item in path:
+    item_path = os.path.join(path, item)
+    if os.path.isdir(item_path):
+      repo_path = item_path
+      if gordion.Repository._exists(repo_path):
+        git_clean(repo_path)
+        git_delete_non_develop_branches(repo_path)
