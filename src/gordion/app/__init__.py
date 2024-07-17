@@ -1,3 +1,2 @@
-# Copyright (c) 2020, Nordic Semiconductor ASA
-
-# nothing here
+# # flake8: noqa: F401
+# from .root import gordion_root

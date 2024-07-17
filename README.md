@@ -6,7 +6,7 @@ tox -- test/test_repository.py -s --no-cov
 Just a single test file:
   `tox -e unit -- tests/test_single.py -s`
   `tox -e unit -- tests/test_diamond.py -s`
-  `tox -e unit -- tests/test_main.py -s`
+  `tox -e unit -- tests/test_app.py -s`
 
 Lint and type check: `tox -e lint`
 Run all tox environments: `tox`

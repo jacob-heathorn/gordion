@@ -34,27 +34,27 @@ def test_gordion_root(repo_a):
 
   # From top of repoA.
   with gordion.utils.pushd(repo_a.path):
-    assert repo_a.path == gordion.app.main.gordion_root()
+    assert repo_a.path == gordion.app.root.gordion_root()
 
   # From the gordion directory in repoA.
   with gordion.utils.pushd(os.path.join(repo_a.path, 'gordion')):
-    assert repo_a.path == gordion.app.main.gordion_root()
+    assert repo_a.path == gordion.app.root.gordion_root()
 
   # From one level above repoA.
   with gordion.utils.pushd(os.path.join(repo_a.path, '..')):
     with pytest.raises(gordion.NotAGordionRepositoryError):
-      gordion.app.main.gordion_root()
+      gordion.app.root.gordion_root()
 
   # From repoB under repoA
   with gordion.utils.pushd(os.path.join(repo_a.path, 'gordion', 'gordion_demo_b')):
-    assert repo_a.path == gordion.app.main.gordion_root()
+    assert repo_a.path == gordion.app.root.gordion_root()
 
   # Cause repoC to dangle and then try from there.
   repo_a.yeditor.yaml_data['repositories']['gordion_demo_c']['path'] = '/heyo/gordion_demo_c'
   repo_a.yeditor.save()
   with gordion.utils.pushd(os.path.join(repo_a.path, 'gordion', 'gordion_demo_c')):
     with pytest.raises(gordion.DanglingGordionRepositoryError) as context:
-      gordion.app.main.gordion_root()
+      gordion.app.root.gordion_root()
 
     expected = gordion.DanglingGordionRepositoryError(
       os.path.join(repo_a.path, 'gordion', 'gordion_demo_c'), repo_a.path)
