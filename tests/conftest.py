@@ -44,10 +44,15 @@ def git_delete_non_develop_branches(path):
 
 
 def recursive_git_blast(path):
-  for item in path:
-    item_path = os.path.join(path, item)
-    if os.path.isdir(item_path):
-      repo_path = item_path
-      if gordion.Repository._exists(repo_path):
-        git_clean(repo_path)
-        git_delete_non_develop_branches(repo_path)
+  # Cleanup root directory.
+  git_clean(path)
+  git_delete_non_develop_branches(path)
+
+  # Cleanup child directories.
+  for root, dirs, _ in os.walk(path):
+    for dir in dirs:
+      dir = os.path.join(root, dir)
+      if gordion.Repository._exists(dir):
+        print(f"blast: {dir}")
+        git_clean(dir)
+        git_delete_non_develop_branches(dir)
