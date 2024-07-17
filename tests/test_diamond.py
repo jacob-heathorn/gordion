@@ -59,12 +59,12 @@ def repo_a(repo_a_session):
       repo.handle.git.clean('-fdx')
 
   cleanup_repo(repo_a_session.path)
-  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_b'))
-  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_c'))
-  cleanup_repo(os.path.join(repo_a_session.path, 'gordion', 'gordion_demo_d'))
 
-  # Update to our known commit.
-  repo_a_session.update(tag, branch_name, force=True)
+  for item in os.listdir(os.path.join(repo_a_session.path, 'gordion')):
+    item_path = os.path.join(os.path.join(repo_a_session.path, 'gordion'), item)
+    if os.path.isdir(item_path):
+      if gordion.Repository._exists(item_path):
+        cleanup_repo(item_path)
 
 
 def test_tag_mismatch(repo_a):
