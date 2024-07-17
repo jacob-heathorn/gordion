@@ -20,8 +20,11 @@ def repo_a(repo_a_session):
 
   yield repo_a_session
 
-  # Cleanup
+  # Cleanup.
   recursive_git_blast(repo_a_session.path)
+
+  # Update to our known commit.
+  repo_a_session.update(tag, branch_name, force=True)
 
 
 def test_tag_mismatch(repo_a):

@@ -2,6 +2,7 @@ import os
 import gordion
 import pytest
 from git import BadName
+from tests.conftest import recursive_git_blast
 
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -31,18 +32,8 @@ def repo_a(repo_a_session):
   repo_a_session.update(tag, branch_name, force=True)
   yield repo_a_session
 
-  # Cleanup
-  #
-  # Delete all local branches except develop (can't be deleted) to start fresh.
-  repo_a_session.handle.branches['develop'].checkout()
-  branches = list(repo_a_session.handle.branches)
-  for branch in branches:
-    if branch.name != 'develop':
-      repo_a_session.handle.delete_head(branch, force=True)
-
-  # Git clean.
-  repo_a_session.handle.git.reset('--hard')
-  repo_a_session.handle.git.clean('-fdx')
+  # Cleanup.
+  recursive_git_blast(repo_a_session.path)
 
   # Update to our known commit.
   repo_a_session.update(tag, branch_name, force=True)
