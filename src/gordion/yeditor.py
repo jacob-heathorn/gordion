@@ -1,5 +1,6 @@
 import yaml
 import os
+from typing import Dict, Any
 
 
 class YamlEditor:
@@ -10,7 +11,7 @@ class YamlEditor:
 
   def __init__(self, fullfile: str) -> None:
     self.fullfile = fullfile
-    self.yaml_data = None
+    self.yaml_data: Dict[str, Any] = {}
     self.reload()
 
   def exists(self):
@@ -19,7 +20,7 @@ class YamlEditor:
   def reload(self):
     # TODO assert not duplicate names, or urls, or paths. Path basename must be the same as name and
     # is optional.
-    self.yaml_data = None
+    self.yaml_data = {}
     if self.exists():
       with open(self.fullfile, 'r') as file:
         self.yaml_data = yaml.safe_load(file)

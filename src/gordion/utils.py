@@ -1,6 +1,8 @@
 import contextlib
 import os
 from urllib.parse import urlparse
+import traceback
+import textwrap
 
 
 # Context manager for pushd. Example from
@@ -82,3 +84,32 @@ def is_related_path(directory, paths):
     if path.startswith(directory) or directory.startswith(path):
       return True
   return False
+
+
+def find_ancestor_dir(cwd, target_dir_name):
+  """TODO"""
+  # Loop to move up the directory tree
+  while cwd != os.path.dirname(cwd):  # Continue until the root directory is reached
+    parent_dir = os.path.dirname(cwd)
+    if os.path.basename(parent_dir) == target_dir_name:
+      return parent_dir  # Return the matching ancestor directory
+    cwd = parent_dir
+
+  return None  # Return None if no matching ancestor is found
+
+
+def print_exception(e, trace: bool = False):
+  formatted_traceback = ''.join(traceback.format_exception(None, e, e.__traceback__))
+  RED = '\033[91m'
+  RESET = '\033[0m'
+  if trace:
+    print(f"{formatted_traceback}\n")
+  print(f"{RED}{e}{RESET}")
+
+
+def wrap_string(text, max_width=100):
+  # Use the wrap function to split the text into lines of maximum 100 characters
+  wrapped_text = textwrap.wrap(text, width=max_width)
+  # Join the wrapped lines with newline characters to form the final formatted string
+  formatted_string = '\n'.join(wrapped_text)
+  return formatted_string

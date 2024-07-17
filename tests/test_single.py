@@ -2,10 +2,9 @@ import os
 import gordion
 import pytest
 from git import BadName
+from tests.conftest import recursive_git_blast
 
-assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
-REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -19,38 +18,11 @@ def test_exists():
   assert gordion.Repository._exists(path)
 
 
-@pytest.fixture(scope="session")
-def repo_a_session():
-  """
-  Creates the repo_a object only once for the lifetime of this session. This is important so the
-  "fetch_once" doesn't fetch every test case, which saves time.
-  """
-  path = os.path.join(REPOS_DIR, 'gordion_demo_a')
-  url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
-
-  # Create the repo object and ensure it.
-  repo = gordion.Repository(path)
-  repo.ensure(url)
-
-  yield repo
-
-
 @pytest.fixture
 def repo_a(repo_a_session):
   """
   This puts the repo_a object back into a well-known state for each test case.
   """
-
-  # Clear uncommitted changes.
-  repo_a_session.handle.git.reset('--hard')
-  repo_a_session.handle.git.clean('-fdx')
-
-  # Delete all local branches except develop (can't be deleted) to start fresh.
-  repo_a_session.handle.branches['develop'].checkout()
-  branches = list(repo_a_session.handle.branches)
-  for branch in branches:
-    if branch.name != 'develop':
-      repo_a_session.handle.delete_head(branch, force=True)
 
   # Set the object to a known commit on the test_single branch.
   tag = '26968db5866b41339b9811c809818f44055c8153'
@@ -58,10 +30,13 @@ def repo_a(repo_a_session):
 
   # Set the target branch/commit
   repo_a_session.update(tag, branch_name, force=True)
-  assert repo_a_session.handle.head.commit.hexsha == tag
-  assert repo_a_session.handle.active_branch.name == branch_name
-
   yield repo_a_session
+
+  # Cleanup.
+  recursive_git_blast(repo_a_session.path)
+
+  # Update to our known commit.
+  repo_a_session.update(tag, branch_name, force=True)
 
 
 def test_verify_tag(repo_a):
