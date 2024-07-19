@@ -99,3 +99,12 @@ class DanglingGordionRepositoryError(Exception):
       f"this repository appears to be dangling and should be deleted."
     ))
     super().__init__(self.message)
+
+
+class BadRepositoryPath(Exception):
+  def __init__(self, file, path, name):
+    self.message = (
+      f"File<{file}> lists repository name<{name}> but the path is <{path}>. The name needs to"
+      f" match the base directory name of the path."
+    )
+    super().__init__(self.message)

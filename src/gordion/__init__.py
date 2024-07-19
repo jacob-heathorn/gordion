@@ -8,5 +8,6 @@ from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSave
 from .exception import UpdateRepoIsDirtyError, UpdateDuplicateRepoPathError
 from .exception import UpdateDuplicateRepoTagError, UnsafeRemoveDirty
 from .exception import NotAGordionRepositoryError, DanglingGordionRepositoryError
+from .exception import BadRepositoryPath
 from .yeditor import YamlEditor
 from .app.root import gordion_root

@@ -1,6 +1,7 @@
 import yaml
 import os
 from typing import Dict, Any
+import gordion
 
 
 class YamlEditor:
@@ -18,12 +19,17 @@ class YamlEditor:
     return os.path.exists(self.fullfile)
 
   def reload(self):
-    # TODO assert not duplicate names, or urls, or paths. Path basename must be the same as name and
-    # is optional.
+    # TODO assert not duplicate names, or urls, or paths.
     self.yaml_data = {}
     if self.exists():
       with open(self.fullfile, 'r') as file:
         self.yaml_data = yaml.safe_load(file)
+
+        # Verify that the path basedir matches the entry name.
+        for name, info in self.yaml_data['repositories'].items():
+          if 'path' in info and info['path']:
+            if name != os.path.basename(info['path']):
+              raise gordion.BadRepositoryPath(self.fullfile, info['path'], name)
 
   def write_repository_tag(self, name: str, tag: str):
     # Check if the repository exists
