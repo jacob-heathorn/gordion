@@ -1,7 +1,6 @@
 import os
 import subprocess
 import git
-from git import Commit, NoSuchPathError, InvalidGitRepositoryError
 import gordion
 from typing import List
 import shutil
@@ -85,7 +84,7 @@ class Repository:
 
     """
 
-    commit: Commit = self._verify_tag(tag)
+    commit: git.Commit = self._verify_tag(tag)
 
     # Check for duplicate tag
     root = self._root()
@@ -339,7 +338,7 @@ class Repository:
     else:
       return commit in remote_branch.commit.iter_parents()
 
-  def _verify_tag(self, tag: str) -> Commit:
+  def _verify_tag(self, tag: str) -> git.Commit:
     """
     Verifies and returns the commit object for the specified tag if it exists, otherwise throws an
     error. This fuction will perform a fetch if necessary to check if recent remote changes contain
@@ -384,7 +383,7 @@ class Repository:
       repo = git.Repo(path)
       # Compare the absolute paths to determine if 'path' is the repository root
       return os.path.abspath(repo.working_tree_dir) == os.path.abspath(path)
-    except (NoSuchPathError, InvalidGitRepositoryError):
+    except (git.NoSuchPathError, git.InvalidGitRepositoryError):
       # If Repo initialization fails, the path is not a Git repository
       return False
 

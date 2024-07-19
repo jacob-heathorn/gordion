@@ -1,7 +1,7 @@
 import os
 import gordion
 import pytest
-from git import BadName
+import git
 from tests.conftest import recursive_git_blast
 
 
@@ -50,7 +50,7 @@ def test_verify_tag(repo_a):
   repo_a._verify_tag('f30a7cbe5592ef4521dad06203d5178e651ecd5b')
 
   # Verify that an ill-formed commit will raise an error.
-  with pytest.raises(BadName):
+  with pytest.raises(git.BadName):
     repo_a._verify_tag("123")
 
 
