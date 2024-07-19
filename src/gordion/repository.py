@@ -1,6 +1,7 @@
 import os
 import subprocess
-from git import Repo, Commit, NoSuchPathError, InvalidGitRepositoryError
+import git
+from git import Commit, NoSuchPathError, InvalidGitRepositoryError
 import gordion
 from typing import List
 import shutil
@@ -32,7 +33,7 @@ class Repository:
     # Derive url if necessary.
     if not url:
       assert Repository._exists(self.path)
-      self.handle = Repo(self.path)
+      self.handle = git.Repo(self.path)
       self.url = self.handle.remotes.origin.url
     else:
       self.url = url
@@ -52,7 +53,7 @@ class Repository:
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     # Reload objects.
-    self.handle = Repo(self.path)
+    self.handle = git.Repo(self.path)
     self.yeditor.reload()
 
   def _root(self):
@@ -184,7 +185,7 @@ class Repository:
   @staticmethod
   def _safe_remove_repo(path, force: bool = False):
     assert gordion.Repository._exists(path)
-    repo = Repo(path)
+    repo = git.Repo(path)
 
     # Check if repository has local changes.
     if repo.is_dirty(untracked_files=True):
@@ -321,7 +322,8 @@ class Repository:
       raise gordion.UpdateNoTrackingBranchError(self, local_branch.name)
 
   @staticmethod
-  def _does_remote_branch_have_commit(repo: Repo, branch_name: str, commit: Repo.commit) -> bool:
+  def _does_remote_branch_have_commit(repo: git.Repo, branch_name: str,
+                                      commit: git.Repo.commit) -> bool:
     """
     Returns true if there is a remote branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
@@ -358,7 +360,8 @@ class Repository:
     return commit
 
   @staticmethod
-  def _does_local_branch_have_commit(repo: Repo, branch_name: str, commit: Repo.commit) -> bool:
+  def _does_local_branch_have_commit(repo: git.Repo, branch_name: str,
+                                     commit: git.Repo.commit) -> bool:
     """
     Returns true if there exist a local branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
@@ -378,7 +381,7 @@ class Repository:
   def _exists(path: str) -> bool:
     try:
         # Initialize the Repo object
-      repo = Repo(path)
+      repo = git.Repo(path)
       # Compare the absolute paths to determine if 'path' is the repository root
       return os.path.abspath(repo.working_tree_dir) == os.path.abspath(path)
     except (NoSuchPathError, InvalidGitRepositoryError):
