@@ -101,7 +101,7 @@ class DanglingGordionRepositoryError(Exception):
     super().__init__(self.message)
 
 
-class BadRepositoryPath(Exception):
+class BadRepositoryNamePathMismach(Exception):
   def __init__(self, file, path, name):
     self.message = (
       f"File<{file}> lists repository name<{name}> but the path is <{path}>. The name needs to"

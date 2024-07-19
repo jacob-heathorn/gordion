@@ -29,7 +29,7 @@ class YamlEditor:
         for name, info in self.yaml_data['repositories'].items():
           if 'path' in info and info['path']:
             if name != os.path.basename(info['path']):
-              raise gordion.BadRepositoryPath(self.fullfile, info['path'], name)
+              raise gordion.BadRepositoryNamePathMismach(self.fullfile, info['path'], name)
 
   def write_repository_tag(self, name: str, tag: str):
     # Check if the repository exists

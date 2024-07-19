@@ -121,3 +121,18 @@ def test_unsafe_remove_dirty(repo_a):
 
   expected = gordion.UnsafeRemoveDirty(repo_c.path)
   assert str(context.value) == str(expected)
+
+
+def test_name_path_mismatch(repo_a):
+  """
+  Verifies that an error is generated if the optional path property does not match the repository
+  name.
+  """
+  repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/subdir/not_gordion_demo_b'
+  repo_a.yeditor.save()
+  with pytest.raises(gordion.BadRepositoryNamePathMismach) as context:
+    repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+
+  expected = gordion.BadRepositoryNamePathMismach(repo_a.yeditor.fullfile,
+                                                  '/subdir/not_gordion_demo_b', 'gordion_demo_b')
+  assert str(context.value) == str(expected)
