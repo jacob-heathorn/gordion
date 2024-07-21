@@ -3,11 +3,10 @@ import gordion
 
 class UpdateError(Exception):
   def __init__(self, target, reason, suggestion):
-    self.message = (f"Cannot update {target.name}.\n"
-                    f"system path: {target.path}\n"
-                    f"listed path: {target._listed_path()}\n"
-                    f"reason: {reason}\n"
-                    f"suggestion: {suggestion}")
+    self.message = (f"Cannot update repository<{target.name}>.\n"
+                    f"listed path: <{target._listed_path()}>\n"
+                    f"system path: <{target.path}>\n"
+                    f"{reason}. {suggestion}.")
     super().__init__(self.message)
 
 
@@ -108,3 +107,12 @@ class BadRepositoryNamePathMismach(Exception):
       f" match the base directory name of the path."
     )
     super().__init__(self.message)
+
+
+class UpdateDifferentRepoSamePathError(UpdateError):
+  def __init__(self, target, other):
+    reason = (f"The repository<{other.url}> is already cloned<{other.path}>."
+              f" You are trying to clone <{target.url}> to the same path."
+              " You cannot do this")
+    suggestion = "You need to make sure repositories have unique paths in the gordion.yaml files"
+    super().__init__(target, reason, suggestion)

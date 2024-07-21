@@ -1,7 +1,7 @@
 import os
 import gordion
 import pytest
-from tests.conftest import recursive_git_blast
+from tests.conftest import recursive_git_blast, MockRepository
 
 
 @pytest.fixture
@@ -135,4 +135,26 @@ def test_name_path_mismatch(repo_a):
 
   expected = gordion.BadRepositoryNamePathMismach(repo_a.yeditor.fullfile,
                                                   '/subdir/not_gordion_demo_b', 'gordion_demo_b')
+  assert str(context.value) == str(expected)
+
+
+def test_different_repo_same_path(repo_a):
+  """
+  Verifies that an error is generated if a different repository is attempted to be cloned to the
+  same gordion path.
+  """
+
+  with pytest.raises(gordion.UpdateDifferentRepoSamePathError) as context:
+    repo_a.update('92d294df03a6bbf7ef43b60a0255adca08671328', "test_different_repo_same_path")
+
+  repo_b = repo_a.children['gordion_demo_b']
+
+  # Create a new mock repository B with the same path so that we can test the error. We cannot
+  # create the real repository object because it errors, hence this testcase.
+  mock_target_repo_b = MockRepository(
+    url='https://github.com/jacob-heathorn/gordion_demo_d.git',
+    path=os.path.join(repo_a.path, 'gordion', 'gordion_demo_b'),
+    listed_path='gordion_demo_a/gordion/gordion_demo_c lists gordion_demo_b')
+
+  expected = gordion.UpdateDifferentRepoSamePathError(mock_target_repo_b, repo_b)
   assert str(context.value) == str(expected)
