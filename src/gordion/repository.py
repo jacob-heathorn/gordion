@@ -413,5 +413,10 @@ class Repository:
     Fetches only once for the lifetime of this Repository object.
     """
     if not self.fetched:
-      self.handle.remotes.origin.fetch()
+      # NOTE: The `--prune` option deletes local remote-tracking branches that no longer have
+      # corresponding branches on the remote repository. When a child repository deletes a remote
+      # branch (e.g. a PR is merged), we want the parent repository to see that deletion. Assuming
+      # the user deletes the local branch too, then gordion cannot checkout that branch from their
+      # local git cache, which would otherwise feel unexpected.
+      self.handle.git.fetch('--prune')
       self.fetched = True
