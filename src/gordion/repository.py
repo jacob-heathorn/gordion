@@ -47,11 +47,11 @@ class Repository:
     # Check for a duplicates repository cloned at different paths.
     self._check_duplicate_repo_path(self._root())
 
-    # Clone if necessary.
+    # Clone if necessary. At this point the mirror should exist regardless of whether the repository
+    # exists. so ensure it first.
+    cache = gordion.Cache()
+    mirror_path = cache.ensure_mirror(self.url)
     if not Repository._exists(self.path):
-      cache = gordion.Cache()
-      mirror_path = cache.ensure_mirror(self.url)
-
       args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
