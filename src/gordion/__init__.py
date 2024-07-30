@@ -2,7 +2,7 @@
 from .repository import Repository
 from .cache import Cache
 from .utils import extract_repo_details, is_related_path, find_ancestor_dir
-from .utils import print_exception, wrap_string
+from .utils import print_exception
 from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
 from .exception import UpdateRepoIsDirtyError, UpdateDuplicateRepoPathError

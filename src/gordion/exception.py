@@ -1,6 +1,3 @@
-import gordion
-
-
 class UpdateError(Exception):
   def __init__(self, target, reason, suggestion):
     self.message = (f"Cannot update repository<{target.name}>.\n"
@@ -70,27 +67,27 @@ class UpdateDuplicateRepoTagError(UpdateError):
 
 class UnsafeRemoveDirty(Exception):
   def __init__(self, path):
-    self.message = gordion.utils.wrap_string((
+    self.message = (
       f"Cannot remove repository<{path}> because it is dirty."
-    ))
+    )
     super().__init__(self.message)
 
 
 class NotAGordionRepositoryError(Exception):
   def __init__(self):
-    self.message = gordion.utils.wrap_string((
+    self.message = (
       "You are not in a gordion repository!"
-    ))
+    )
     super().__init__(self.message)
 
 
 class DanglingGordionRepositoryError(Exception):
   def __init__(self, current_repo_path, disconnected_parent_path):
-    self.message = gordion.utils.wrap_string((
+    self.message = (
       f"You are in repository<{current_repo_path}>. There is a parent gordion "
       f"repository<{disconnected_parent_path}> but it does not list this repository. Therefore "
       f"this repository appears to be dangling and should be deleted."
-    ))
+    )
     super().__init__(self.message)
 
 
