@@ -105,7 +105,8 @@ class Repository:
 
     # Check if a branch HAS NOT been specified.
     if not branch_name:
-      # Checkout the target commit in a detached HEAD state
+      # Checkout the target commit in a detached HEAD state as long as it is not dangling.
+      self._check_dangling_commit(commit)
       self.handle.git.checkout(commit)
 
     # A branch HAS been specified
@@ -169,6 +170,8 @@ class Repository:
         # We could not find the commit on a local or remote branch by the designated name, so just
         # checkout the commit in a detached head state.
         else:
+          # Checkout the target commit in a detached HEAD state as long as it is not dangling.
+          self._check_dangling_commit(commit)
           self.handle.git.checkout(commit)
 
     self.yeditor.reload()
@@ -231,6 +234,20 @@ class Repository:
           print(f"Deleting directory: {full_dirpath}")
           assert not gordion.Repository._exists(full_dirpath)  # Removed above.
           shutil.rmtree(full_dirpath)
+
+  def _check_dangling_commit(self, commit):
+    """
+    Checks if the commit is dangling (does not belong to a branch) and raises an error if it is
+    because we don't like that business.
+    """
+    dangling_commit = True
+    for ref in self.handle.references:
+      for reachable_commit in self.handle.iter_commits(ref):
+        if commit.hexsha == reachable_commit.hexsha:
+          dangling_commit = False
+
+    if dangling_commit:
+      raise gordion.DanglingCommitError(self, commit.hexsha)
 
   def _check_different_repo_same_path(self, other):
     """

@@ -9,5 +9,6 @@ from .exception import UpdateRepoIsDirtyError, UpdateDuplicateRepoPathError
 from .exception import UpdateDuplicateRepoTagError, UnsafeRemoveDirty
 from .exception import NotAGordionRepositoryError, DanglingGordionRepositoryError
 from .exception import BadRepositoryNamePathMismach, UpdateDifferentRepoSamePathError
+from .exception import DanglingCommitError
 from .yeditor import YamlEditor
 from .app.root import gordion_root

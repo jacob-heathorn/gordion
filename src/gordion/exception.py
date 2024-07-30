@@ -35,12 +35,11 @@ class UpdateWrongTrackingBranchError(UpdateError):
 
 class UpdateDetachedHeadNotSavedError(UpdateError):
   def __init__(self, target):
-    tab = " " * 8
-    reason = (f"The repository is in a detached HEAD state. This is fine except the HEAD is\n{tab}"
-              f"a commit that is not saved in a local ore remote branch. This indicates\n{tab}"
-              f"that you have made local commits while in the detached HEAD state, which is\n{tab}"
-              f"fine but we want to make sure you save those changes.")
-    suggestion = "Checkout a new local branch to save the current head state."
+    reason = ("The repository is in a detached HEAD state. This is fine except the HEAD is "
+              "a commit that is not saved in a local or remote branch. This indicates "
+              "that you have made local commits while in the detached HEAD state, which is "
+              "fine but we want to make sure you save those changes ")
+    suggestion = "Checkout a new local branch to save the current head state"
     super().__init__(target, reason, suggestion)
 
 
@@ -115,4 +114,11 @@ class UpdateDifferentRepoSamePathError(UpdateError):
               f" You are trying to clone <{target.url}> to the same path."
               " You cannot do this")
     suggestion = "You need to make sure repositories have unique paths in the gordion.yaml files"
+    super().__init__(target, reason, suggestion)
+
+
+class DanglingCommitError(UpdateError):
+  def __init__(self, target, target_tag):
+    reason = (f"Commit<{target_tag}> is dangling (does not belong to a branch)")
+    suggestion = ("Update the commit tag in the parent gordion.yaml")
     super().__init__(target, reason, suggestion)
