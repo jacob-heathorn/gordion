@@ -105,9 +105,12 @@ class Repository:
 
     # Check if a branch HAS NOT been specified.
     if not branch_name:
-      # Checkout the target commit in a detached HEAD state as long as it is not dangling.
-      self._check_dangling_commit(commit)
-      self.handle.git.checkout(commit)
+      # If we are already on this commit, then we are done. Don't add extra checks and don't
+      # checkout in detached HEAD state.
+      if self.handle.head.commit.hexsha != commit.hexsha:
+        # Checkout the target commit in a detached HEAD state as long as it is not dangling.
+        self._check_dangling_commit(commit)
+        self.handle.git.checkout(commit)
 
     # A branch HAS been specified
     else:
@@ -170,9 +173,12 @@ class Repository:
         # We could not find the commit on a local or remote branch by the designated name, so just
         # checkout the commit in a detached head state.
         else:
-          # Checkout the target commit in a detached HEAD state as long as it is not dangling.
-          self._check_dangling_commit(commit)
-          self.handle.git.checkout(commit)
+          # If we are already on this commit, then we are done. Don't add extra checks and don't
+          # checkout in detached HEAD state.
+          if self.handle.head.commit.hexsha != commit.hexsha:
+            # Checkout the target commit in a detached HEAD state as long as it is not dangling.
+            self._check_dangling_commit(commit)
+            self.handle.git.checkout(commit)
 
     self.yeditor.reload()
     self._update_children(branch_name, force)

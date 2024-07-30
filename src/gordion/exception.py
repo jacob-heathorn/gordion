@@ -35,10 +35,10 @@ class UpdateWrongTrackingBranchError(UpdateError):
 
 class UpdateDetachedHeadNotSavedError(UpdateError):
   def __init__(self, target):
-    reason = ("The repository is in a detached HEAD state. This is fine except the HEAD is "
-              "a commit that is not saved in a local or remote branch. This indicates "
-              "that you have made local commits while in the detached HEAD state, which is "
-              "fine but we want to make sure you save those changes ")
+    reason = (f"The repository<{target.name}> is in a detached HEAD state. This is fine except "
+              f"the HEAD is a commit that is not saved in a local or remote branch. This "
+              f"indicates that you have made local commits while in the detached HEAD state, "
+              f"which is fine but we want to make sure you save those changes")
     suggestion = "Checkout a new local branch to save the current head state"
     super().__init__(target, reason, suggestion)
 
