@@ -158,3 +158,29 @@ def test_different_repo_same_path(repo_a):
 
   expected = gordion.UpdateDifferentRepoSamePathError(mock_target_repo_b, repo_b)
   assert str(context.value) == str(expected)
+
+
+def test_dangling_commit(repo_a):
+  """
+  Verifies update will error if a child target commit is dangling.
+  """
+
+  # Create a dangling commit by committing something, then deleting it. First make an arbitrary
+  # change to repo B.
+  repo_b = repo_a.children['gordion_demo_b']
+  repo_b.handle.git.commit('-m', "Empty commit for test_dangling_commit", allow_empty=True)
+  empty_commit = repo_b.handle.head.commit
+
+  # Now delete the commit (checkout HEAD~1).
+  repo_b.handle.head.reset('HEAD~1', index=True, working_tree=True)
+
+  # Now add the empty commit to the parent gordion.yaml.
+  repo_a.yeditor.write_repository_tag('gordion_demo_b', empty_commit.hexsha)
+  repo_a.yeditor.save()
+
+  # Now update should error commit is dangling ehh.
+  with pytest.raises(gordion.DanglingCommitError) as context:
+    repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+
+  expected = gordion.DanglingCommitError(repo_b, empty_commit.hexsha)
+  assert str(context.value) == str(expected)
