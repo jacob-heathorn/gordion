@@ -2,7 +2,6 @@ import contextlib
 import os
 from urllib.parse import urlparse
 import traceback
-import textwrap
 
 
 # Context manager for pushd. Example from
@@ -105,11 +104,3 @@ def print_exception(e, trace: bool = False):
   if trace:
     print(f"{formatted_traceback}\n")
   print(f"{RED}{e}{RESET}")
-
-
-def wrap_string(text, max_width=100):
-  # Use the wrap function to split the text into lines of maximum 100 characters
-  wrapped_text = textwrap.wrap(text, width=max_width)
-  # Join the wrapped lines with newline characters to form the final formatted string
-  formatted_string = '\n'.join(wrapped_text)
-  return formatted_string

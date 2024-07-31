@@ -1,7 +1,7 @@
 import os
 import gordion
 import pytest
-from git import BadName
+import git
 from tests.conftest import recursive_git_blast
 
 
@@ -50,7 +50,7 @@ def test_verify_tag(repo_a):
   repo_a._verify_tag('f30a7cbe5592ef4521dad06203d5178e651ecd5b')
 
   # Verify that an ill-formed commit will raise an error.
-  with pytest.raises(BadName):
+  with pytest.raises(git.BadName):
     repo_a._verify_tag("123")
 
 
@@ -233,12 +233,20 @@ def test_detached_head_unsaved_commit(repo_a):
 def test_dont_specify_branch(repo_a):
   """
   Verifies that if you don't specify the branch, it will checkout the commit in detached head
-  state.
+  state (as long as the commit is moving).
   """
+  # If commit does not move, it'll stay on the branch checked out.
   baseline_commit = repo_a.handle.head.commit.hexsha
   repo_a.update(baseline_commit, None)
-  assert repo_a.handle.head.is_detached
+  assert not repo_a.handle.head.is_detached
+  assert repo_a.handle.active_branch.name == "test_single"
   assert repo_a.handle.head.commit.hexsha == baseline_commit
+
+  # If commit moves, it'll checkout in detached HEAD state.
+  develop_tip = repo_a.handle.branches['develop'].commit.hexsha
+  repo_a.update(develop_tip, None)
+  assert repo_a.handle.head.is_detached
+  assert repo_a.handle.head.commit.hexsha == develop_tip
 
 
 def test_update_dirty_repo(repo_a):
