@@ -123,6 +123,57 @@ def test_unsafe_remove_dirty(repo_a):
   assert str(context.value) == str(expected)
 
 
+def test_unsafe_remove_local_branch_no_tracking_branch(repo_a):
+  """
+  Verifies that an error is generated if the update attempts to delete a repository that has local
+  branches without a remote tracking branch.
+  """
+
+  # Checkout a new local branch on repo B.
+  repo_b = repo_a.children['gordion_demo_b']
+  new_branch = repo_b.handle.create_head("new_branch")
+  new_branch.checkout()
+
+  # Remove repo B from Repo A's yaml file.
+  del repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']
+  repo_a.yeditor.save()
+
+  # Verify update errors because we are deleting the repository and the local branch does not have a
+  # tracking branch.
+  with pytest.raises(gordion.UnsafeRemoveLocalBranchNoTrackingBranch) as context:
+    repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+  expected = gordion.UnsafeRemoveLocalBranchNoTrackingBranch(repo_b.path, "new_branch")
+  assert str(context.value) == str(expected)
+
+
+def test_unsafe_remove_local_branch_ahead(repo_a):
+  """
+  Verifies that an error is generated if the update attempts to delete a repository that has local
+  branches that are ahead of their remote tracking branches.
+  """
+
+  # Remove repo B from Repo A's yaml file.
+  del repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']
+  repo_a.yeditor.save()
+
+  # Now checkout a branch on Repo B that has a remote tracking branch.
+  repo_b = repo_a.children['gordion_demo_b']
+  repo_b.handle.git.checkout('-b', 'test_unsafe_remove_local_branch_unsaved',
+                             'origin/test_unsafe_remove_local_branch_unsaved')
+  repo_b.handle.git.commit('-m', "Empty commit for test_unsafe_remove_local_branch_unsaved",
+                           allow_empty=True)
+
+  # Verify update errors because we are deleting the repository and the local branch has an unsaved
+  # commit.
+  with pytest.raises(gordion.UnsafeRemoveLocalBranchAhead) as context:
+    repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+  expected = gordion.UnsafeRemoveLocalBranchAhead(repo_b.path,
+                                                  "test_unsafe_remove_local_branch_unsaved",
+                                                  "origin/test_unsafe_remove_local_branch_unsaved",
+                                                  1)
+  assert str(context.value) == str(expected)
+
+
 def test_name_path_mismatch(repo_a):
   """
   Verifies that an error is generated if the optional path property does not match the repository
