@@ -30,6 +30,7 @@ def git_clean(path):
     repo = git.Repo(path)
     repo.git.reset('--hard')
     repo.git.clean('-fdx')
+    repo.git.stash('clear')
 
 
 def git_delete_non_develop_branches(path):

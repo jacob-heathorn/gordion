@@ -10,6 +10,6 @@ from .exception import UpdateDuplicateRepoTagError, UnsafeRemoveDirty
 from .exception import NotAGordionRepositoryError, DanglingGordionRepositoryError
 from .exception import BadRepositoryNamePathMismach, UpdateDifferentRepoSamePathError
 from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
-from .exception import UnsafeRemoveLocalBranchNoTrackingBranch
+from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes
 from .yeditor import YamlEditor
 from .app.root import gordion_root

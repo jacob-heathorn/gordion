@@ -174,6 +174,31 @@ def test_unsafe_remove_local_branch_ahead(repo_a):
   assert str(context.value) == str(expected)
 
 
+def test_unsafe_remove_stashes(repo_a):
+  """
+  Verifies that an error is generated if the update attempts to delete a repository that has
+  stashes.
+  """
+
+  # Remove repo B from Repo A's yaml file.
+  del repo_a.yeditor.yaml_data['repositories']['gordion_demo_b']
+  repo_a.yeditor.save()
+
+  # Create a stash on repo B.
+  repo_b = repo_a.children['gordion_demo_b']
+  file_path = os.path.join(repo_b.path, 'README.md')
+  with open(file_path, 'w') as file:
+    file.write('test_unsafe_remove_stashes wrote this.\n')
+  repo_b.handle.git.stash("save")
+
+  # Verify update errors because we are deleting the repository while it has stashes.
+  stashes = repo_b.handle.git.stash("list")
+  with pytest.raises(gordion.UnsafeRemoveStashes) as context:
+    repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+  expected = gordion.UnsafeRemoveStashes(repo_b.path, stashes)
+  assert str(context.value) == str(expected)
+
+
 def test_name_path_mismatch(repo_a):
   """
   Verifies that an error is generated if the optional path property does not match the repository

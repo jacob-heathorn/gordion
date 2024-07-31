@@ -221,7 +221,10 @@ class Repository:
       else:
         raise gordion.UnsafeRemoveLocalBranchNoTrackingBranch(path, local_branch.name)
 
-    # TODO do not delete if stashes exist.
+    # Error if the repository has stashes that will be lost by the deletion.
+    stashes = repo.git.stash('list')
+    if stashes:
+      raise gordion.UnsafeRemoveStashes(path, stashes)
 
     # If we reach here, it's safe to delete the repository
     print(f"Deleting directory: {path}")
