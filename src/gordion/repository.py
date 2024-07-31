@@ -204,12 +204,22 @@ class Repository:
       if not force:
         raise gordion.UnsafeRemoveDirty(path)
 
-    # Check if any branch has commits ahead of the corresponding remote branch.
-    for branch in repo.branches:
-      # TODO warn if any branches have commits ahead, then do not delete.
-      # Check if branch has correct tracking branch, then verify commits not ahead.
-      # _verify_local_commits_not_ahead
-      pass
+    # Check if any information would be lost from local branches if we delete this repository.
+    for local_branch in repo.branches:
+      # If there is a tracking branch, ensure the local branch is not ahead of it.
+      tracking_branch = local_branch.tracking_branch()
+      if tracking_branch:
+        merge_base = repo.merge_base(local_branch, tracking_branch)
+        commits_ahead = list(repo.iter_commits(
+            f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
+
+        if commits_ahead:
+          raise gordion.UnsafeRemoveLocalBranchAhead(path, local_branch.name,
+                                                     tracking_branch.name, len(commits_ahead))
+
+      # There is no tracking branch, so error.
+      else:
+        raise gordion.UnsafeRemoveLocalBranchNoTrackingBranch(path, local_branch.name)
 
     # TODO do not delete if stashes exist.
 

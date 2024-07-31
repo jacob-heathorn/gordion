@@ -73,6 +73,24 @@ class UnsafeRemoveDirty(Exception):
     super().__init__(self.message)
 
 
+class UnsafeRemoveLocalBranchAhead(Exception):
+  def __init__(self, path, local_branch, tracking_branch, num_commits_ahead):
+    self.message = (
+      f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that is "
+      f"{num_commits_ahead} commit(s) ahead of tracking branch<{tracking_branch}>."
+    )
+    super().__init__(self.message)
+
+
+class UnsafeRemoveLocalBranchNoTrackingBranch(Exception):
+  def __init__(self, path, local_branch):
+    self.message = (
+      f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that does "
+      f"not have a tracking branch."
+    )
+    super().__init__(self.message)
+
+
 class NotAGordionRepositoryError(Exception):
   def __init__(self):
     self.message = (
