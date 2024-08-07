@@ -48,12 +48,6 @@ class Folder:
     print(*self.get_symbol_row(), sep='', end='')
     print(self.name)
 
-    # for 
-    # if self.parent:
-    #   print(f"{self.get_symbol_row()}{self.name}")
-    # else:
-    #   print(f"{self.name}")
-
     for child in self.children:
       child.print()
 
@@ -98,14 +92,16 @@ def print_path_tree(paths):
 
 
 def aggregate_repositories_map(root):
-  repos = {root.path: root}
+
+  repos = {os.path.basename(root.path): root}
 
   # TODO if gordion repo found, don't look at subfolders. In case they have a goridon/ folder too.
   for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
     for dirname in dirnames:
       full_dirpath = os.path.join(dirpath, dirname)
       if gordion.Repository._exists(full_dirpath):
-        repos[full_dirpath] = gordion.Repository(full_dirpath)
+        relative_path = os.path.relpath(full_dirpath, os.path.dirname(root.path))
+        repos[relative_path] = gordion.Repository(full_dirpath)
 
   return repos
 
