@@ -34,11 +34,11 @@ class Folder:
       current_folder = self.parent
       while current_folder:
         if current_folder.parent:
-          parent_child_type = self.parent.get_child_type(self.name)
+          parent_child_type = current_folder.parent.get_child_type(current_folder.name)
           if parent_child_type == "last":
-            symbols.insert(0, "│   ")
-          else:
             symbols.insert(0, "    ")
+          else:
+            symbols.insert(0, "│   ")
 
         current_folder = current_folder.parent
 
