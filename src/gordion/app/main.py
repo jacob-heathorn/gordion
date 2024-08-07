@@ -63,16 +63,32 @@ class Folder:
           return "middle"
 
 
-def print_path_tree(paths):
-  root_folder_name = paths[0].split(os.sep)[0]
-  root = Folder(root_folder_name)
+def aggregate_repositories_map(root):
+  repos = [root]
 
-  for path in paths:
-    parts = path.split(os.sep)
+  # TODO if gordion repo found, don't look at subfolders. In case they have a goridon/ folder too.
+  for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
+    for dirname in dirnames:
+      # print(f"{dirpath}, {dirname}")
+      full_dirpath = os.path.join(dirpath, dirname)
+      if gordion.Repository._exists(full_dirpath):
+        repos.append(gordion.Repository(full_dirpath))
+        continue
 
-    current_folder = root
+  return repos
+
+
+def print_path_tree(root):
+  repos = aggregate_repositories_map(root)
+  root_folder = Folder(root.name)
+
+  for repo in repos:
+    relpath = os.path.relpath(repo.path, os.path.dirname(root.path))
+    parts = relpath.split(os.sep)
+
+    current_folder = root_folder
     for part in parts:
-      if current_folder == part:
+      if current_folder.name == part:
         continue
       else:
         found_child = False
@@ -88,32 +104,11 @@ def print_path_tree(paths):
           current_folder.children.append(new_child)
           current_folder = new_child
 
-  root.print()
-
-
-def aggregate_repositories_map(root):
-
-  repos = {os.path.basename(root.path): root}
-
-  # TODO if gordion repo found, don't look at subfolders. In case they have a goridon/ folder too.
-  for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
-    for dirname in dirnames:
-      full_dirpath = os.path.join(dirpath, dirname)
-      if gordion.Repository._exists(full_dirpath):
-        relative_path = os.path.relpath(full_dirpath, os.path.dirname(root.path))
-        repos[relative_path] = gordion.Repository(full_dirpath)
-
-  return repos
+  root_folder.print()
 
 
 def print_status(root):
-  repos = aggregate_repositories_map(root)
-  paths = []
-  for key in sorted(repos.keys()):
-    paths.append(key)
-    # print(f"{key}: {repos[key]}")
-
-  print_path_tree(paths)
+  print_path_tree(root)
 
 
 def main(argv=None):
@@ -147,7 +142,7 @@ def main(argv=None):
         # # print("└──")
 
   except Exception as e:
-    gordion.utils.print_exception(e)
+    gordion.utils.print_exception(e=e, trace=True)
 
 
 if __name__ == "__main__":
