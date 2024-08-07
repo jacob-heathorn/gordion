@@ -66,14 +66,15 @@ class Folder:
 def aggregate_repositories_map(root):
   repos = [root]
 
-  # TODO if gordion repo found, don't look at subfolders. In case they have a goridon/ folder too.
   for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
-    for dirname in dirnames:
-      # print(f"{dirpath}, {dirname}")
+    # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+    for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
       full_dirpath = os.path.join(dirpath, dirname)
+
       if gordion.Repository._exists(full_dirpath):
         repos.append(gordion.Repository(full_dirpath))
-        continue
+        # Remove the current directory's name from dirnames so os.walk will skip its subdirectories
+        dirnames.remove(dirname)
 
   return repos
 
