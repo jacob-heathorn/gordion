@@ -63,7 +63,7 @@ class Folder:
           return "middle"
 
 
-def aggregate_repositories_map(root):
+def list_repositories(root):
   repos = [root]
 
   for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
@@ -76,11 +76,11 @@ def aggregate_repositories_map(root):
         # Remove the current directory's name from dirnames so os.walk will skip its subdirectories
         dirnames.remove(dirname)
 
-  return repos
+  return sorted(repos, key=lambda repo: repo.name)
 
 
 def print_path_tree(root):
-  repos = aggregate_repositories_map(root)
+  repos = list_repositories(root)
   root_folder = Folder(root.name)
 
   for repo in repos:
