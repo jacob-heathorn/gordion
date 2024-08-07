@@ -15,6 +15,7 @@ class Folder:
     self.name = name
     self.children = []
     self.parent = []
+    self.header = []
 
   def top(self):
     if self.parent:
@@ -46,7 +47,10 @@ class Folder:
 
   def print(self):
     print(*self.get_symbol_row(), sep='', end='')
-    print(self.name)
+    if self.header:
+      print(f"{self.name} {self.header}")
+    else:
+      print(self.name)
 
     for child in self.children:
       child.print()
@@ -82,13 +86,14 @@ def list_repositories(root):
 def print_path_tree(root):
   repos = list_repositories(root)
   root_folder = Folder(root.name)
+  root_folder.header = root.handle.head.commit.hexsha
 
   for repo in repos:
     relpath = os.path.relpath(repo.path, os.path.dirname(root.path))
     parts = relpath.split(os.sep)
 
     current_folder = root_folder
-    for part in parts:
+    for index, part in enumerate(parts):
       if current_folder.name == part:
         continue
       else:
@@ -101,6 +106,8 @@ def print_path_tree(root):
 
         if not found_child:
           new_child = Folder(part)
+          if index == len(parts) - 1:
+            new_child.header = repo.handle.head.commit.hexsha
           new_child.parent = current_folder
           current_folder.children.append(new_child)
           current_folder = new_child
@@ -137,10 +144,6 @@ def main(argv=None):
       with gordion.utils.pushd(root_path):
         root = gordion.Repository(root_path)
         print_status(root)
-        # repository_paths = list_repository_paths(root)
-        # for repository_path in repository_paths:
-        #   print(repository_path)
-        # # print("└──")
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)
