@@ -25,7 +25,7 @@ def repo_a(repo_a_session):
   """
 
   # Set the object to a known commit on the test_single branch.
-  tag = '26968db5866b41339b9811c809818f44055c8153'
+  tag = 'a415fa52649601f17fccf6d17616281213b117b8'
   branch_name = 'test_single'
 
   # Set the target branch/commit
@@ -47,7 +47,7 @@ def test_verify_tag(repo_a):
   repo_a._verify_tag(repo_a.handle.head.commit.parents[0].hexsha)
 
   # Verify a tag that only exists on a different remote branch (test_single_1) in fact exists.
-  repo_a._verify_tag('f30a7cbe5592ef4521dad06203d5178e651ecd5b')
+  repo_a._verify_tag('05090461f38c8b725d89bf30a31c716383778b48')
 
   # Verify that an ill-formed commit will raise an error.
   with pytest.raises(git.BadName):
@@ -82,7 +82,7 @@ def test_does_local_branch_have_commit(repo_a):
       repo_a.handle, 'test_single_1', head_commit)
 
   # Verfiy commit on remote but not on local returns false.
-  future_commit = repo_a._verify_tag('a415fa52649601f17fccf6d17616281213b117b8')
+  future_commit = repo_a._verify_tag('04518b39225d45f69fc9a2f9f5c0dba1fe6a6227')
   assert not gordion.Repository._does_local_branch_have_commit(
       repo_a.handle, 'test_single', future_commit)
 
@@ -113,8 +113,9 @@ def test_update_nonactive_local_branch_commits_ahead(repo_a):
   repo_a.handle.branches['test_single'].checkout()
 
   # Verify update error. User needs to save the commits, or force the update.
+  # NOTE: the commit needs to move, so checkout HEAD~1
   with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
-    repo_a.update(repo_a.handle.head.commit.hexsha, "test_single_1")
+    repo_a.update(repo_a.handle.commit('HEAD~1').hexsha, "test_single_1")
   expected = gordion.UpdateLocalBranchAheadError(repo_a, 'test_single_1', 'origin/test_single_1', 1)
   assert str(context.value) == str(expected)
 
@@ -146,7 +147,7 @@ def test_does_remote_branch_have_commit(repo_a):
   """
 
   # Verify a commit is on remote branch but not local.
-  commit = repo_a._verify_tag('a415fa52649601f17fccf6d17616281213b117b8')
+  commit = repo_a._verify_tag('04518b39225d45f69fc9a2f9f5c0dba1fe6a6227')
   assert not gordion.Repository._does_local_branch_have_commit(repo_a.handle, 'test_single', commit)
   assert gordion.Repository._does_remote_branch_have_commit(repo_a.handle, 'test_single', commit)
 
@@ -166,10 +167,10 @@ def test_update_remote_branch_only(repo_a):
   Verifies that update will create a new local branch to track the remote branch if it does not
   exist yet AND the remote branch has the target commit.
   """
-  baseline_commit = repo_a.handle.head.commit.hexsha
-  repo_a.update(baseline_commit, "test_single_1")
+  new_commit = repo_a.handle.commit('HEAD~1').hexsha
+  repo_a.update(new_commit, "test_single_1")
   assert repo_a.handle.head.reference.name == "test_single_1"
-  assert repo_a.handle.head.commit.hexsha == baseline_commit
+  assert repo_a.handle.head.commit.hexsha == new_commit
 
 
 def test_update_local_fastforward(repo_a):
@@ -204,7 +205,7 @@ def test_branch_does_not_have_commit_but_commit_exists(repo_a):
   """
 
   # Choose a tag that exists on 'test_single_1' but not on test_single.
-  tag = 'f30a7cbe5592ef4521dad06203d5178e651ecd5b'
+  tag = '05090461f38c8b725d89bf30a31c716383778b48'
   repo_a.update(tag, "test_single")
   assert repo_a.handle.head.is_detached
   assert repo_a.handle.head.commit.hexsha == tag
