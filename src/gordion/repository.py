@@ -4,7 +4,6 @@ import git
 import gordion
 from typing import List
 import shutil
-import traceback
 
 
 class Repository:
@@ -456,7 +455,6 @@ class Repository:
     Fetches only once for the lifetime of this Repository object.
     """
     if not self.fetched:
-      print("fetch once")
       # NOTE: The `--prune` option deletes local remote-tracking branches that no longer have
       # corresponding branches on the remote repository. When a child repository deletes a remote
       # branch (e.g. a PR is merged), we want the parent repository to see that deletion. Assuming
