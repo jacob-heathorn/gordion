@@ -4,6 +4,7 @@ import git
 import gordion
 from typing import List
 import shutil
+import traceback
 
 
 class Repository:
@@ -94,6 +95,23 @@ class Repository:
     root = self._root()
     self._check_duplicate_repo_tag(tag, root)
 
+    # If the commit does not change, we are done. Allow user to manually checkout a HEAD or
+    # different branch name and still satisfy the update.
+    if self.handle.head.commit.hexsha != commit.hexsha:
+      self._update_moving_commit(commit, branch_name, force)
+
+    self.yeditor.reload()
+    self._update_children(branch_name, force)
+
+    # Cleanup detached repositories.
+    if self is root:
+      self._clean_detached_repos(force)
+
+  def _update_moving_commit(self, commit: git.Commit, branch_name: str,
+                            force: bool = False) -> None:
+    """
+    The internal version of the update() method. Called only if the commit moves.
+    """
     # Verify that we don't have an unsaved HEAD that would be lost by the update.
     if self.handle.head.is_detached:
       self._verify_head_wont_be_lost(commit)
@@ -105,18 +123,16 @@ class Repository:
 
     # Check if a branch HAS NOT been specified.
     if not branch_name:
-      # If we are already on this commit, then we are done. Don't add extra checks and don't
-      # checkout in detached HEAD state.
-      if self.handle.head.commit.hexsha != commit.hexsha:
-        # Checkout the target commit in a detached HEAD state as long as it is not dangling.
-        self._check_dangling_commit(commit)
-        self.handle.git.checkout(commit)
+      # Checkout the target commit in a detached HEAD state as long as it is not dangling.
+      self._check_dangling_commit(commit)
+      self.handle.git.checkout(commit)
 
     # A branch HAS been specified
     else:
       # Check if a local branch by the target name has the target commit.
       if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
         local_branch = self.handle.branches[branch_name]
+
         # Check if target commit is HEAD of local branch.
         if commit.hexsha == local_branch.commit.hexsha:
           local_branch.checkout()
@@ -140,8 +156,9 @@ class Repository:
           local_branch.checkout()
           self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
-      # Tag is not on a local branch
+      # Tag is not on the specified local branch.
       else:
+
         self.fetch_once()
 
         # Check if a remote branch by the target name has the target commit.
@@ -173,19 +190,9 @@ class Repository:
         # We could not find the commit on a local or remote branch by the designated name, so just
         # checkout the commit in a detached head state.
         else:
-          # If we are already on this commit, then we are done. Don't add extra checks and don't
-          # checkout in detached HEAD state.
-          if self.handle.head.commit.hexsha != commit.hexsha:
-            # Checkout the target commit in a detached HEAD state as long as it is not dangling.
-            self._check_dangling_commit(commit)
-            self.handle.git.checkout(commit)
-
-    self.yeditor.reload()
-    self._update_children(branch_name, force)
-
-    # Cleanup detached repositories.
-    if self is root:
-      self._clean_detached_repos(force)
+          # Checkout the target commit in a detached HEAD state as long as it is not dangling.
+          self._check_dangling_commit(commit)
+          self.handle.git.checkout(commit)
 
   def _list_child_repository_paths(self) -> List[str]:
     paths = []
@@ -449,6 +456,7 @@ class Repository:
     Fetches only once for the lifetime of this Repository object.
     """
     if not self.fetched:
+      print("fetch once")
       # NOTE: The `--prune` option deletes local remote-tracking branches that no longer have
       # corresponding branches on the remote repository. When a child repository deletes a remote
       # branch (e.g. a PR is merged), we want the parent repository to see that deletion. Assuming
