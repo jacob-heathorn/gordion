@@ -86,7 +86,7 @@ def list_repositories(root):
 def print_path_tree(root):
   repos = list_repositories(root)
   root_folder = Folder(root.name)
-  root_folder.header = root.handle.head.commit.hexsha
+  root_folder.header = f"{root.handle.active_branch}:{root.handle.head.commit.hexsha}"
 
   for repo in repos:
     relpath = os.path.relpath(repo.path, os.path.dirname(root.path))
@@ -107,7 +107,7 @@ def print_path_tree(root):
         if not found_child:
           new_child = Folder(part)
           if index == len(parts) - 1:
-            new_child.header = repo.handle.head.commit.hexsha
+            new_child.header = f"{repo.handle.active_branch}:{repo.handle.head.commit.hexsha}"
           new_child.parent = current_folder
           current_folder.children.append(new_child)
           current_folder = new_child
