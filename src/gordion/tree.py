@@ -11,15 +11,11 @@ class Tree(gordion.Repository):
 
   """
 
-  def __init__(self, path: str, parent=None) -> None:
-    super().__init__(path)
+  def __init__(self, path: str, url: str = '', parent=None) -> None:
+    super().__init__(path, url)
     self.parent: Tree = parent
     self.children: dict[str, Tree] = {}
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
-
-    # TODO reconsider this happening here.
-    if gordion.Repository._exists(self.path):
-      self.ensure()
 
   def _root(self):
     """
@@ -42,27 +38,6 @@ class Tree(gordion.Repository):
       listed_path = f"{self._relpath()} (root)"
 
     return listed_path
-
-  def ensure(self, url: str = ''):
-    # Derive url if necessary.
-    if not url:
-      assert gordion.Repository._exists(self.path)
-      self.handle = git.Repo(self.path)
-      self.url = self.handle.remotes.origin.url
-    else:
-      self.url = url
-      if gordion.Repository._exists(self.path):
-        if self.url != self.handle.remotes.origin.url:
-          self._check_different_repo_same_path(self._root())
-          gordion.Tree._safe_remove_repo(self.path)
-
-    # Check for different repositories cloned to the same path.
-    self._check_different_repo_same_path(self._root())
-
-    # Check for a duplicates repository cloned at different paths.
-    self._check_duplicate_repo_path(self._root())
-    super().ensure(url)
-    self.yeditor.reload()
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     # TODO make it become commit inside repo, check for duplicate tag while it's only a string here.
@@ -159,8 +134,16 @@ class Tree(gordion.Repository):
         # Create child repository objects
         gpath = self.yeditor.read_repository_gpath(child_name)
         child_path = os.path.join(root.path, 'gordion', gpath)
-        child = Tree(child_path, self)
-        child.ensure(child_info['url'])
+
+        # TODO these go here
+        # _check_different_repo_same_path
+        # _check_duplicate_repo_path
+        #
+        # if url != repo.remotes.origin.url:
+        #   self._check_different_repo_same_path(self._root())
+        #   gordion.Tree._safe_remove_repo(self.path)
+
+        child = Tree(child_path, child_info['url'], self)
         child.update(child_info['tag'], branch_name, force)
         self.children[child_name] = child
 

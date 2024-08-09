@@ -11,17 +11,33 @@ class Repository:
 
   """
 
-  def __init__(self, path: str) -> None:
+  def __init__(self, path: str, url: str = '') -> None:
     self.path = path
     self.name = os.path.basename(self.path)
-    self.url = ''
+    self.url = Repository._derive_url(path, url)
     self.fetched = False
+    self.handle: git.Repo = []
+    self._ensure()
+
+  @staticmethod
+  def _derive_url(path: str, url: str):
+    # Derive url if necessary.
+    if not url:
+      assert gordion.Repository._exists(path)
+      repo = git.Repo(path)
+      url = repo.remotes.origin.url
+    else:
+      if gordion.Repository._exists(path):
+        repo = git.Repo(path)
+        assert url == repo.remotes.origin.url
+
+    return url
 
   @abstractmethod
   def _relpath(self):
       pass
 
-  def ensure(self, url: str):
+  def _ensure(self):
     """
     Clones the repository if necessary and creates the underlying git repository handle.
     """
