@@ -2,6 +2,7 @@ import os
 import subprocess
 import git
 import gordion
+from abc import abstractmethod
 
 
 class Repository:
@@ -16,30 +17,14 @@ class Repository:
     self.url = ''
     self.fetched = False
 
-  def ensure(self, url: str = ''):
+  @abstractmethod
+  def _relpath(self):
+      pass
+
+  def ensure(self, url: str):
     """
     Clones the repository if necessary and creates the underlying git repository handle.
     """
-
-    # Derive url if necessary.
-    if not url:
-      assert Repository._exists(self.path)
-      self.handle = git.Repo(self.path)
-      self.url = self.handle.remotes.origin.url
-    else:
-      self.url = url
-      if Repository._exists(self.path):
-        if self.url != self.handle.remotes.origin.url:
-          pass
-          # TODO save these
-          # self._check_different_repo_same_path(self._root())
-          # gordion.Repository._safe_remove_repo(self.path)
-
-    # Check for different repositories cloned to the same path.
-    # self._check_different_repo_same_path(self._root())
-
-    # Check for a duplicates repository cloned at different paths.
-    # self._check_duplicate_repo_path(self._root())
 
     # Clone if necessary. At this point the mirror should exist regardless of whether the repository
     # exists. so ensure it first.
@@ -164,40 +149,6 @@ class Repository:
 
     if dangling_commit:
       raise gordion.DanglingCommitError(self, commit.hexsha)
-
-  def _check_different_repo_same_path(self, other):
-    """
-    Recursively checks the repository path against another repository and it's children.
-    """
-    host, username, repo_name = gordion.extract_repo_details(self.url)
-    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
-
-    # Check if the remote repository is the same
-    if host != other_host or username != other_username or repo_name != other_repo_name:
-      # Make sure the repository does not have the same local path.
-      if self.path == other.path:
-        raise gordion.UpdateDifferentRepoSamePathError(self, other)
-
-    # Check against the other's children
-    for _, other_child in other.children.items():
-      Repository._check_different_repo_same_path(self, other_child)
-
-  def _check_duplicate_repo_path(self, other):
-    """
-    Recursively checks the repository path against another repository and it's children.
-    """
-    host, username, repo_name = gordion.extract_repo_details(self.url)
-    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
-
-    # Check if the remote repository is the same
-    if host == other_host and username == other_username and repo_name == other_repo_name:
-      # Make sure the repository has the same local path.
-      if self.path != other.path:
-        raise gordion.UpdateDuplicateRepoPathError(self, other)
-
-    # Check against the other's children
-    for _, other_child in other.children.items():
-      Repository._check_duplicate_repo_path(self, other_child)
 
   def _check_duplicate_repo_tag(self, target_tag, other):
     """
