@@ -1,5 +1,6 @@
 # flake8: noqa: F401
 from .repository import Repository
+from .tree import Tree
 from .cache import Cache
 from .utils import extract_repo_details, is_related_path, find_ancestor_dir
 from .utils import print_exception

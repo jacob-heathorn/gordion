@@ -16,7 +16,7 @@ def get_repository_root(cwd: str):
 
 def is_gordion_repository(path: str) -> bool:
   if gordion.Repository._exists(path):
-    repo = gordion.Repository(path)
+    repo = gordion.Tree(path)
     if repo.yeditor.exists():
       return True
 
@@ -70,7 +70,7 @@ def gordion_root():
         # The parent git repository is gordion.
         else:
           # Check that the parent gordion.yaml file lists the current repo.
-          parent = gordion.Repository(parent_root)
+          parent = gordion.Tree(parent_root)
           assert parent.yeditor.exists()
           repo_root_relative = os.path.relpath(current_repo_path, parent_gordion_path)
           for name, _ in parent.yeditor.yaml_data['repositories'].items():
