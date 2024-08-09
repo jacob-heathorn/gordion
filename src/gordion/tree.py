@@ -134,49 +134,78 @@ class Tree(gordion.Repository):
         # Create child repository objects
         gpath = self.yeditor.read_repository_gpath(child_name)
         child_path = os.path.join(root.path, 'gordion', gpath)
+        child_url = child_info['url']
 
-        # TODO these go here
-        # _check_different_repo_same_path
-        # _check_duplicate_repo_path
-        #
-        # if url != repo.remotes.origin.url:
-        #   self._check_different_repo_same_path(self._root())
-        #   gordion.Tree._safe_remove_repo(self.path)
+        # Check the repository path before creating it.
+        Tree._check_different_repo_same_path(child_path, child_url, root)
+        Tree._check_same_repo_different_path(child_path, child_url, root)
+
+        # If a repository with the wrong URL already exists at the child path, remove it. We have
+        # already checked that a different repository is not listed at the same path, so if one
+        # does, then it's dangling anyway (not listed in yaml yet).
+        if gordion.Repository._exists(child_path):
+          child_repo = git.Repo(child_path)
+          if child_url != child_repo.remotes.origin.url:
+            gordion.Tree._safe_remove_repo(self.path)
 
         child = Tree(child_path, child_info['url'], self)
         child.update(child_info['tag'], branch_name, force)
         self.children[child_name] = child
 
-  def _check_different_repo_same_path(self, other):
+  @staticmethod
+  def _check_different_repo_same_path(target_path, target_url, other):
     """
     Recursively checks the repository path against another repository and it's children.
     """
-    host, username, repo_name = gordion.extract_repo_details(self.url)
+    host, username, repo_name = gordion.extract_repo_details(target_url)
     other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
 
     # Check if the remote repository is the same
     if host != other_host or username != other_username or repo_name != other_repo_name:
       # Make sure the repository does not have the same local path.
-      if self.path == other.path:
-        raise gordion.UpdateDifferentRepoSamePathError(self, other)
+      if target_path == other.path:
+        raise gordion.UpdateDifferentRepoSamePathError(target_path, target_url, other.path,
+                                                       other.url)
 
     # Check against the other's children
     for _, other_child in other.children.items():
-      Tree._check_different_repo_same_path(self, other_child)
+      Tree._check_different_repo_same_path(target_path, target_url, other_child)
 
-  def _check_duplicate_repo_path(self, other):
+  @staticmethod
+  def _check_same_repo_different_path(target_path, target_url, other):
     """
     Recursively checks the repository path against another repository and it's children.
     """
-    host, username, repo_name = gordion.extract_repo_details(self.url)
+    host, username, repo_name = gordion.extract_repo_details(target_url)
     other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
 
     # Check if the remote repository is the same
     if host == other_host and username == other_username and repo_name == other_repo_name:
       # Make sure the repository has the same local path.
-      if self.path != other.path:
-        raise gordion.UpdateDuplicateRepoPathError(self, other)
+      if target_path != other.path:
+        raise gordion.UpdateSameRepoDifferentPathError(target_path, other.path, other.url)
 
     # Check against the other's children
     for _, other_child in other.children.items():
-      Tree._check_duplicate_repo_path(self, other_child)
+      Tree._check_same_repo_different_path(target_path, target_url, other_child)
+
+  def _check_duplicate_repo_tag(self, target_tag, other):
+    """
+    Recursively checks the repository tag against another repository and it's children.
+    """
+
+    if self is not other:
+      host, username, repo_name = gordion.extract_repo_details(self.url)
+      other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
+
+      # Check if the remote repository is the same
+      if host == other_host and username == other_username and repo_name == other_repo_name:
+        # Make sure the repository has the same tag.
+        if target_tag != other.handle.head.commit.hexsha:
+          raise gordion.UpdateSameRepoDifferentTagError(self.path, self._listed_path(),
+                                                        target_tag, other._listed_path(),
+                                                        other.handle.head.commit.hexsha)
+
+    # Check against the other's children
+    for _, other_child in other.children.items():
+      Tree._check_duplicate_repo_tag(self, target_tag, other_child)

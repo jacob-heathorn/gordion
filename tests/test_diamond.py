@@ -1,7 +1,7 @@
 import os
 import gordion
 import pytest
-from tests.conftest import recursive_git_blast, MockRepository
+from tests.conftest import recursive_git_blast
 
 
 @pytest.fixture
@@ -27,14 +27,14 @@ def repo_a(repo_a_session):
   repo_a_session.update(tag, branch_name, force=True)
 
 
-def test_tag_mismatch(repo_a):
+def test_same_repo_different_tag(repo_a):
   """
   Verifies update will error if two of the same repository reference have different tags.
   """
 
   # Add a commit to repository D.
   repo_d = repo_a.children['gordion_demo_b'].children['gordion_demo_d']
-  repo_d.handle.git.commit('-m', "Empty commit for test_tag_mismatch", allow_empty=True)
+  repo_d.handle.git.commit('-m', "Empty commit for test_same_repo_different_tag", allow_empty=True)
 
   # Make B point to D's new commit but not C.
   repo_b = repo_a.children['gordion_demo_b']
@@ -52,16 +52,17 @@ def test_tag_mismatch(repo_a):
   c_ref_d_tag = repo_a.children['gordion_demo_c'].yeditor.read_repository_tag('gordion_demo_d')
 
   # Now update, it should raise error, tag mismatch.
-  with pytest.raises(gordion.UpdateDuplicateRepoTagError) as context:
+  with pytest.raises(gordion.UpdateSameRepoDifferentTagError) as context:
     repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
 
   # Verify the exception.
-  expected = gordion.UpdateDuplicateRepoTagError(c_ref_d, c_ref_d_tag,
-                                                 b_ref_d, b_ref_d_tag)
+  expected = gordion.UpdateSameRepoDifferentTagError(c_ref_d.path, c_ref_d._listed_path(),
+                                                     c_ref_d_tag, b_ref_d._listed_path(),
+                                                     b_ref_d_tag)
   assert str(context.value) == str(expected)
 
 
-def test_duplicate_repo_path_mismatch(repo_a):
+def test_same_repo_different_path(repo_a):
   """
   Verifies update will error if the same repository is attempted to be cloned at different paths.
   """
@@ -69,10 +70,28 @@ def test_duplicate_repo_path_mismatch(repo_a):
   repo_b = repo_a.children['gordion_demo_b']
   repo_c = repo_a.children['gordion_demo_c']
 
-  with pytest.raises(gordion.UpdateDuplicateRepoPathError) as context:
+  with pytest.raises(gordion.UpdateSameRepoDifferentPathError) as context:
     repo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
 
-  expected = gordion.UpdateDuplicateRepoPathError(repo_c, repo_b)
+  expected = gordion.UpdateSameRepoDifferentPathError(repo_c.path, repo_b.path, repo_b.url)
+  assert str(context.value) == str(expected)
+
+
+def test_different_repo_same_path(repo_a):
+  """
+  Verifies that an error is generated if a different repository is attempted to be cloned to the
+  same gordion path.
+  """
+
+  with pytest.raises(gordion.UpdateDifferentRepoSamePathError) as context:
+    repo_a.update('92d294df03a6bbf7ef43b60a0255adca08671328', "test_different_repo_same_path")
+
+  repo_b = repo_a.children['gordion_demo_b']
+
+  target_path = os.path.join(repo_a.path, 'gordion', 'gordion_demo_b')
+  target_url = 'https://github.com/jacob-heathorn/gordion_demo_d.git'
+  expected = gordion.UpdateDifferentRepoSamePathError(target_path, target_url, repo_b.path,
+                                                      repo_b.url)
   assert str(context.value) == str(expected)
 
 
@@ -214,28 +233,6 @@ def test_name_path_mismatch(repo_a):
   assert str(context.value) == str(expected)
 
 
-def test_different_repo_same_path(repo_a):
-  """
-  Verifies that an error is generated if a different repository is attempted to be cloned to the
-  same gordion path.
-  """
-
-  with pytest.raises(gordion.UpdateDifferentRepoSamePathError) as context:
-    repo_a.update('92d294df03a6bbf7ef43b60a0255adca08671328', "test_different_repo_same_path")
-
-  repo_b = repo_a.children['gordion_demo_b']
-
-  # Create a new mock repository B with the same path so that we can test the error. We cannot
-  # create the real repository object because it errors, hence this testcase.
-  mock_target_repo_b = MockRepository(
-    url='https://github.com/jacob-heathorn/gordion_demo_d.git',
-    path=os.path.join(repo_a.path, 'gordion', 'gordion_demo_b'),
-    listed_path='gordion_demo_a/gordion/gordion_demo_c lists gordion_demo_b')
-
-  expected = gordion.UpdateDifferentRepoSamePathError(mock_target_repo_b, repo_b)
-  assert str(context.value) == str(expected)
-
-
 def test_dangling_commit(repo_a):
   """
   Verifies update will error if a child target commit is dangling.
@@ -258,5 +255,5 @@ def test_dangling_commit(repo_a):
   with pytest.raises(gordion.DanglingCommitError) as context:
     repo_a.update(repo_a.handle.head.commit.hexsha, "develop")
 
-  expected = gordion.DanglingCommitError(repo_b, empty_commit.hexsha)
+  expected = gordion.DanglingCommitError(repo_b.path, empty_commit.hexsha)
   assert str(context.value) == str(expected)

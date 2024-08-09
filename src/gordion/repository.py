@@ -77,7 +77,7 @@ class Repository:
     # Verify we don't have uncommitted chages that could be lost by the update.
     if self.handle.is_dirty(untracked_files=True):
       if commit.hexsha != self.handle.head.commit.hexsha:
-        raise gordion.UpdateRepoIsDirtyError(self)
+        raise gordion.UpdateRepoIsDirtyError(self.path)
 
     # Check if a branch HAS NOT been specified.
     if not branch_name:
@@ -164,27 +164,7 @@ class Repository:
           dangling_commit = False
 
     if dangling_commit:
-      raise gordion.DanglingCommitError(self, commit.hexsha)
-
-  def _check_duplicate_repo_tag(self, target_tag, other):
-    """
-    Recursively checks the repository tag against another repository and it's children.
-    """
-
-    if self is not other:
-      host, username, repo_name = gordion.extract_repo_details(self.url)
-      other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
-
-      # Check if the remote repository is the same
-      if host == other_host and username == other_username and repo_name == other_repo_name:
-        # Make sure the repository has the same tag.
-        if target_tag != other.handle.head.commit.hexsha:
-          raise gordion.UpdateDuplicateRepoTagError(
-              self, target_tag, other, other.handle.head.commit.hexsha)
-
-    # Check against the other's children
-    for _, other_child in other.children.items():
-      Repository._check_duplicate_repo_tag(self, target_tag, other_child)
+      raise gordion.DanglingCommitError(self.path, commit.hexsha)
 
   def _verify_head_wont_be_lost(self, commit):
     """
@@ -204,7 +184,7 @@ class Repository:
                            head_commit.hexsha in [commit.hexsha for commit in
                                                   branch.commit.iter_parents()]]
         if not remote_branches:
-          raise gordion.UpdateDetachedHeadNotSavedError(self)
+          raise gordion.UpdateDetachedHeadNotSavedError(self.path)
 
   def _verify_local_commits_not_ahead(self, local_branch, remote_branch):
     merge_base = self.handle.merge_base(local_branch, remote_branch)
@@ -212,18 +192,19 @@ class Repository:
     commits_ahead = list(self.handle.iter_commits(
         f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
     if commits_ahead:
-      raise gordion.UpdateLocalBranchAheadError(
-          self, local_branch.name, remote_branch.name, len(commits_ahead))
+      raise gordion.UpdateLocalBranchAheadError(self.path, local_branch.name,
+                                                remote_branch.name, len(commits_ahead))
 
   def _verify_local_branch_has_correct_tracking_branch(self, local_branch):
     if local_branch.tracking_branch():
       remote_branch = local_branch.tracking_branch()
       if remote_branch.name != f"origin/{local_branch.name}":
-        raise gordion.UpdateWrongTrackingBranchError(self, local_branch.name, remote_branch.name)
+        raise gordion.UpdateWrongTrackingBranchError(self.path, local_branch.name,
+                                                     remote_branch.name)
       else:
         return remote_branch
     else:
-      raise gordion.UpdateNoTrackingBranchError(self, local_branch.name)
+      raise gordion.UpdateNoTrackingBranchError(self.path, local_branch.name)
 
   @staticmethod
   def _does_remote_branch_have_commit(repo: git.Repo, branch_name: str,
