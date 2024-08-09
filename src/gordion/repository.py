@@ -53,12 +53,13 @@ class Repository:
     # Reload objects.
     self.handle = git.Repo(self.path)
 
-  def update(self, commit: git.Commit, branch_name: str, force: bool = False) -> None:
+  def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
     Updates the repository to the specified commit and optional branch, as long as information will
     not be lost in the process, otherwise it will raise descriptive errors about what to do next.
 
     """
+    commit: git.Commit = self._verify_tag(tag)
 
     # If the commit does not change, we are done. Allow user to manually checkout a HEAD or
     # different branch name and still satisfy the update.

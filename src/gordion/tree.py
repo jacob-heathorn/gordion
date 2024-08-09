@@ -40,14 +40,11 @@ class Tree(gordion.Repository):
     return listed_path
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
-    # TODO make it become commit inside repo, check for duplicate tag while it's only a string here.
-    commit: git.Commit = self._verify_tag(tag)
-
     # Check for duplicate tag
     root = self._root()
     self._check_duplicate_repo_tag(tag, root)
 
-    super().update(commit, branch_name, force)
+    super().update(tag, branch_name, force)
 
     self.yeditor.reload()
     self._update_children(branch_name, force)
