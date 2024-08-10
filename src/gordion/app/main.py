@@ -151,38 +151,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
-
-
-# def print_path_tree(paths):
-#     def print_part(part, indent, is_last):
-#       """ Helper function to print a line with appropriate prefix """
-#       # Choose the right prefix based on whether the item is the last in the section
-#       prefix = '└── ' if is_last else '├── '
-#       # Print with indentation and prefix
-#       print('    ' * indent + prefix + part)
-
-#     # Store depth and last index seen at each depth
-#     last_indices = {}
-
-#     previous_parts = []
-
-#     for path in paths:
-#       parts = path.split(os.sep)
-#       max_depth = len(parts) - 1
-
-#       # Update last indices for all seen parts
-#       for depth, part in enumerate(parts):
-#         last_indices[depth] = parts[depth:]
-
-#       common_prefix_length = len(os.path.commonprefix([previous_parts if previous_parts else [], parts]))
-
-#       # Determine the range of new parts to print
-#       new_parts_range = range(common_prefix_length, len(parts))
-
-#       # Print each new part of the path
-#       for i in new_parts_range:
-#           # Determine if this is the last part to print for this depth
-#           is_last = i == max_depth or parts[i] != last_indices[i][0]
-#           print_part(parts[i], i, is_last)
-
-#       previous_parts = parts
