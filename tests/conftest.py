@@ -18,9 +18,8 @@ def repo_a_session():
   path = os.path.join(REPOS_DIR, 'gordion_demo_a')
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
-  # Create the repo object and ensure it.
-  repo = gordion.Repository(path)
-  repo.ensure(url)
+  # Create the gordion repository Tree object.
+  repo = gordion.Tree(path, url)
 
   yield repo
 
@@ -55,14 +54,3 @@ def recursive_git_blast(path):
       if gordion.Repository._exists(dir):
         git_clean(dir)
         git_delete_non_develop_branches(dir)
-
-
-class MockRepository:
-  def __init__(self, url: str, path: str, listed_path: str) -> None:
-    self.url = url
-    self.path = path
-    self.name = os.path.basename(self.path)
-    self.listed_path = listed_path
-
-  def _listed_path(self):
-    return self.listed_path

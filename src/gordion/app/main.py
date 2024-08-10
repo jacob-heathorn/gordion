@@ -130,7 +130,7 @@ def main(argv=None):
     if args.update:
       root_path = gordion.app.root.gordion_root()
       with gordion.utils.pushd(root_path):
-        root = gordion.Repository(root_path)
+        root = gordion.Tree(root_path)
         branch = None
         if not root.handle.head.is_detached:
           branch = root.handle.active_branch.name

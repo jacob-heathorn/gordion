@@ -1,68 +1,80 @@
+import os
+
+
 class UpdateError(Exception):
-  def __init__(self, target, reason, suggestion):
-    self.message = (f"Cannot update repository<{target.name}>.\n"
-                    f"listed path: <{target._listed_path()}>\n"
-                    f"system path: <{target.path}>\n"
+  def __init__(self, target_path, reason, suggestion):
+    self.message = (f"Cannot update repository<{os.path.basename(target_path)}>.\n"
+                    f"path<{target_path}>\n"
                     f"{reason}. {suggestion}.")
     super().__init__(self.message)
 
 
 class UpdateLocalBranchAheadError(UpdateError):
-  def __init__(self, target, local_branch, remote_branch, num_commits):
+  def __init__(self, target_path, local_branch, remote_branch, num_commits):
     reason = (f"{local_branch} is {num_commits} commit(s) ahead of {remote_branch}. "
               f"Update would lose one or more of these commit(s)")
     suggestion = "Push or remove the commits please"
-    super().__init__(target, reason, suggestion)
+    super().__init__(target_path, reason, suggestion)
 
 
 class UpdateNoTrackingBranchError(UpdateError):
-  def __init__(self, target, local_branch):
+  def __init__(self, target_path, local_branch):
     reason = f"{local_branch} does not have a tracking branch, so commits will be lost"
     suggestion = f"Create a remote tracking branch (git push -u origin {local_branch})"
-    super().__init__(target, reason, suggestion)
+    super().__init__(target_path, reason, suggestion)
 
 
 class UpdateWrongTrackingBranchError(UpdateError):
-  def __init__(self, target, local_branch, remote_branch):
+  def __init__(self, target_path, local_branch, remote_branch):
     reason = (f"{local_branch} does not track origin/{local_branch}. Instead, it tracks "
               f"{remote_branch}. This is unexpected and can cause problems")
     suggestion = f"fix it: git push -u origin {local_branch}. Maybe delete incorrect remote branch?"
-    super().__init__(target, reason, suggestion)
+    super().__init__(target_path, reason, suggestion)
 
 
 class UpdateDetachedHeadNotSavedError(UpdateError):
-  def __init__(self, target):
-    reason = (f"The repository<{target.name}> is in a detached HEAD state. This is fine except "
-              f"the HEAD is a commit that is not saved in a local or remote branch. This "
-              f"indicates that you have made local commits while in the detached HEAD state, "
-              f"which is fine but we want to make sure you save those changes")
+  def __init__(self, target_path):
+    reason = (f"The repository<{os.path.basename(target_path)}> is in a detached HEAD state. "
+              f"This is fine except the HEAD is a commit that is not saved in a local or remote "
+              f"branch. This indicates that you have made local commits while in the detached "
+              f"HEAD state, which is fine but we want to make sure you save those changes")
     suggestion = "Checkout a new local branch to save the current head state"
-    super().__init__(target, reason, suggestion)
+    super().__init__(target_path, reason, suggestion)
 
 
 class UpdateRepoIsDirtyError(UpdateError):
-  def __init__(self, target):
+  def __init__(self, target_path):
     reason = ("The repository is dirty and you are trying to move the HEAD commit")
     suggestion = "Save or restore the uncommitted changes"
-    super().__init__(target, reason, suggestion)
+    super().__init__(target_path, reason, suggestion)
 
 
-class UpdateDuplicateRepoPathError(UpdateError):
-  def __init__(self, target, other):
-    reason = (f"The repository({other.url}) is already cloned at {other.path}. You are trying to "
-              f"clone it again to {target.path}. You cannot do this")
+class UpdateDifferentRepoSamePathError(UpdateError):
+  def __init__(self, target_path, target_url, other_path, other_url):
+    reason = (f"The repository<{other_url}> is already cloned<{other_path}>."
+              f" You are trying to clone <{target_url}> to the same path."
+              " You cannot do this")
+    suggestion = "You need to make sure repositories have unique paths in the gordion.yaml files"
+    super().__init__(target_path, reason, suggestion)
+
+
+class UpdateSameRepoDifferentPathError(UpdateError):
+  def __init__(self, target_path, other_path, other_url):
+    reason = (f"The repository({other_url}) is already cloned at {other_path}. You are trying to "
+              f"clone it again to {target_path}. You cannot do this")
     suggestion = ("You need to make sure all listings of the same repository have the same "
                   "local path in the gordion.yaml file")
-    super().__init__(target, reason, suggestion)
+    super().__init__(target_path, reason, suggestion)
 
 
-class UpdateDuplicateRepoTagError(UpdateError):
-  def __init__(self, target, target_tag, other, other_tag):
+class UpdateSameRepoDifferentTagError(UpdateError):
+  def __init__(self, target_path, target_listed_path, target_tag, other_listed_path,
+               other_tag):
     reason = (f"Gordion repository tag mismatch!\n"
-              f"{target._listed_path()}:{target_tag}\n"
-              f"{other._listed_path()}:{other_tag}\n")
+              f"{target_listed_path}:{target_tag}\n"
+              f"{other_listed_path}:{other_tag}\n")
     suggestion = ("The tags need to match. I guess that's kinda the whole point of this thing")
-    super().__init__(target, reason, suggestion)
+    super().__init__(target_path, reason, suggestion)
 
 
 class UnsafeRemoveDirty(Exception):
@@ -127,17 +139,8 @@ class BadRepositoryNamePathMismach(Exception):
     super().__init__(self.message)
 
 
-class UpdateDifferentRepoSamePathError(UpdateError):
-  def __init__(self, target, other):
-    reason = (f"The repository<{other.url}> is already cloned<{other.path}>."
-              f" You are trying to clone <{target.url}> to the same path."
-              " You cannot do this")
-    suggestion = "You need to make sure repositories have unique paths in the gordion.yaml files"
-    super().__init__(target, reason, suggestion)
-
-
 class DanglingCommitError(UpdateError):
-  def __init__(self, target, target_tag):
+  def __init__(self, target_path, target_tag):
     reason = (f"Commit<{target_tag}> is dangling (does not belong to a branch)")
     suggestion = ("Update the commit tag in the parent gordion.yaml")
-    super().__init__(target, reason, suggestion)
+    super().__init__(target_path, reason, suggestion)

@@ -99,7 +99,8 @@ def test_update_active_branch_commits_ahead(repo_a):
   # Verify update error. User needs to save the commits, or force the update.
   with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
     repo_a.update(baseline_commit, "test_single")
-  expected = gordion.UpdateLocalBranchAheadError(repo_a, 'test_single', 'origin/test_single', 1)
+  expected = gordion.UpdateLocalBranchAheadError(repo_a.path, 'test_single', 'origin/test_single',
+                                                 1)
   assert str(context.value) == str(expected)
 
 
@@ -116,7 +117,8 @@ def test_update_nonactive_local_branch_commits_ahead(repo_a):
   # NOTE: the commit needs to move, so checkout HEAD~1
   with pytest.raises(gordion.UpdateLocalBranchAheadError) as context:
     repo_a.update(repo_a.handle.commit('HEAD~1').hexsha, "test_single_1")
-  expected = gordion.UpdateLocalBranchAheadError(repo_a, 'test_single_1', 'origin/test_single_1', 1)
+  expected = gordion.UpdateLocalBranchAheadError(repo_a.path, 'test_single_1',
+                                                 'origin/test_single_1', 1)
   assert str(context.value) == str(expected)
 
 
@@ -137,7 +139,7 @@ def test_update_local_branch_no_remote(repo_a):
   # Verify update error. User needs to create a tracking branch.
   with pytest.raises(gordion.UpdateNoTrackingBranchError) as context:
     repo_a.update(tag, branch_name)
-  expected = gordion.UpdateNoTrackingBranchError(repo_a, 'test_branch_no_remote')
+  expected = gordion.UpdateNoTrackingBranchError(repo_a.path, 'test_branch_no_remote')
   assert str(context.value) == str(expected)
 
 
@@ -194,7 +196,8 @@ def test_local_branch_wrong_tracking_branch(repo_a):
   repo_a.handle.git.checkout('-b', 'test_single_1', 'origin/test_single')
   with pytest.raises(gordion.UpdateWrongTrackingBranchError) as context:
     repo_a.update(baseline_commit, "test_single_1")
-  expected = gordion.UpdateWrongTrackingBranchError(repo_a, 'test_single_1', 'origin/test_single')
+  expected = gordion.UpdateWrongTrackingBranchError(repo_a.path, 'test_single_1',
+                                                    'origin/test_single')
   assert str(context.value) == str(expected)
 
 
@@ -227,7 +230,7 @@ def test_detached_head_unsaved_commit(repo_a):
   # Now verify that update errors.
   with pytest.raises(gordion.UpdateDetachedHeadNotSavedError) as context:
     repo_a.update(baseline_commit, "test_single")
-  expected = gordion.UpdateDetachedHeadNotSavedError(repo_a)
+  expected = gordion.UpdateDetachedHeadNotSavedError(repo_a.path)
   assert str(context.value) == str(expected)
 
 
@@ -264,7 +267,7 @@ def test_update_dirty_repo(repo_a):
   tag = repo_a.handle.head.commit.parents[0].hexsha
   with pytest.raises(gordion.UpdateRepoIsDirtyError) as context:
     repo_a.update(tag, "test_single")
-  expected = gordion.UpdateRepoIsDirtyError(repo_a)
+  expected = gordion.UpdateRepoIsDirtyError(repo_a.path)
   assert str(context.value) == str(expected)
 
   # If you don't move the HEAD, but change the branch while it's dirty, it's OK actually.

@@ -32,6 +32,9 @@ def pushd(dir, create=False):
 
 
 def extract_repo_details(url):
+  """
+  Returns the host, username, and repository name from Git repository URL.
+  """
   # Handle SSH special case
   if "@" in url and ":" in url:
     # Typical SSH format: user@host:path
@@ -86,7 +89,9 @@ def is_related_path(directory, paths):
 
 
 def find_ancestor_dir(cwd, target_dir_name):
-  """TODO"""
+  """
+  Looks for the directory in the direcotires ancestry.
+  """
   # Loop to move up the directory tree
   while cwd != os.path.dirname(cwd):  # Continue until the root directory is reached
     parent_dir = os.path.dirname(cwd)
@@ -98,6 +103,9 @@ def find_ancestor_dir(cwd, target_dir_name):
 
 
 def print_exception(e, trace: bool = False):
+  """
+  Prints the exception, optionally with a trace.
+  """
   formatted_traceback = ''.join(traceback.format_exception(None, e, e.__traceback__))
   RED = '\033[91m'
   RESET = '\033[0m'
