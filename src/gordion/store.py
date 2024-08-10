@@ -4,18 +4,7 @@ import shutil
 from typing import List
 
 
-# TODO move this to a dedicated singleton.py in utils folder.
-def singleton(cls):
-  instances = {}
-
-  def get_instance(*args, **kwargs):
-    if cls not in instances:
-      instances[cls] = cls(*args, **kwargs)
-    return instances[cls]
-  return get_instance
-
-
-@singleton
+@gordion.utils.singleton
 class Store:
   """
   Singleton class dedicated to managing the gordion/ folder.
