@@ -247,10 +247,10 @@ def test_dont_specify_branch(repo_a):
   assert repo_a.handle.head.commit.hexsha == baseline_commit
 
   # If commit moves, it'll checkout in detached HEAD state.
-  develop_tip = repo_a.handle.branches['develop'].commit.hexsha
-  repo_a.update(develop_tip, None)
+  new_commit = repo_a.handle.commit('HEAD~1').hexsha
+  repo_a.update(new_commit, None)
   assert repo_a.handle.head.is_detached
-  assert repo_a.handle.head.commit.hexsha == develop_tip
+  assert repo_a.handle.head.commit.hexsha == new_commit
 
 
 def test_update_dirty_repo(repo_a):
