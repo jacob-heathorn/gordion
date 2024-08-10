@@ -16,9 +16,7 @@ class Tree(gordion.Repository):
     self.parent: Tree = parent
     self.children: dict[str, Tree] = {}
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
-    store = gordion.Store()
-    assert store.path
-    store.print()
+    assert gordion.Store().path
 
   def _root(self):
     """
@@ -75,46 +73,6 @@ class Tree(gordion.Repository):
       paths.extend(repo._list_child_repository_paths())
     return paths
 
-  @staticmethod
-  def _safe_remove_repo(path, force: bool = False):
-    """
-    Deletes the repository as long as information will not be lost. Generates an error if the
-    repository has unsaved branches/commits or if it has stashes.
-    """
-    assert gordion.Repository._exists(path)
-    repo = git.Repo(path)
-
-    # Check if repository has local changes.
-    if repo.is_dirty(untracked_files=True):
-      if not force:
-        raise gordion.UnsafeRemoveDirty(path)
-
-    # Check if any information would be lost from local branches if we delete this repository.
-    for local_branch in repo.branches:
-      # If there is a tracking branch, ensure the local branch is not ahead of it.
-      tracking_branch = local_branch.tracking_branch()
-      if tracking_branch:
-        merge_base = repo.merge_base(local_branch, tracking_branch)
-        commits_ahead = list(repo.iter_commits(
-            f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
-
-        if commits_ahead:
-          raise gordion.UnsafeRemoveLocalBranchAhead(path, local_branch.name,
-                                                     tracking_branch.name, len(commits_ahead))
-
-      # There is no tracking branch, so error.
-      else:
-        raise gordion.UnsafeRemoveLocalBranchNoTrackingBranch(path, local_branch.name)
-
-    # Error if the repository has stashes that will be lost by the deletion.
-    stashes = repo.git.stash('list')
-    if stashes:
-      raise gordion.UnsafeRemoveStashes(path, stashes)
-
-    # If we reach here, it's safe to delete the repository
-    print(f"Deleting directory: {path}")
-    shutil.rmtree(path)
-
   def _clean_detached_repos(self, force: bool = False):
     """
     Removes repositories that are not listed in the yaml tree.
@@ -130,7 +88,7 @@ class Tree(gordion.Repository):
         if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
                                                                          child_paths)):
           if gordion.Repository._exists(full_dirpath):
-            gordion.Tree._safe_remove_repo(full_dirpath, force)
+            gordion.Store().safe_remove_repo(full_dirpath, force)
 
     # Delete everything else that is not related to the gordion paths.
     for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
@@ -155,7 +113,7 @@ class Tree(gordion.Repository):
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
         # Create child repository objects
         gpath = self.yeditor.read_repository_gpath(child_name)
-        child_path = os.path.join(root.path, 'gordion', gpath)
+        child_path = os.path.join(gordion.Store().path, gpath)
         child_url = child_info['url']
 
         # Check the repository path before creating it.
@@ -168,7 +126,7 @@ class Tree(gordion.Repository):
         if gordion.Repository._exists(child_path):
           child_repo = git.Repo(child_path)
           if child_url != child_repo.remotes.origin.url:
-            gordion.Tree._safe_remove_repo(self.path)
+            gordion.Store().safe_remove_repo(self.path)
 
         child = Tree(child_path, child_info['url'], self)
         child.update(child_info['tag'], branch_name, force)
