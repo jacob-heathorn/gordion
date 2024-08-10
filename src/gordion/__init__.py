@@ -3,7 +3,7 @@ from .repository import Repository
 from .tree import Tree
 from .cache import Cache
 from .utils import extract_repo_details, is_related_path, find_ancestor_dir
-from .utils import print_exception
+from .utils import print_exception, singleton
 from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
 from .exception import UpdateRepoIsDirtyError, UpdateSameRepoDifferentPathError
@@ -14,3 +14,4 @@ from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes
 from .yeditor import YamlEditor
 from .app.root import gordion_root
+from .store import Store
