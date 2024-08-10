@@ -2,6 +2,7 @@
 
 import argparse
 import gordion
+import os
 
 
 def main(argv=None):
@@ -12,7 +13,7 @@ def main(argv=None):
 
   try:
     if args.update:
-      root_path = gordion.app.root.gordion_root()
+      root_path = gordion.app.root.gordion_root(os.getcwd())
       with gordion.utils.pushd(root_path):
         root = gordion.Tree(root_path)
         branch = None
@@ -21,7 +22,7 @@ def main(argv=None):
         root.update(root.handle.head.commit.hexsha, branch)
 
     if args.root:
-      print(f"{gordion.app.root.gordion_root()}")
+      print(f"{gordion.app.root.gordion_root(os.getcwd())}")
 
   except Exception as e:
     gordion.utils.print_exception(e)

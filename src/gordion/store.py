@@ -1,3 +1,6 @@
+import gordion
+
+
 # TODO move this to a dedicated singleton.py in utils folder.
 def singleton(cls):
   instances = {}
@@ -16,7 +19,7 @@ class Store:
   """
 
   def __init__(self, path) -> None:
-
+    # gordion.app.root.gordion_root(path)
     print("init Store here1")
 
   def print(self):
