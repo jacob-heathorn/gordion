@@ -7,8 +7,8 @@ from typing import List
 
 class Tree(gordion.Repository):
   """
-  Adds gordion tree functionality to the repository class.
-
+  Extends a gordion.Repository to add tree functionality. A gordion repository can have children
+  gordion repositories that have children and so on.
   """
 
   def __init__(self, path: str, url: str = '', parent=None) -> None:
@@ -27,9 +27,15 @@ class Tree(gordion.Repository):
       return self
 
   def _relpath(self) -> str:
+    """
+    Returns the path relative to the root repository.
+    """
     return os.path.relpath(self.path, os.path.dirname(self._root().path))
 
   def _listed_path(self) -> str:
+    """
+    Describes the parent path listing of this repository.
+    """
     listed_path = ''
     if self.parent:
       gpath = self.parent.yeditor.read_repository_gpath(self.name)
@@ -40,6 +46,9 @@ class Tree(gordion.Repository):
     return listed_path
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
+    """
+    Updates this repository and it's children.
+    """
     # Check for duplicate tag
     root = self._root()
     self._check_duplicate_repo_tag(tag, root)
@@ -54,6 +63,9 @@ class Tree(gordion.Repository):
       self._clean_detached_repos(force)
 
   def _list_child_repository_paths(self) -> List[str]:
+    """
+    Returns a list of the child repository paths.
+    """
     paths = []
     for _, repo in self.children.items():
       paths.append(repo.path)
@@ -62,6 +74,10 @@ class Tree(gordion.Repository):
 
   @staticmethod
   def _safe_remove_repo(path, force: bool = False):
+    """
+    Deletes the repository as long as information will not be lost. Generates an error if the
+    repository has unsaved branches/commits or if it has stashes.
+    """
     assert gordion.Repository._exists(path)
     repo = git.Repo(path)
 
@@ -97,6 +113,9 @@ class Tree(gordion.Repository):
     shutil.rmtree(path)
 
   def _clean_detached_repos(self, force: bool = False):
+    """
+    Removes repositories that are not listed in the yaml tree.
+    """
     # Get all the paths of all repositories:
     root = self._root()
     child_paths = root._list_child_repository_paths()
@@ -121,6 +140,9 @@ class Tree(gordion.Repository):
           shutil.rmtree(full_dirpath)
 
   def _update_children(self, branch_name: str, force: bool):
+    """
+    Updates the children repository listed in this repositorie's yaml.
+    """
     root = self._root()
     self.children = {}
 

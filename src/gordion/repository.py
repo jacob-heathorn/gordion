@@ -99,7 +99,7 @@ class Repository:
         # Target commit is in local branch history.
         else:
           # Need to fetch for this part of the logic.
-          self.fetch_once()
+          self._fetch_once()
 
           # Make sure the local branch is setup to track the expected remote branch.
           local_branch = self.handle.branches[branch_name]
@@ -118,7 +118,7 @@ class Repository:
       # Tag is not on the specified local branch.
       else:
 
-        self.fetch_once()
+        self._fetch_once()
 
         # Check if a remote branch by the target name has the target commit.
         if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
@@ -180,7 +180,7 @@ class Repository:
       local_branches = [branch for branch in self.handle.branches if head_commit.hexsha in [
           commit.hexsha for commit in branch.commit.iter_parents()]]
       if not local_branches:
-        self.fetch_once()
+        self._fetch_once()
         remote_branches = [branch for branch in self.handle.remotes.origin.refs if
                            head_commit.hexsha in [commit.hexsha for commit in
                                                   branch.commit.iter_parents()]]
@@ -236,7 +236,7 @@ class Repository:
     except ValueError:
       # A value error is thrown if the commit is not found. Let's fetch and then try one more time.
       # Fetch takes time and an internet connection, so I only want to do it if I have to.
-      self.fetch_once()
+      self._fetch_once()
 
       # If this throws a Value error again, then the commit really does not exist. If it throws a
       # BadName error, the tag/commit is ill-formed.
@@ -274,7 +274,7 @@ class Repository:
       # If Repo initialization fails, the path is not a Git repository
       return False
 
-  def fetch_once(self):
+  def _fetch_once(self):
     """
     Fetches only once for the lifetime of this Repository object.
     """
