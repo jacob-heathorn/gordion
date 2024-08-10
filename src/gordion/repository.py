@@ -325,5 +325,5 @@ class Repository:
       raise gordion.UnsafeRemoveStashes(repo_path, stashes)
 
     # If we reach here, it's safe to delete the repository
-    print(f"Deleting directory: {repo_path}")
+    print(f"Deleting repository: {repo_path}")
     shutil.rmtree(repo_path)
