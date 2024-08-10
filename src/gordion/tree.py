@@ -16,7 +16,8 @@ class Tree(gordion.Repository):
     self.parent: Tree = parent
     self.children: dict[str, Tree] = {}
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
-    gordion.Store()
+    store = gordion.Store(path)
+    store.print()
 
   def _root(self):
     """

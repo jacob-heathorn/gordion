@@ -1,4 +1,4 @@
-# TODO can I move this? or import it?
+# TODO move this to a dedicated singleton.py in utils folder.
 def singleton(cls):
   instances = {}
 
@@ -15,5 +15,9 @@ class Store:
   Singleton class dedicated to managing the gordion/ folder.
   """
 
-  def __init__(self) -> None:
+  def __init__(self, path) -> None:
+
     print("init Store here1")
+
+  def print(self):
+    print("here2")
