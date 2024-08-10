@@ -67,24 +67,10 @@ class Folder:
           return "middle"
 
 
-def list_repositories(root):
-  repos = [root]
-
-  for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
-    # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-    for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-      full_dirpath = os.path.join(dirpath, dirname)
-
-      if gordion.Repository._exists(full_dirpath):
-        repos.append(gordion.Repository(full_dirpath))
-        # Remove the current directory's name from dirnames so os.walk will skip its subdirectories
-        dirnames.remove(dirname)
-
-  return sorted(repos, key=lambda repo: repo.name)
-
-
 def print_path_tree(root):
-  repos = list_repositories(root)
+  repos = [root]
+  repos.extend(gordion.Store().list_repos())
+  repos.sort(key=lambda repo: repo.path)
   root_folder = Folder(root.name)
   root_folder.header = f"{root.handle.active_branch}:{root.handle.head.commit.hexsha}"
 
