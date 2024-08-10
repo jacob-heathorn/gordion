@@ -1,4 +1,5 @@
 import gordion
+import os
 
 
 # TODO move this to a dedicated singleton.py in utils folder.
@@ -19,8 +20,8 @@ class Store:
   """
 
   def __init__(self, path) -> None:
-    # gordion.app.root.gordion_root(path)
+    self.gordion_dir = os.path.join(gordion.app.root.gordion_root(path), 'gordion')
     print("init Store here1")
 
   def print(self):
-    print("here2")
+    print(f"gordion dir: {self.gordion_dir}")

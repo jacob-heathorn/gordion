@@ -16,8 +16,8 @@ def get_repository_root(cwd: str):
 
 def is_gordion_repository(path: str) -> bool:
   if gordion.Repository._exists(path):
-    repo = gordion.Tree(path)
-    if repo.yeditor.exists():
+    yeditor = gordion.YamlEditor(os.path.join(path, 'gordion.yaml'))
+    if yeditor.exists():
       return True
 
   return False
@@ -70,15 +70,15 @@ def gordion_root(path):
         # The parent git repository is gordion.
         else:
           # Check that the parent gordion.yaml file lists the current repo.
-          parent = gordion.Tree(parent_root)
-          assert parent.yeditor.exists()
+          parent_yeditor = gordion.YamlEditor(os.path.join(parent_root, 'gordion.yaml'))
+          assert parent_yeditor.exists()
           repo_root_relative = os.path.relpath(current_repo_path, parent_gordion_path)
-          for name, _ in parent.yeditor.yaml_data['repositories'].items():
-            if parent.yeditor.read_repository_gpath(name) == repo_root_relative:
-              return parent.path
+          for name, _ in parent_yeditor.yaml_data['repositories'].items():
+            if parent_yeditor.read_repository_gpath(name) == repo_root_relative:
+              return parent_root
 
           # Could not find a parent entry for the current repository. The current repo might be a
           # repository that used to be managed by the parent gordion repo, but is not anymore. In
           # this case, we generate a unique error to be safely indicate the current repo is
           # dangling.
-          raise gordion.DanglingGordionRepositoryError(current_repo_path, parent.path)
+          raise gordion.DanglingGordionRepositoryError(current_repo_path, parent_root)
