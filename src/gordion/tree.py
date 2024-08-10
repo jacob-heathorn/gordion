@@ -61,7 +61,7 @@ class Tree(gordion.Repository):
         if gordion.Repository._exists(child_path):
           child_repo = git.Repo(child_path)
           if child_url != child_repo.remotes.origin.url:
-            gordion.Store().safe_remove_repo(self.path)
+            gordion.Repository.safe_delete(child_path)
 
         child = Tree(child_path, child_info['url'], self)
         child.update(child_info['tag'], branch_name, force)
