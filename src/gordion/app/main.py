@@ -67,6 +67,16 @@ class Folder:
           return "middle"
 
 
+# TODO here.
+def does_tree_list_repository(root: gordion.Tree, repo: gordion.Repository):
+  # Check root yaml file for this repository
+
+  # For each child in yaml file, create Tree if it is the correct sha. Call this function
+  # recursively.
+
+  pass
+
+
 def print_path_tree(root):
   repos = [root]
   repos.extend(gordion.Store().list_repos())
