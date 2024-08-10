@@ -1,5 +1,3 @@
-TODO
-
 tox -- test/test_repository.py -s --no-cov
 
 # Testing
@@ -12,7 +10,7 @@ Lint and type check: `tox -e lint`
 Run all tox environments: `tox`
 
 # Debugging
-TODO: finish
+NOTE: Not able to get this working recently
 `tox -e unit -- tests/test_repository.py -s --no-cov`
 
 # Install from source
