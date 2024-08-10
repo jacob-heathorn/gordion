@@ -1,4 +1,3 @@
-import gordion
 import os
 
 
@@ -19,9 +18,16 @@ class Store:
   Singleton class dedicated to managing the gordion/ folder.
   """
 
-  def __init__(self, path) -> None:
-    self.gordion_dir = os.path.join(gordion.app.root.gordion_root(path), 'gordion')
-    print("init Store here1")
+  def __init__(self) -> None:
+    self.path = ''
+
+  def setup(self, path):
+    """
+    User must call this function once with a path that this store will place the singleton gordion/
+    folder.
+    """
+    self.path = os.path.join(path, 'gordion')
 
   def print(self):
-    print(f"gordion dir: {self.gordion_dir}")
+    assert self.path
+    print(f"gordion dir: {self.path}")
