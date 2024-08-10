@@ -30,8 +30,8 @@ class Store:
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       for dirname in dirnames:
         full_dirpath = os.path.join(dirpath, dirname)
-        if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
-                                                                         keep_repos)):
+        if (os.path.exists(full_dirpath) and not gordion.utils.is_related_path(full_dirpath,
+                                                                               keep_repos)):
           if gordion.Repository._exists(full_dirpath):
             gordion.Repository.safe_delete(full_dirpath, force)
 
@@ -39,8 +39,8 @@ class Store:
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       for dirname in dirnames:
         full_dirpath = os.path.join(dirpath, dirname)
-        if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
-                                                                         keep_repos)):
+        if (os.path.exists(full_dirpath) and not gordion.utils.is_related_path(full_dirpath,
+                                                                               keep_repos)):
           print(f"Deleting directory: {full_dirpath}")
           assert not gordion.Repository._exists(full_dirpath)  # Removed above.
           shutil.rmtree(full_dirpath)

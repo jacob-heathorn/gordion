@@ -288,7 +288,6 @@ class Repository:
       self.handle.git.fetch('--prune')
       self.fetched = True
 
-  # TODO can share functionality?
   @staticmethod
   def safe_delete(repo_path, force: bool = False):
     """
