@@ -2,6 +2,7 @@ import os
 import gordion
 import git
 import shutil
+from typing import List
 
 
 # TODO move this to a dedicated singleton.py in utils folder.
@@ -24,12 +25,12 @@ class Store:
   def __init__(self) -> None:
     self.path = ''
 
-  def setup(self, path):
+  def setup(self, root_repository_path):
     """
-    User must call this function once with a path that this store will place the singleton gordion/
-    folder.
+    User must call this function once with the root gordion repository path, where we will store the
+    gordion/ folder managed by this class.
     """
-    self.path = os.path.join(path, 'gordion')
+    self.path = os.path.join(root_repository_path, 'gordion')
 
   def print(self):
     assert self.path
@@ -75,3 +76,27 @@ class Store:
     # If we reach here, it's safe to delete the repository
     print(f"Deleting directory: {repo_path}")
     shutil.rmtree(repo_path)
+
+  def trim_repos(self, keep_repos: List[str], force: bool = False):
+    """
+    Removes repositories that are not listed in the keep_repos argument.
+    """
+
+    # Delete git repositories.
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      for dirname in dirnames:
+        full_dirpath = os.path.join(dirpath, dirname)
+        if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
+                                                                         keep_repos)):
+          if gordion.Repository._exists(full_dirpath):
+            gordion.Store().safe_remove_repo(full_dirpath, force)
+
+    # Delete everything else that is not related to the gordion paths.
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      for dirname in dirnames:
+        full_dirpath = os.path.join(dirpath, dirname)
+        if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
+                                                                         keep_repos)):
+          print(f"Deleting directory: {full_dirpath}")
+          assert not gordion.Repository._exists(full_dirpath)  # Removed above.
+          shutil.rmtree(full_dirpath)

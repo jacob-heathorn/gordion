@@ -1,7 +1,6 @@
 import gordion
 import os
 import git
-import shutil
 from typing import List
 
 
@@ -18,34 +17,6 @@ class Tree(gordion.Repository):
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
     assert gordion.Store().path
 
-  def _root(self):
-    """
-    Recursively returns the root repository object.
-    """
-    if self.parent:
-      return self.parent._root()
-    else:
-      return self
-
-  def _relpath(self) -> str:
-    """
-    Returns the path relative to the root repository.
-    """
-    return os.path.relpath(self.path, os.path.dirname(self._root().path))
-
-  def _listed_path(self) -> str:
-    """
-    Describes the parent path listing of this repository.
-    """
-    listed_path = ''
-    if self.parent:
-      gpath = self.parent.yeditor.read_repository_gpath(self.name)
-      listed_path = f"{self.parent._relpath()} lists {gpath}"
-    else:
-      listed_path = f"{self._relpath()} (root)"
-
-    return listed_path
-
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
     Updates this repository and it's children.
@@ -61,44 +32,8 @@ class Tree(gordion.Repository):
 
     # Cleanup detached repositories.
     if self is root:
-      self._clean_detached_repos(force)
-
-  def _list_child_repository_paths(self) -> List[str]:
-    """
-    Returns a list of the child repository paths.
-    """
-    paths = []
-    for _, repo in self.children.items():
-      paths.append(repo.path)
-      paths.extend(repo._list_child_repository_paths())
-    return paths
-
-  def _clean_detached_repos(self, force: bool = False):
-    """
-    Removes repositories that are not listed in the yaml tree.
-    """
-    # Get all the paths of all repositories:
-    root = self._root()
-    child_paths = root._list_child_repository_paths()
-
-    # Delete git repositories.
-    for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
-      for dirname in dirnames:
-        full_dirpath = os.path.join(dirpath, dirname)
-        if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
-                                                                         child_paths)):
-          if gordion.Repository._exists(full_dirpath):
-            gordion.Store().safe_remove_repo(full_dirpath, force)
-
-    # Delete everything else that is not related to the gordion paths.
-    for dirpath, dirnames, _ in os.walk(os.path.join(root.path, 'gordion'), topdown=True):
-      for dirname in dirnames:
-        full_dirpath = os.path.join(dirpath, dirname)
-        if (os.path.exists(full_dirpath) and not gordion.is_related_path(full_dirpath,
-                                                                         child_paths)):
-          print(f"Deleting directory: {full_dirpath}")
-          assert not gordion.Repository._exists(full_dirpath)  # Removed above.
-          shutil.rmtree(full_dirpath)
+      keep_repos = self._list_child_repository_paths()
+      gordion.Store().trim_repos(keep_repos, force)
 
   def _update_children(self, branch_name: str, force: bool):
     """
@@ -131,6 +66,44 @@ class Tree(gordion.Repository):
         child = Tree(child_path, child_info['url'], self)
         child.update(child_info['tag'], branch_name, force)
         self.children[child_name] = child
+
+  def _root(self):
+    """
+    Recursively returns the root repository object.
+    """
+    if self.parent:
+      return self.parent._root()
+    else:
+      return self
+
+  def _relpath(self) -> str:
+    """
+    Returns the path relative to the root repository.
+    """
+    return os.path.relpath(self.path, os.path.dirname(self._root().path))
+
+  def _listed_path(self) -> str:
+    """
+    Describes the parent path listing of this repository.
+    """
+    listed_path = ''
+    if self.parent:
+      gpath = self.parent.yeditor.read_repository_gpath(self.name)
+      listed_path = f"{self.parent._relpath()} lists {gpath}"
+    else:
+      listed_path = f"{self._relpath()} (root)"
+
+    return listed_path
+
+  def _list_child_repository_paths(self) -> List[str]:
+    """
+    Returns a list of the child repository paths.
+    """
+    paths = []
+    for _, repo in self.children.items():
+      paths.append(repo.path)
+      paths.extend(repo._list_child_repository_paths())
+    return paths
 
   @staticmethod
   def _check_different_repo_same_path(target_path, target_url, other):
