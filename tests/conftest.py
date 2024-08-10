@@ -18,7 +18,7 @@ def repo_a_session():
   path = os.path.join(REPOS_DIR, 'gordion_demo_a')
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
-  # Create the repo object and ensure it.
+  # Create the gordion repository Tree object.
   repo = gordion.Tree(path, url)
 
   yield repo
