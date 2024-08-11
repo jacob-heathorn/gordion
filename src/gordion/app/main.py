@@ -28,7 +28,8 @@ def does_tree_list_repository(root: gordion.Tree, repo: gordion.Repository) -> b
         if gordion.Repository._exists(child_path):
           child = gordion.Tree(child_path)
           if child.handle.head.commit.hexsha == child_info['tag']:
-            return does_tree_list_repository(child, repo)
+            if does_tree_list_repository(child, repo):
+              return True
 
   return False
 
