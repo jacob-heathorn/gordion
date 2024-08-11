@@ -5,6 +5,34 @@ import gordion
 import os
 
 
+def does_tree_list_repository(root: gordion.Tree, repo: gordion.Repository) -> bool:
+  """
+  Returns true if any of the tree lists the provided repository, identified by the name, url, and
+  path. Or if any of the children (with correct tags) list the repository.
+  """
+  if repo == root:
+    return True
+
+  root.yeditor.reload()
+  # Check yaml file for this repository
+  if root.yeditor.exists():
+    for child_name, child_info in root.yeditor.yaml_data['repositories'].items():
+      gpath = root.yeditor.read_repository_gpath(child_name)
+      child_path = os.path.join(gordion.Store().path, gpath)
+      # If the child matches the repo by name, path, and url, then it is in the tree.
+      if repo.name == child_name and repo.path == child_path and repo.url == child_info['url']:
+        return True
+
+      # Otherwise check the child's children ONLY if the child is the correct tag.
+      else:
+        if gordion.Repository._exists(child_path):
+          child = gordion.Tree(child_path)
+          if child.handle.head.commit.hexsha == child_info['tag']:
+            return does_tree_list_repository(child, repo)
+
+  return False
+
+
 class Folder:
   """
   TODO
@@ -15,7 +43,7 @@ class Folder:
     self.name = name
     self.children = []
     self.parent = []
-    self.header = []
+    self.repo = []
 
   def top(self):
     if self.parent:
@@ -45,15 +73,23 @@ class Folder:
 
     return symbols
 
-  def print(self):
+  def print(self, root: gordion.Tree):
     print(*self.get_symbol_row(), sep='', end='')
-    if self.header:
-      print(f"{self.name} {self.header}")
-    else:
-      print(self.name)
+    header = self.name
+    if self.repo:
+      if does_tree_list_repository(root, self.repo):
+        # Brighter: 92m
+        header = "\033[32m" + self.name + "\033[0m"
+      else:
+        # Brighter: 91m
+        header = '\033[31m' + self.name + '\033[0m'
+
+      header += f" {self.repo.handle.active_branch}:{self.repo.handle.head.commit.hexsha}"
+
+    print(header)
 
     for child in self.children:
-      child.print()
+      child.print(root)
 
   def get_child_type(self, child_name):
     total_children = len(self.children)
@@ -67,22 +103,12 @@ class Folder:
           return "middle"
 
 
-# TODO here.
-def does_tree_list_repository(root: gordion.Tree, repo: gordion.Repository):
-  # Check root yaml file for this repository
-
-  # For each child in yaml file, create Tree if it is the correct sha. Call this function
-  # recursively.
-
-  pass
-
-
 def print_path_tree(root):
   repos = [root]
   repos.extend(gordion.Store().list_repos())
   repos.sort(key=lambda repo: repo.path)
   root_folder = Folder(root.name)
-  root_folder.header = f"{root.handle.active_branch}:{root.handle.head.commit.hexsha}"
+  root_folder.repo = root
 
   for repo in repos:
     relpath = os.path.relpath(repo.path, os.path.dirname(root.path))
@@ -103,12 +129,12 @@ def print_path_tree(root):
         if not found_child:
           new_child = Folder(part)
           if index == len(parts) - 1:
-            new_child.header = f"{repo.handle.active_branch}:{repo.handle.head.commit.hexsha}"
+            new_child.repo = repo
           new_child.parent = current_folder
           current_folder.children.append(new_child)
           current_folder = new_child
 
-  root_folder.print()
+  root_folder.print(root)
 
 
 def print_status(root):
@@ -146,7 +172,7 @@ def main(argv=None):
     # Print status.
     if args.status:
       with gordion.utils.pushd(root_path):
-        root = gordion.Repository(root_path)
+        root = gordion.Tree(root_path)
         print_status(root)
 
   except Exception as e:
