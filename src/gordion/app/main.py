@@ -115,14 +115,14 @@ class Folder:
         # TODO branch coloring
         header += f" {self.repo.handle.active_branch}:"
         if does_tree_list_repository_with_tag(root, self.repo):
-          header += gordion.utils.bold_green(f"{self.repo.handle.head.commit.hexsha}")
+          header += gordion.utils.green(f"{self.repo.handle.head.commit.hexsha}")
         else:
-          header += gordion.utils.bold_red(f"{self.repo.handle.head.commit.hexsha}")
+          header += gordion.utils.red(f"{self.repo.handle.head.commit.hexsha}")
       else:
         header = gordion.utils.bold_red(self.name)
         # TODO branch coloring
         header += f" {self.repo.handle.active_branch}:"
-        header += gordion.utils.bold_red(f"{self.repo.handle.head.commit.hexsha}")
+        header += gordion.utils.red(f"{self.repo.handle.head.commit.hexsha}")
 
     print(header)
 

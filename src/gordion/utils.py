@@ -127,8 +127,16 @@ def singleton(cls):
   return get_instance
 
 
+def red(str):
+  return '\033[31m' + str + '\033[0m'
+
+
 def bold_red(str):
   return '\033[1;31m' + str + '\033[0m'
+
+
+def green(str):
+  return "\033[32m" + str + "\033[0m"
 
 
 def bold_green(str):
