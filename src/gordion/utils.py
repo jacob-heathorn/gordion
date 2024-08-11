@@ -125,3 +125,15 @@ def singleton(cls):
       instances[cls] = cls(*args, **kwargs)
     return instances[cls]
   return get_instance
+
+
+def bold_red(str):
+  return '\033[1;31m' + str + '\033[0m'
+
+
+def bold_green(str):
+  return "\033[1;32m" + str + "\033[0m"
+
+
+def bold_blue(str):
+  return "\033[1;34m" + str + "\033[0m"

@@ -34,6 +34,37 @@ def does_tree_list_repository(root: gordion.Tree, repo: gordion.Repository) -> b
   return False
 
 
+# TODO duiplicate code
+def does_tree_list_repository_with_tag(root: gordion.Tree, repo: gordion.Repository) -> bool:
+  """
+  Returns true if any of the tree lists the provided repository, identified by the name, url,
+  path, and tag. Or if any of the children (with correct tags) list the repository.
+  """
+  if repo == root:
+    return True
+
+  root.yeditor.reload()
+  # Check yaml file for this repository
+  if root.yeditor.exists():
+    for child_name, child_info in root.yeditor.yaml_data['repositories'].items():
+      gpath = root.yeditor.read_repository_gpath(child_name)
+      child_path = os.path.join(gordion.Store().path, gpath)
+      # If the child matches the repo by name, path, and url, and tag then return true.
+      if (repo.name == child_name and repo.path == child_path and  # noqa: W504
+          repo.url == child_info['url'] and repo.handle.head.commit.hexsha == child_info['tag']):
+        return True
+
+      # Otherwise check the child's children ONLY if the child is the correct tag.
+      else:
+        if gordion.Repository._exists(child_path):
+          child = gordion.Tree(child_path)
+          if child.handle.head.commit.hexsha == child_info['tag']:
+            if does_tree_list_repository(child, repo):
+              return True
+
+  return False
+
+
 class Folder:
   """
   TODO
@@ -77,16 +108,21 @@ class Folder:
   def print(self, root: gordion.Tree):
     print(*self.get_symbol_row(), sep='', end='')
     # TODO make utility funcitons. Print bold blue, green, red.
-    header = "\033[1;34m" + self.name + "\033[0m"
+    header = gordion.utils.bold_blue(self.name)
     if self.repo:
       if does_tree_list_repository(root, self.repo):
-        # Brighter: 92m
-        header = "\033[1;32m" + self.name + "\033[0m"
+        header = gordion.utils.bold_green(self.name)
+        # TODO branch coloring
+        header += f" {self.repo.handle.active_branch}:"
+        if does_tree_list_repository_with_tag(root, self.repo):
+          header += gordion.utils.bold_green(f"{self.repo.handle.head.commit.hexsha}")
+        else:
+          header += gordion.utils.bold_red(f"{self.repo.handle.head.commit.hexsha}")
       else:
-        # Brighter: 91m
-        header = '\033[1;31m' + self.name + '\033[0m'
-
-      header += f" {self.repo.handle.active_branch}:{self.repo.handle.head.commit.hexsha}"
+        header = gordion.utils.bold_red(self.name)
+        # TODO branch coloring
+        header += f" {self.repo.handle.active_branch}:"
+        header += gordion.utils.bold_red(f"{self.repo.handle.head.commit.hexsha}")
 
     print(header)
 
@@ -178,7 +214,7 @@ def main(argv=None):
         print_status(root)
 
   except Exception as e:
-    gordion.utils.print_exception(e=e)
+    gordion.utils.print_exception(e=e, trace=True)
 
 
 if __name__ == "__main__":
