@@ -75,14 +75,15 @@ class Folder:
 
   def print(self, root: gordion.Tree):
     print(*self.get_symbol_row(), sep='', end='')
-    header = self.name
+    # TODO make utility funcitons. Print bold blue, green, red.
+    header = "\033[1;34m" + self.name + "\033[0m"
     if self.repo:
       if does_tree_list_repository(root, self.repo):
         # Brighter: 92m
-        header = "\033[32m" + self.name + "\033[0m"
+        header = "\033[1;32m" + self.name + "\033[0m"
       else:
         # Brighter: 91m
-        header = '\033[31m' + self.name + '\033[0m'
+        header = '\033[1;31m' + self.name + '\033[0m'
 
       header += f" {self.repo.handle.active_branch}:{self.repo.handle.head.commit.hexsha}"
 
