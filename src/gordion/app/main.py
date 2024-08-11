@@ -178,7 +178,7 @@ def main(argv=None):
         print_status(root)
 
   except Exception as e:
-    gordion.utils.print_exception(e=e, trace=True)
+    gordion.utils.print_exception(e=e)
 
 
 if __name__ == "__main__":
