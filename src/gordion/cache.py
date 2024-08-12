@@ -2,8 +2,9 @@ import os
 import gordion
 import subprocess
 import shutil
+import git
 
-CACHE_DIR = os.path.join(os.environ['HOME'], '.gordion')
+CACHE_DIR = os.path.join(os.environ['HOME'], '.local', 'share', 'gordion')
 
 
 class Cache:
@@ -20,9 +21,9 @@ class Cache:
     shutil.rmtree(CACHE_DIR)
     os.makedirs(CACHE_DIR)
 
-  def ensure_mirror(self, url: str) -> str:
+  def ensure_mirror(self, url: str) -> tuple[str, str]:
     """
-    Clones a mirror if it does not already exist
+    Clones a mirror if it does not already exist. Returns the path and default branch name.
 
     """
 
@@ -34,4 +35,8 @@ class Cache:
       args = ['git', 'clone', '--mirror', url, local_path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
 
-    return local_path
+    # Get the default branch
+    mirror = git.Repo(local_path)
+    default_branch_name = mirror.active_branch.name
+
+    return local_path, default_branch_name

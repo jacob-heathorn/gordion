@@ -39,4 +39,9 @@ class TestCache(unittest.TestCase):
   def test_mirror(self):
     cache = gordion.Cache()
     cache.clean()
-    cache.ensure_mirror('https://github.com/jacob-heathorn/gordion_demo_a.git')
+    path, default_branch = cache.ensure_mirror(
+      'https://github.com/jacob-heathorn/gordion_demo_a.git')
+    self.assertEqual(path, os.path.join(os.environ['HOME'], '.local', 'share', 'gordion',
+                                        'mirrors', 'github.com', 'jacob-heathorn',
+                                        'gordion_demo_a'))
+    self.assertEqual(default_branch, 'develop')
