@@ -21,7 +21,7 @@ class Cache:
     shutil.rmtree(CACHE_DIR)
     os.makedirs(CACHE_DIR)
 
-  def ensure_mirror(self, url: str) -> str:
+  def ensure_mirror(self, url: str) -> tuple[str, str]:
     """
     Clones a mirror if it does not already exist. Returns the path and default branch name.
 

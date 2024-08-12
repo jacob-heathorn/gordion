@@ -92,30 +92,7 @@ class Repository:
     else:
       # Check if a local branch by the target name has the target commit.
       if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
-        local_branch = self.handle.branches[branch_name]
-
-        # Check if target commit is HEAD of local branch.
-        if commit.hexsha == local_branch.commit.hexsha:
-          local_branch.checkout()
-
-        # Target commit is in local branch history.
-        else:
-          # Need to fetch for this part of the logic.
-          self._fetch_once()
-
-          # Make sure the local branch is setup to track the expected remote branch.
-          local_branch = self.handle.branches[branch_name]
-          tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
-
-          # Make sure the local branch is not ahead of tracking branch, since we're moving the
-          # local HEAD, information would be lost.
-          if not force:
-            self._verify_local_commits_not_ahead(local_branch, tracking_branch)
-
-          # Good to go move the local branch HEAD to the target commit.
-          print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
-          local_branch.checkout()
-          self.handle.head.reset(commit=commit, index=True, working_tree=True)
+        self._checkout_local_branch_commit(branch_name, commit, force)
 
       # Tag is not on the specified local branch.
       else:
@@ -154,6 +131,32 @@ class Repository:
           # Checkout the target commit in a detached HEAD state as long as it is not dangling.
           self._check_dangling_commit(commit)
           self.handle.git.checkout(commit)
+
+  def _checkout_local_branch_commit(self, branch_name: str, commit: git.Commit, force: bool):
+    local_branch = self.handle.branches[branch_name]
+
+    # Check if target commit is HEAD of local branch.
+    if commit == local_branch.commit:
+      local_branch.checkout()
+
+    # Target commit is in local branch history.
+    else:
+      # Need to fetch for this part of the logic.
+      self._fetch_once()
+
+      # Make sure the local branch is setup to track the expected remote branch.
+      local_branch = self.handle.branches[branch_name]
+      tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
+
+      # Make sure the local branch is not ahead of tracking branch, since we're moving the
+      # local HEAD, information would be lost.
+      if not force:
+        self._verify_local_commits_not_ahead(local_branch, tracking_branch)
+
+      # Good to go move the local branch HEAD to the target commit.
+      print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
+      local_branch.checkout()
+      self.handle.head.reset(commit=commit, index=True, working_tree=True)
 
   def _check_dangling_commit(self, commit):
     """
