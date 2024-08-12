@@ -1,3 +1,6 @@
+# Tests for the gordion.Repository interface. That means we are dealing with a single repository,
+# which does not recursively manage children.
+
 import os
 import gordion
 import pytest

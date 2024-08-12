@@ -1,3 +1,14 @@
+# Tests the gordion.Tree interface. A Tree has a gordion.yaml file and recursively manages children.
+# In particular, we are interested in testing the behavior of the "diamond" situation:
+#
+# Repository A lists Repository B and C. B and C both list D.
+#
+#   A
+#  / \
+# B   C
+#  \ /
+#   D
+
 import os
 import gordion
 import pytest

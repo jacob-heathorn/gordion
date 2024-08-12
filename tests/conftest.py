@@ -1,7 +1,6 @@
 import os
 import gordion
 import pytest
-import git
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
@@ -46,21 +45,21 @@ def repository_a():
 
 
 def git_clean(path):
-  if os.path.exists(path):
-    repo = git.Repo(path)
-    repo.git.reset('--hard')
-    repo.git.clean('-fdx')
-    repo.git.stash('clear')
+  if gordion.Repository._exists(path):
+    repo = gordion.Repository(path)
+    repo.handle.git.reset('--hard')
+    repo.handle.git.clean('-fdx')
+    repo.handle.git.stash('clear')
 
 
 def git_delete_non_develop_branches(path):
-  if os.path.exists(path):
-    repo = git.Repo(path)
-    repo.branches['develop'].checkout()
-    branches = list(repo.branches)
+  if gordion.Repository._exists(path):
+    repo = gordion.Repository(path)
+    repo.handle.branches['develop'].checkout()
+    branches = list(repo.handle.branches)
     for branch in branches:
       if branch.name != 'develop':
-        repo.delete_head(branch, force=True)
+        repo.handle.delete_head(branch, force=True)
 
 
 def recursive_git_blast(path):
