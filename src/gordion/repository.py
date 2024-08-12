@@ -90,25 +90,31 @@ class Repository:
 
     # A branch HAS been specified
     else:
-      # Check if a local branch by the target name has the target commit.
-      if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
-        self._checkout_local_branch_commit(branch_name, commit, force)
-
-      # Tag is not on the specified local branch.
-      else:
-
-        self._fetch_once()
-
-        # Check if a remote branch by the target name has the target commit.
-        if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
-          self._checkout_remote_branch_commit(branch_name, commit, force)
-
+      if not self._try_checkout_branch_commit(branch_name, commit, force):
         # We could not find the commit on a local or remote branch by the designated name, so just
-        # checkout the commit in a detached head state.
-        else:
-          # Checkout the target commit in a detached HEAD state as long as it is not dangling.
-          self._check_dangling_commit(commit)
-          self.handle.git.checkout(commit)
+        # checkout the commit in a detached head state. Checkout the target commit in a detached
+        # HEAD state as long as it is not dangling.
+        self._check_dangling_commit(commit)
+        self.handle.git.checkout(commit)
+
+  def _try_checkout_branch_commit(self, branch_name: str, commit: git.Commit, force: bool) -> bool:
+    # Check if a local branch by the target name has the target commit.
+    if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
+      self._checkout_local_branch_commit(branch_name, commit, force)
+      # TODO make the function return
+      return True
+
+    # Tag is not on the specified local branch.
+    else:
+
+      self._fetch_once()
+
+      # Check if a remote branch by the target name has the target commit.
+      if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
+        self._checkout_remote_branch_commit(branch_name, commit, force)
+        return True
+
+      return False
 
   def _checkout_local_branch_commit(self, branch_name: str, commit: git.Commit, force: bool):
     local_branch = self.handle.branches[branch_name]
