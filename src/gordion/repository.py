@@ -16,6 +16,7 @@ class Repository:
     self.path = path
     self.name = os.path.basename(self.path)
     self.url = Repository._derive_url(path, url)
+    self.default_branch_name = ''
     self.fetched = False
     self.handle: git.Repo = []
     self._ensure()
@@ -46,7 +47,7 @@ class Repository:
     # Clone if necessary. At this point the mirror should exist regardless of whether the repository
     # exists. so ensure it first.
     cache = gordion.Cache()
-    mirror_path = cache.ensure_mirror(self.url)
+    mirror_path, self.default_branch_name = cache.ensure_mirror(self.url)
     if not Repository._exists(self.path):
       args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
@@ -65,12 +66,11 @@ class Repository:
     # If the commit does not change, we are done. Allow user to manually checkout a HEAD or
     # different branch name and still satisfy the update.
     if self.handle.head.commit.hexsha != commit.hexsha:
-      self._update_moving_commit(commit, branch_name, force)
+      self._checkout(commit, branch_name, force)
 
-  def _update_moving_commit(self, commit: git.Commit, branch_name: str,
-                            force: bool = False) -> None:
+  def _checkout(self, commit: git.Commit, branch_name: str, force: bool = False) -> None:
     """
-    The internal version of the update() method. Called only if the commit moves.
+    Checks out the specified commit and optional branch.
     """
     # Verify that we don't have an unsaved HEAD that would be lost by the update.
     if self.handle.head.is_detached:
@@ -83,76 +83,109 @@ class Repository:
 
     # Check if a branch HAS NOT been specified.
     if not branch_name:
-      # Checkout the target commit in a detached HEAD state as long as it is not dangling.
-      self._check_dangling_commit(commit)
-      self.handle.git.checkout(commit)
+      # Try the default branch.
+      if not self._try_checkout(self.default_branch_name, commit, force):
+        # Checkout the target commit in a detached HEAD state as long as it is not dangling.
+        self._check_dangling_commit(commit)
+        self.handle.git.checkout(commit)
 
-    # A branch HAS been specified
+    # A branch HAS been specified.
     else:
-      # Check if a local branch by the target name has the target commit.
-      if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
-        local_branch = self.handle.branches[branch_name]
-
-        # Check if target commit is HEAD of local branch.
-        if commit.hexsha == local_branch.commit.hexsha:
-          local_branch.checkout()
-
-        # Target commit is in local branch history.
-        else:
-          # Need to fetch for this part of the logic.
-          self._fetch_once()
-
-          # Make sure the local branch is setup to track the expected remote branch.
-          local_branch = self.handle.branches[branch_name]
-          tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
-
-          # Make sure the local branch is not ahead of tracking branch, since we're moving the
-          # local HEAD, information would be lost.
-          if not force:
-            self._verify_local_commits_not_ahead(local_branch, tracking_branch)
-
-          # Good to go move the local branch HEAD to the target commit.
-          print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
-          local_branch.checkout()
-          self.handle.head.reset(commit=commit, index=True, working_tree=True)
-
-      # Tag is not on the specified local branch.
-      else:
-
-        self._fetch_once()
-
-        # Check if a remote branch by the target name has the target commit.
-        if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
-
-          # Check if there is a local branch to match the remote branch.
-          local_branches = [branch.name for branch in self.handle.branches]
-
-          if branch_name in local_branches:
-            # Make sure the local branch is setup to track the expected remote branch.
-            local_branch = self.handle.branches[branch_name]
-            tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
-
-            # Make sure the local branch is not ahead of tracking branch, since we're moving the
-            # local HEAD, information would be lost.
-            if not force:
-              self._verify_local_commits_not_ahead(local_branch, tracking_branch)
-
-            # Good to go move the local branch HEAD to the target commit.
-            print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
-            local_branch.checkout()
-            self.handle.head.reset(commit=commit, index=True, working_tree=True)
-
-          # There is no local branch yet, create it, and reset it to the target commit.
-          else:
-            self.handle.git.checkout('-b', branch_name, f'origin/{branch_name}')
-            self.handle.head.reset(commit=commit, index=True, working_tree=True)
-
-        # We could not find the commit on a local or remote branch by the designated name, so just
-        # checkout the commit in a detached head state.
-        else:
+      # Try the specified branch.
+      if not self._try_checkout(branch_name, commit, force):
+        # Try the default branch.
+        if not self._try_checkout(self.default_branch_name, commit, force):
           # Checkout the target commit in a detached HEAD state as long as it is not dangling.
           self._check_dangling_commit(commit)
           self.handle.git.checkout(commit)
+
+  def _try_checkout(self, branch_name: str, commit: git.Commit, force: bool) -> bool:
+    """
+    Attempts to checkout the commit on the specified branch, returns the success of the request.
+    """
+    # Try the local branch.
+    if self._try_checkout_local(branch_name, commit, force):
+      return True
+
+    # Tag is not on the specified local branch.
+    else:
+
+      self._fetch_once()
+
+      # Try the remote branch
+      return self._try_checkout_remote(branch_name, commit, force)
+
+  def _try_checkout_local(self, branch_name: str, commit: git.Commit, force: bool) -> bool:
+    """
+    Attempts to checkout the commit on the specified LOCAL branch, returns the success of the
+    request.
+    """
+
+    # Check if target commit is HEAD of local branch.
+    if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
+      local_branch = self.handle.branches[branch_name]
+
+      if commit == local_branch.commit:
+        local_branch.checkout()
+        return True
+
+      # Target commit is in local branch history.
+      else:
+        # Need to fetch for this part of the logic.
+        self._fetch_once()
+
+        # Make sure the local branch is setup to track the expected remote branch.
+        local_branch = self.handle.branches[branch_name]
+        tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
+
+        # Make sure the local branch is not ahead of tracking branch, since we're moving the
+        # local HEAD, information would be lost.
+        if not force:
+          self._verify_local_commits_not_ahead(local_branch, tracking_branch)
+
+        # Good to go move the local branch HEAD to the target commit.
+        print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
+        local_branch.checkout()
+        self.handle.head.reset(commit=commit, index=True, working_tree=True)
+        return True
+
+    else:
+      return False
+
+  def _try_checkout_remote(self, branch_name: str, commit: git.Commit, force: bool):
+    """
+    Attempts to checkout the commit on the specified REMOTE branch, returns the success of the
+    request.
+    """
+
+    if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
+      # Check if there is a local branch to match the remote branch.
+      local_branches = [branch.name for branch in self.handle.branches]
+
+      if branch_name in local_branches:
+        # Make sure the local branch is setup to track the expected remote branch.
+        local_branch = self.handle.branches[branch_name]
+        tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
+
+        # Make sure the local branch is not ahead of tracking branch, since we're moving the
+        # local HEAD, information would be lost.
+        if not force:
+          self._verify_local_commits_not_ahead(local_branch, tracking_branch)
+
+        # Good to go move the local branch HEAD to the target commit.
+        print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
+        local_branch.checkout()
+        self.handle.head.reset(commit=commit, index=True, working_tree=True)
+        return True
+
+      # There is no local branch yet, create it, and reset it to the target commit.
+      else:
+        self.handle.git.checkout('-b', branch_name, f'origin/{branch_name}')
+        self.handle.head.reset(commit=commit, index=True, working_tree=True)
+        return True
+
+    else:
+      return False
 
   def _check_dangling_commit(self, commit):
     """
