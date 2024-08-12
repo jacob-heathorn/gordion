@@ -16,6 +16,7 @@ class Repository:
     self.path = path
     self.name = os.path.basename(self.path)
     self.url = Repository._derive_url(path, url)
+    self.default_branch_name = ''
     self.fetched = False
     self.handle: git.Repo = []
     self._ensure()
@@ -46,7 +47,7 @@ class Repository:
     # Clone if necessary. At this point the mirror should exist regardless of whether the repository
     # exists. so ensure it first.
     cache = gordion.Cache()
-    mirror_path = cache.ensure_mirror(self.url)
+    mirror_path, self.default_branch_name = cache.ensure_mirror(self.url)
     if not Repository._exists(self.path):
       args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
