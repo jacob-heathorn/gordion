@@ -107,22 +107,27 @@ class Folder:
 
   def print(self, root: gordion.Tree):
     print(*self.get_symbol_row(), sep='', end='')
-    # TODO make utility funcitons. Print bold blue, green, red.
     header = gordion.utils.bold_blue(self.name)
     if self.repo:
+      # Branch header.
+      # TODO branch coloring
+      if self.repo.handle.head.is_detached:
+        branch_header = "HEAD detached"
+      else:
+        branch_header = f"{self.repo.handle.active_branch.name}"
+
+      # Name branch:tag
       if does_tree_list_repository(root, self.repo):
         header = gordion.utils.bold_green(self.name)
-        # TODO branch coloring
-        header += f" {self.repo.handle.active_branch}:"
+        header += " " + branch_header
         if does_tree_list_repository_with_tag(root, self.repo):
-          header += gordion.utils.green(f"{self.repo.handle.head.commit.hexsha}")
+          header += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha}")
         else:
-          header += gordion.utils.red(f"{self.repo.handle.head.commit.hexsha}")
+          header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha}")
       else:
         header = gordion.utils.bold_red(self.name)
-        # TODO branch coloring
-        header += f" {self.repo.handle.active_branch}:"
-        header += gordion.utils.red(f"{self.repo.handle.head.commit.hexsha}")
+        header += " " + branch_header
+        header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha}")
 
     print(header)
 
