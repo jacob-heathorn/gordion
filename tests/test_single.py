@@ -201,19 +201,6 @@ def test_local_branch_wrong_tracking_branch(repo_a):
   assert str(context.value) == str(expected)
 
 
-def test_branch_does_not_have_commit_but_commit_exists(repo_a):
-  """
-  Verifies that update will checkout a commit in a detached head state if it exists,
-  but it cannot find it on the specified branch.
-  """
-
-  # Choose a tag that exists on 'test_single_1' but not on test_single.
-  tag = '05090461f38c8b725d89bf30a31c716383778b48'
-  repo_a.update(tag, "test_single")
-  assert repo_a.handle.head.is_detached
-  assert repo_a.handle.head.commit.hexsha == tag
-
-
 def test_detached_head_unsaved_commit(repo_a):
   """
   Verifies update will ERROR if we are in a detached head state, and the HEAD commit does not
@@ -234,23 +221,50 @@ def test_detached_head_unsaved_commit(repo_a):
   assert str(context.value) == str(expected)
 
 
+def test_requested_branch_does_not_have_commit(repo_a):
+  """
+  Verifies that update will checkout will first try the default branch, then checkout in detached
+  head state if it cannot find the commit on the specified branch.
+  """
+
+  # If the commit moves, and exists on the default branch but not the requested branch, it will go
+  # there. Choose a commit on develop but not test_single_1.
+  new_commit = repo_a._verify_tag('8a477c37ae584072dd1c7909c5000f5e2677fec5')
+  repo_a.update(new_commit, "test_single_1")
+  assert repo_a.handle.active_branch.name == "develop"
+  assert repo_a.handle.head.commit == new_commit
+
+  # If the commit moves, and exists on a non-default branch, but not the requested branch, it will
+  # checkout detached HEAD. Choose a commit that exists on test_single_1 only.
+  new_commit = repo_a._verify_tag('05090461f38c8b725d89bf30a31c716383778b48')
+  repo_a.update(new_commit, "test_single")
+  assert repo_a.handle.head.is_detached
+  assert repo_a.handle.head.commit == new_commit
+
+
 def test_dont_specify_branch(repo_a):
   """
-  Verifies that if you don't specify the branch, it will checkout the commit in detached head
-  state (as long as the commit is moving).
+  Verifies that if you don't specify the branch, it will checkout the commit on the default branch
+  if it exists there. If it doesn't exist there it will check it out in a detached head state.
   """
   # If commit does not move, it'll stay on the branch checked out.
-  baseline_commit = repo_a.handle.head.commit.hexsha
+  baseline_commit = repo_a.handle.head.commit
   repo_a.update(baseline_commit, None)
   assert not repo_a.handle.head.is_detached
   assert repo_a.handle.active_branch.name == "test_single"
-  assert repo_a.handle.head.commit.hexsha == baseline_commit
+  assert repo_a.handle.head.commit == baseline_commit
 
-  # If commit moves, it'll checkout in detached HEAD state.
-  new_commit = repo_a.handle.commit('HEAD~1').hexsha
+  # If the commit moves, and exists on the default branch (develop) it will go there. Choose a
+  # commit that only exists on develop branch.
+  new_commit = repo_a._verify_tag('8a477c37ae584072dd1c7909c5000f5e2677fec5')
   repo_a.update(new_commit, None)
+  assert repo_a.handle.active_branch.name == "develop"
+  assert repo_a.handle.head.commit == new_commit
+
+  # If the commit does not exist on the default branch, it'll checkout in detached HEAD state.
+  repo_a.update(baseline_commit, None)
   assert repo_a.handle.head.is_detached
-  assert repo_a.handle.head.commit.hexsha == new_commit
+  assert repo_a.handle.head.commit == baseline_commit
 
 
 def test_update_dirty_repo(repo_a):
