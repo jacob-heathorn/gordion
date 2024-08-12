@@ -121,13 +121,13 @@ class Folder:
         header = gordion.utils.bold_green(self.name)
         header += " " + branch_header
         if does_tree_list_repository_with_tag(root, self.repo):
-          header += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha}")
+          header += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
         else:
-          header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha}")
+          header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
       else:
         header = gordion.utils.bold_red(self.name)
         header += " " + branch_header
-        header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha}")
+        header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
 
     print(header)
 
