@@ -124,7 +124,7 @@ class Folder:
 
   @staticmethod
   def is_tracked(repo) -> bool:
-    return bool(repo.handle.active_branch.tracking_branch)
+    return bool(repo.handle.active_branch.tracking_branch())
 
   @staticmethod
   def is_correct_tracking_branch(repo) -> bool:
@@ -146,23 +146,62 @@ class Folder:
     return False
 
   @staticmethod
+  def does_root_branch_have_commit(repo, root):
+    if not root.handle.head.is_detached:
+      root_branch_name = root.handle.active_branch.name
+      return repo._does_local_branch_have_commit(root_branch_name, repo.handle.head.commit)
+
+  @staticmethod
   def get_branch_header(repo, root: gordion.Tree):
-    # If we are the root branch
+    branch_header = ""
+    # First print the name of the branch, in green if it is correct, and yellow if it is incorrect
+    # or detached.
+    branch_suggestion = []
+    branch_header = ""
+
+    # TODO handle other branch, and detached cases.
     if Folder.is_root_branch(repo, root):
-      if Folder.is_tracked(repo):
-        if Folder.is_correct_tracking_branch(repo):
-          if Folder.is_ahead(repo):
-            return gordion.utils.orange(repo.handle.active_branch.name + "(ahead)")
-          else:
-            return gordion.utils.green(repo.handle.active_branch.name)
-        else:
-          return gordion.utils.orange(repo.handle.active_branch.name + "(wrong tracking branch)")
-      else:
-        return gordion.utils.orange(repo.handle.active_branch.name + "(untracked)")
+      branch_header += gordion.utils.green(repo.handle.active_branch.name)
 
     elif Folder.is_default_branch(repo):
-      # Should it be the root branch?
-      pass
+      if Folder.does_root_branch_have_commit(repo, root):
+        branch_suggestion = root.handle.active_branch.name
+        branch_header += gordion.utils.yellow(repo.handle.active_branch.name)
+
+    # Orthoganally, append untracked, correct branch suggestion, or ahead if necessary.
+    def append_warning(warning: str, addition: str):
+      if not warning:
+        warning = f"({addition})"
+      else:
+        warning = warning[0:-2]
+        warning += f", {addition})"
+      return warning
+
+    # Generate branch warning string
+    warning_str = ""
+    if branch_suggestion:
+      warning_str = append_warning(warning_str, f"{branch_suggestion}?")
+
+    # Other active branch related warnings.
+    if not repo.handle.head.is_detached:
+      # Warn if branch is untracked.
+      if Folder.is_tracked(repo):
+        # Warng if it has the incorrect tracking branch name.
+        if Folder.is_correct_tracking_branch(repo):
+          pass
+        else:
+          warning_str = append_warning(warning_str, "wrong tracking branch")
+
+        # Warn if branch is ahead.
+        if Folder.is_ahead(repo):
+          warning_str = append_warning(warning_str, "ahead")
+      else:
+        warning_str = append_warning(warning_str, "untracked")
+
+    if warning_str:
+      branch_header += gordion.utils.yellow(warning_str)
+
+    return branch_header
 
   def print(self, root: gordion.Tree):
     print(*self.get_symbol_row(), sep='', end='')
