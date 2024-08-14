@@ -113,6 +113,47 @@ class Folder:
 
     return symbols
 
+  @staticmethod
+  def is_root_branch(repo, root: gordion.Tree):
+    if not repo.handle.head.is_detached:
+      if not root.handle.head.is_detached:
+        return repo.handle.active_branch.name == root.handle.active_branch.name
+
+  @staticmethod
+  def is_tracked(repo) -> bool:
+    return bool(repo.handle.active_branch.tracking_branch)
+
+  @staticmethod
+  def is_correct_tracking_branch(repo) -> bool:
+    active_branch = repo.handle.active_branch
+    return active_branch.tracking_branch().name == f"origin/{active_branch.name}"
+
+  @staticmethod
+  def is_ahead(repo) -> bool:
+    active_branch = repo.handle.active_branch
+    merge_base = repo.handle.merge_base(active_branch, active_branch.tracking_branch())
+    commits_ahead = list(repo.handle.iter_commits(
+            f'{merge_base[0].hexsha}..{active_branch.commit.hexsha}'))
+    return bool(commits_ahead)
+
+  @staticmethod
+  def get_branch_header(repo, root: gordion.Tree):
+    # If we are the root branch
+    if Folder.is_root_branch(repo, root):
+      if Folder.is_tracked(repo):
+        if Folder.is_correct_tracking_branch(repo):
+          if Folder.is_ahead(repo):
+            return gordion.utils.orange(repo.handle.active_branch.name + "(ahead)")
+          else:
+            return gordion.utils.green(repo.handle.active_branch.name)
+        else:
+          return gordion.utils.orange(repo.handle.active_branch.name + "(wrong tracking branch)")
+      else:
+        return gordion.utils.orange(repo.handle.active_branch.name + "(untracked)")
+
+    else:
+      return "TODO"
+
   def print(self, root: gordion.Tree):
     print(*self.get_symbol_row(), sep='', end='')
     header = gordion.utils.bold_blue(self.name)
@@ -122,7 +163,7 @@ class Folder:
       if self.repo.handle.head.is_detached:
         branch_header = "HEAD detached"
       else:
-        branch_header = f"{self.repo.handle.active_branch.name}"
+        branch_header = Folder.get_branch_header(self.repo, root)
 
       # Name branch:tag
       if does_tree_list_repository(root, self.repo):
