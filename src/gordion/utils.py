@@ -146,5 +146,6 @@ def bold_green(str):
 def bold_blue(str):
   return "\033[1;34m" + str + "\033[0m"
 
+
 def orange(str):
   return "\033[38;2;221;72;20m" + str + "\033[0m"

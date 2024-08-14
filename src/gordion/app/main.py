@@ -3,6 +3,7 @@
 import argparse
 import gordion
 import os
+from typing import List, Optional
 
 
 def does_tree_list_repository(root: gordion.Tree, repo: gordion.Repository) -> bool:
@@ -81,9 +82,9 @@ class Folder:
 
   def __init__(self, name) -> None:
     self.name = name
-    self.children = []
-    self.parent = []
-    self.repo = []
+    self.children: List[Folder] = []
+    self.parent: Optional[Folder] = None
+    self.repo: Optional[gordion.Repository] = None
 
   def top(self):
     if self.parent:
