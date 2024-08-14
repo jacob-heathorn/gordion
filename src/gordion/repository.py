@@ -122,7 +122,7 @@ class Repository:
     """
 
     # Check if target commit is HEAD of local branch.
-    if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
+    if self._does_local_branch_have_commit(branch_name, commit):
       local_branch = self.handle.branches[branch_name]
 
       if commit == local_branch.commit:
@@ -279,15 +279,13 @@ class Repository:
 
     return commit
 
-  @staticmethod
-  def _does_local_branch_have_commit(repo: git.Repo, branch_name: str,
-                                     commit: git.Repo.commit) -> bool:
+  def _does_local_branch_have_commit(self, branch_name: str, commit: git.Repo.commit) -> bool:
     """
     Returns true if there exist a local branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
     """
     try:
-      local_branch = repo.heads[branch_name]
+      local_branch = self.handle.heads[branch_name]
     except IndexError:
       # The local branch does not exist, so it cannot contain the commit.
       return False

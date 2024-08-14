@@ -114,10 +114,12 @@ class Folder:
     return symbols
 
   @staticmethod
-  def is_root_branch(repo, root: gordion.Tree):
+  def is_root_branch(repo, root: gordion.Tree) -> bool:
     if not repo.handle.head.is_detached:
       if not root.handle.head.is_detached:
         return repo.handle.active_branch.name == root.handle.active_branch.name
+
+    return False
 
   @staticmethod
   def is_tracked(repo) -> bool:
@@ -137,6 +139,12 @@ class Folder:
     return bool(commits_ahead)
 
   @staticmethod
+  def is_default_branch(repo) -> bool:
+    if not repo.handle.head.is_detached:
+      return repo.handle.active_branch.name == repo.default_branch_name
+    return False
+
+  @staticmethod
   def get_branch_header(repo, root: gordion.Tree):
     # If we are the root branch
     if Folder.is_root_branch(repo, root):
@@ -151,8 +159,9 @@ class Folder:
       else:
         return gordion.utils.orange(repo.handle.active_branch.name + "(untracked)")
 
-    else:
-      return "TODO"
+    elif Folder.is_default_branch(repo):
+      # Should it be the root branch?
+      pass
 
   def print(self, root: gordion.Tree):
     print(*self.get_symbol_row(), sep='', end='')
