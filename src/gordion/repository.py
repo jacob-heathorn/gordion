@@ -158,7 +158,7 @@ class Repository:
     request.
     """
 
-    if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
+    if self._does_remote_branch_have_commit(branch_name, commit):
       # Check if there is a local branch to match the remote branch.
       local_branches = [branch.name for branch in self.handle.branches]
 
@@ -241,15 +241,13 @@ class Repository:
     else:
       raise gordion.UpdateNoTrackingBranchError(self.path, local_branch.name)
 
-  @staticmethod
-  def _does_remote_branch_have_commit(repo: git.Repo, branch_name: str,
-                                      commit: git.Repo.commit) -> bool:
+  def _does_remote_branch_have_commit(self, branch_name: str, commit: git.Repo.commit) -> bool:
     """
     Returns true if there is a remote branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
     """
     try:
-      remote_branch = repo.refs[f"origin/{branch_name}"]
+      remote_branch = self.handle.refs[f"origin/{branch_name}"]
     except IndexError:
       # The local branch does not exist, so it cannot contain the commit.
       return False
