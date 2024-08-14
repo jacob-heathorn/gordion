@@ -167,6 +167,8 @@ class Folder:
       if Folder.does_root_branch_have_commit(repo, root):
         branch_suggestion = root.handle.active_branch.name
         branch_header += gordion.utils.yellow(repo.handle.active_branch.name)
+      else:
+        branch_header += gordion.utils.green(repo.handle.active_branch.name)
 
     # Orthoganally, append untracked, correct branch suggestion, or ahead if necessary.
     def append_warning(warning: str, addition: str):
