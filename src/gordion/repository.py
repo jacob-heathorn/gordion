@@ -18,7 +18,7 @@ class Repository:
     self.url = Repository._derive_url(path, url)
     self.default_branch_name = ''
     self.fetched = False
-    self.handle: git.Repo = []
+    self.handle: git.Repo
     self._ensure()
 
   @staticmethod
@@ -123,7 +123,7 @@ class Repository:
 
     # Check if target commit is HEAD of local branch.
     if self._does_local_branch_have_commit(branch_name, commit):
-      local_branch = self.handle.branches[branch_name]
+      local_branch = self.handle.branches[branch_name]  # type: ignore
 
       if commit == local_branch.commit:
         local_branch.checkout()
@@ -135,7 +135,7 @@ class Repository:
         self._fetch_once()
 
         # Make sure the local branch is setup to track the expected remote branch.
-        local_branch = self.handle.branches[branch_name]
+        local_branch = self.handle.branches[branch_name]  # type: ignore
         tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
 
         # Make sure the local branch is not ahead of tracking branch, since we're moving the
@@ -160,11 +160,11 @@ class Repository:
 
     if self._does_remote_branch_have_commit(branch_name, commit):
       # Check if there is a local branch to match the remote branch.
-      local_branches = [branch.name for branch in self.handle.branches]
+      local_branches = [branch.name for branch in self.handle.branches]  # type: ignore
 
       if branch_name in local_branches:
         # Make sure the local branch is setup to track the expected remote branch.
-        local_branch = self.handle.branches[branch_name]
+        local_branch = self.handle.branches[branch_name]  # type: ignore
         tracking_branch = self._verify_local_branch_has_correct_tracking_branch(local_branch)
 
         # Make sure the local branch is not ahead of tracking branch, since we're moving the
@@ -241,13 +241,13 @@ class Repository:
     else:
       raise gordion.UpdateNoTrackingBranchError(self.path, local_branch.name)
 
-  def _does_remote_branch_have_commit(self, branch_name: str, commit: git.Repo.commit) -> bool:
+  def _does_remote_branch_have_commit(self, branch_name: str, commit: git.Commit) -> bool:
     """
     Returns true if there is a remote branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
     """
     try:
-      remote_branch = self.handle.refs[f"origin/{branch_name}"]
+      remote_branch = self.handle.refs[f"origin/{branch_name}"]  # type: ignore
     except IndexError:
       # The local branch does not exist, so it cannot contain the commit.
       return False
@@ -277,7 +277,7 @@ class Repository:
 
     return commit
 
-  def _does_local_branch_have_commit(self, branch_name: str, commit: git.Repo.commit) -> bool:
+  def _does_local_branch_have_commit(self, branch_name: str, commit: git.Commit) -> bool:
     """
     Returns true if there exist a local branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
@@ -299,7 +299,7 @@ class Repository:
         # Initialize the Repo object
       repo = git.Repo(path)
       # Compare the absolute paths to determine if 'path' is the repository root
-      return os.path.abspath(repo.working_tree_dir) == os.path.abspath(path)
+      return os.path.abspath(str(repo.working_tree_dir)) == os.path.abspath(path)
     except (git.NoSuchPathError, git.InvalidGitRepositoryError):
       # If Repo initialization fails, the path is not a Git repository
       return False
@@ -332,7 +332,7 @@ class Repository:
         raise gordion.UnsafeRemoveDirty(repo_path)
 
     # Check if any information would be lost from local branches if we delete this repository.
-    for local_branch in repo.branches:
+    for local_branch in repo.branches:  # type: ignore[attr-defined]
       # If there is a tracking branch, ensure the local branch is not ahead of it.
       tracking_branch = local_branch.tracking_branch()
       if tracking_branch:
