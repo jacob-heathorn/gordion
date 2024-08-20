@@ -153,7 +153,7 @@ class Folder:
     branch_header = ""
     # First print the name of the branch, in green if it is correct, and yellow if it is incorrect
     # or detached.
-    branch_suggestion = []
+    branch_suggestion: Optional[str] = None
     branch_header = ""
 
     # TODO handle other branch, and detached cases.
