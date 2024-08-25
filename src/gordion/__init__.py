@@ -13,5 +13,4 @@ from .exception import BadRepositoryNamePathMismach, UpdateDifferentRepoSamePath
 from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes
 from .yeditor import YamlEditor
-from .app import gordion_root, print_status
 from .store import Store
