@@ -1,6 +1,5 @@
-import os
 import gordion
-from gordion.utils import green, bold_green, bold_blue
+from gordion.utils import green, bold_green, bold_blue, red
 import pytest
 from tests.conftest import recursive_git_blast
 
@@ -42,8 +41,25 @@ def test_nominal_status(demo_a):
   Verifies the gordion -s behavior for the nominal test case (all green).
   """
 
-  # From top of repoA.
-  with gordion.utils.pushd(demo_a.path):
-    root_path = gordion.app.root.gordion_root(os.getcwd())
-    root = gordion.Tree(root_path)
-    assert NOMINAL_STATUS == gordion.app.status.get_status(root)
+  root_path = gordion.app.root.gordion_root(demo_a.path)
+  root = gordion.Tree(root_path)
+  assert NOMINAL_STATUS == gordion.app.status.get_status(root)
+
+
+def test_wrong_commit(demo_a):
+  """
+  Verifies the gordion -s behavior when a child repository is checked out at the wrong commit.
+  """
+
+  # In demoC, checkout HEAD~1
+  demo_c = demo_a.children['gordion_demo_c']
+  demo_c.handle.head.reset('HEAD~1', index=True, working_tree=True)
+
+  # Get the expected status string.
+  demo_c_new_commit = demo_c.handle.head.commit.hexsha[:7]
+  expected_status = NOMINAL_STATUS.replace(green('ef7aabb'), red(demo_c_new_commit))
+
+  # Get actual status and verify.
+  root_path = gordion.app.root.gordion_root(demo_a.path)
+  root = gordion.Tree(root_path)
+  assert expected_status == gordion.app.status.get_status(root)
