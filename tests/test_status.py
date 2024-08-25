@@ -1,7 +1,7 @@
 # Verifies the gordion -s behavior
 
 import gordion
-from gordion.utils import green, bold_green, bold_blue, red
+from gordion.utils import green, bold_green, bold_blue, red, bold_red
 import pytest
 from tests.conftest import recursive_git_blast
 
@@ -60,6 +60,30 @@ def test_wrong_commit(demo_a):
   # Get the expected status string.
   demo_c_new_commit = demo_c.handle.head.commit.hexsha[:7]
   expected_status = NOMINAL_STATUS.replace(green('ef7aabb'), red(demo_c_new_commit))
+
+  # Get actual status and verify.
+  root_path = gordion.app.root.gordion_root(demo_a.path)
+  root = gordion.Tree(root_path)
+  assert expected_status == gordion.app.status.get_status(root)
+
+
+def test_dangling_repository(demo_a):
+  """
+  Verifies the repository will appear RED if it is unlisted.
+  """
+
+  # Checkout branch test_dangling_repository.
+  demo_a.handle.git.checkout('-b', 'test_dangling_repository', 'origin/test_dangling_repository')
+
+  # Get the expected status string.
+  expected_status = NOMINAL_STATUS.replace(bold_green('gordion_demo_c'),
+                                           bold_red('gordion_demo_c'))
+  expected_status = expected_status.replace(green('ef7aabb'),
+                                            red('ef7aabb'))
+  expected_status = expected_status.replace(green('test_status'),
+                                            green('test_dangling_repository'))
+  expected_status = expected_status.replace(green('7e869f8'),
+                                            green('cf343cd'))
 
   # Get actual status and verify.
   root_path = gordion.app.root.gordion_root(demo_a.path)
