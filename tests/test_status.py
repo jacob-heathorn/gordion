@@ -36,4 +36,4 @@ def test_gordion_status(demo_a):
   with gordion.utils.pushd(demo_a.path):
     root_path = gordion.app.root.gordion_root(os.getcwd())
     root = gordion.Tree(root_path)
-    gordion.app.status.print_status(root)
+    print(gordion.app.status.get_status(root))
