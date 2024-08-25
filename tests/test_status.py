@@ -1,3 +1,5 @@
+# Verifies the gordion -s behavior
+
 import gordion
 from gordion.utils import green, bold_green, bold_blue, red
 import pytest
@@ -38,7 +40,7 @@ def demo_a(tree_a):
 
 def test_nominal_status(demo_a):
   """
-  Verifies the gordion -s behavior for the nominal test case (all green).
+  Verifies the nominal status string (all green).
   """
 
   root_path = gordion.app.root.gordion_root(demo_a.path)
@@ -48,7 +50,7 @@ def test_nominal_status(demo_a):
 
 def test_wrong_commit(demo_a):
   """
-  Verifies the gordion -s behavior when a child repository is checked out at the wrong commit.
+  Verifies the commit will appear RED if it does not match the parent gordion.yaml file.
   """
 
   # In demoC, checkout HEAD~1
