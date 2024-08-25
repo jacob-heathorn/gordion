@@ -202,8 +202,8 @@ class Folder:
 
     return branch_header
 
-  def print(self, root: gordion.Tree):
-    print(*self.get_symbol_row(), sep='', end='')
+  def get_status(self, root: gordion.Tree) -> str:
+    status_string = ''.join(self.get_symbol_row())
     header = gordion.utils.bold_blue(self.name)
     if self.repo:
       # Branch header.
@@ -226,10 +226,13 @@ class Folder:
         header += " " + branch_header
         header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
 
-    print(header)
+    status_string += header
 
     for child in self.children:
-      child.print(root)
+      status_string += "\n"
+      status_string += child.get_status(root)
+
+    return status_string
 
   def get_child_type(self, child_name):
     total_children = len(self.children)
@@ -243,7 +246,8 @@ class Folder:
           return "middle"
 
 
-def print_path_tree(root):
+def get_path_tree(root) -> str:
+  status_string = ''
   repos = [root]
   repos.extend(gordion.Store().list_repos())
   repos.sort(key=lambda repo: repo.path)
@@ -274,8 +278,9 @@ def print_path_tree(root):
           current_folder.children.append(new_child)
           current_folder = new_child
 
-  root_folder.print(root)
+  status_string += root_folder.get_status(root)
+  return status_string
 
 
-def print_status(root):
-  print_path_tree(root)
+def get_status(root) -> str:
+  return get_path_tree(root)
