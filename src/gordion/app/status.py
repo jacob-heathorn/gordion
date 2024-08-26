@@ -149,31 +149,31 @@ class Folder:
       return repo._does_local_branch_have_commit(root_branch_name, repo.handle.head.commit)
 
   @staticmethod
-  def get_branch_header(repo, root: gordion.Tree, is_repository_listed: bool):
-    branch_header = ""
-    # First print the name of the branch, in green if it is correct, and yellow if it is incorrect
-    # or detached.
+  def color_branch(repo, root: gordion.Tree, is_repository_listed: bool):
+    if is_repository_listed:
+      # TODO handle other branch, and detached cases.
+      if Folder.is_root_branch(repo, root):
+        return gordion.utils.green(repo.handle.active_branch.name)
+
+      elif Folder.is_default_branch(repo):
+        if Folder.does_root_branch_have_commit(repo, root):
+          return gordion.utils.yellow(repo.handle.active_branch.name)
+        else:
+          return gordion.utils.green(repo.handle.active_branch.name)
+
+    else:
+      return repo.handle.active_branch.name
+
+  @staticmethod
+  def get_branch_warnings(repo, root: gordion.Tree):
     branch_suggestion: Optional[str] = None
-    branch_header = ""
 
     # TODO handle other branch, and detached cases.
-    if Folder.is_root_branch(repo, root):
-      branch_header += gordion.utils.green(repo.handle.active_branch.name)
-
-    elif Folder.is_default_branch(repo):
+    if Folder.is_default_branch(repo):
       if Folder.does_root_branch_have_commit(repo, root):
         branch_suggestion = root.handle.active_branch.name
-        if is_repository_listed:
-          branch_header += gordion.utils.yellow(repo.handle.active_branch.name)
-        else:
-          branch_header += repo.handle.active_branch.name
-      else:
-        if is_repository_listed:
-          branch_header += gordion.utils.green(repo.handle.active_branch.name)
-        else:
-          branch_header += repo.handle.active_branch.name
 
-    # Orthoganally, append untracked, correct branch suggestion, or ahead if necessary.
+    # Generate suggestions
     def append_warning(warning: str, addition: str):
       if not warning:
         warning = f"({addition})"
@@ -182,7 +182,7 @@ class Folder:
         warning += f", {addition})"
       return warning
 
-    # Generate branch warning string
+    # Generate branch warnings string
     warning_str = ""
     if branch_suggestion:
       warning_str = append_warning(warning_str, f"{branch_suggestion}?")
@@ -204,9 +204,9 @@ class Folder:
         warning_str = append_warning(warning_str, "untracked")
 
     if warning_str:
-      branch_header += gordion.utils.yellow(warning_str)
-
-    return branch_header
+      return gordion.utils.yellow(warning_str)
+    else:
+      return ''
 
   def get_status(self, root: gordion.Tree) -> str:
     status_string = ''.join(self.get_symbol_row())
@@ -218,7 +218,8 @@ class Folder:
       if self.repo.handle.head.is_detached:
         branch_header = "HEAD detached"
       else:
-        branch_header = Folder.get_branch_header(self.repo, root, is_repository_listed)
+        branch_header = Folder.color_branch(self.repo, root, is_repository_listed) + \
+                        Folder.get_branch_warnings(self.repo, root)
 
       # Name branch:tag
       if is_repository_listed:
