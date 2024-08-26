@@ -285,6 +285,10 @@ class Folder:
         header += " " + branch_header
         header += ":" + self.repo.handle.head.commit.hexsha[:7]
 
+      # Append -dirty to hexsha if necessary.
+      if self.repo.handle.is_dirty(untracked_files=True):
+        header += gordion.utils.yellow("-dirty")
+
     status_string += header
 
     for child in self.children:

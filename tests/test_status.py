@@ -1,9 +1,10 @@
 # Verifies the gordion -s behavior
 
 import gordion
-from gordion.utils import green, bold_green, bold_blue, red, bold_red
+from gordion.utils import green, bold_green, bold_blue, red, bold_red, yellow
 import pytest
 from tests.conftest import recursive_git_blast
+import os
 
 
 @pytest.fixture
@@ -98,6 +99,25 @@ def test_wrong_commit(demo_a):
   # Get the expected status string.
   demo_c_new_commit = demo_c.handle.head.commit.hexsha[:7]
   expected_status = NOMINAL_STATUS.replace(green('ef7aabb'), red(demo_c_new_commit))
+
+  # Get actual status and verify.
+  root_path = gordion.app.root.gordion_root(demo_a.path)
+  root = gordion.Tree(root_path)
+  assert expected_status == gordion.app.status.get_status(root)
+
+
+def test_dirty_commit(demo_a):
+  """
+  Verifies the commit have a "-dirty" flag if there are uncommitted changes.
+  """
+
+  # Make demoB dirty.
+  file_path = os.path.join(demo_a.children['gordion_demo_b'].path, 'README.md')
+  with open(file_path, 'w') as file:
+    file.write('test_dirty_commit wrote this.\n')
+
+  # Get the expected status string.
+  expected_status = NOMINAL_STATUS.replace(green('64d65c2'), green('64d65c2') + yellow('-dirty'))
 
   # Get actual status and verify.
   root_path = gordion.app.root.gordion_root(demo_a.path)
