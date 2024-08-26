@@ -148,37 +148,36 @@ class Folder:
       root_branch_name = root.handle.active_branch.name
       return repo._does_local_branch_have_commit(root_branch_name, repo.handle.head.commit)
 
+  @staticmethod
+  def get_branch_name(repo):
+    if repo.handle.head.is_detached:
+      return "HEAD detached"
+    else:
+      return repo.handle.active_branch.name
+
   # TODO handle other branch, and detached cases.
-  # TODO remove dep on is_repository_listed here
   # TODO swithc statement?
   @staticmethod
-  def color_branch(repo, root: gordion.Tree, is_repository_listed: bool):
-    if is_repository_listed:
-      # Case1: Root branch is checked out.
-      if Folder.is_root_branch(repo, root):
-        return gordion.utils.green(repo.handle.active_branch.name)
+  def color_branch(branch_name: str, repo, root: gordion.Tree):
+    # Case1: Root branch is checked out.
+    if Folder.is_root_branch(repo, root):
+      return gordion.utils.green(branch_name)
 
-      # Case2: Default branch is checked out.
-      elif Folder.is_default_branch(repo):
-        if Folder.does_root_branch_have_commit(repo, root):
-          return gordion.utils.yellow(repo.handle.active_branch.name)
-        else:
-          return gordion.utils.green(repo.handle.active_branch.name)
-
-      # Case3: Other branch is checked out. TODO
-      # Case4: DETATCHED
-      elif repo.handle.head.is_detached:
-        if Folder.does_root_branch_have_commit(repo, root):
-          return gordion.utils.yellow("HEAD detached")
-        # TODO check if default branch has commit.
-        else:
-          return gordion.utils.green("HEAD detached")
-
-    else:
-      if repo.handle.head.is_detached:
-        return "HEAD detached"
+    # Case2: Default branch is checked out.
+    elif Folder.is_default_branch(repo):
+      if Folder.does_root_branch_have_commit(repo, root):
+        return gordion.utils.yellow(branch_name)
       else:
-        return repo.handle.active_branch.name
+        return gordion.utils.green(branch_name)
+
+    # Case3: Other branch is checked out. TODO
+    # Case4: DETATCHED
+    elif repo.handle.head.is_detached:
+      if Folder.does_root_branch_have_commit(repo, root):
+        return gordion.utils.yellow(branch_name)
+      # TODO check if default branch has commit.
+      else:
+        return gordion.utils.green(branch_name)
 
   # TODO handle other branch, and detached cases.
   @staticmethod
@@ -232,8 +231,10 @@ class Folder:
       is_repository_listed = does_tree_list_repository(root, self.repo)
 
       # Branch header.
-      branch_header = Folder.color_branch(self.repo, root, is_repository_listed)
-      branch_header += Folder.get_branch_warnings(self.repo, root)
+      branch_name = Folder.get_branch_name(self.repo)
+      if is_repository_listed:
+        branch_name = Folder.color_branch(branch_name, self.repo, root)
+      branch_header = branch_name + Folder.get_branch_warnings(self.repo, root)
 
       # Name branch:tag
       if is_repository_listed:
