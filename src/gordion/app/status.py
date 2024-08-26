@@ -149,7 +149,7 @@ class Folder:
       return repo._does_local_branch_have_commit(root_branch_name, repo.handle.head.commit)
 
   @staticmethod
-  def get_branch_header(repo, root: gordion.Tree):
+  def get_branch_header(repo, root: gordion.Tree, is_repository_listed: bool):
     branch_header = ""
     # First print the name of the branch, in green if it is correct, and yellow if it is incorrect
     # or detached.
@@ -163,9 +163,15 @@ class Folder:
     elif Folder.is_default_branch(repo):
       if Folder.does_root_branch_have_commit(repo, root):
         branch_suggestion = root.handle.active_branch.name
-        branch_header += gordion.utils.yellow(repo.handle.active_branch.name)
+        if is_repository_listed:
+          branch_header += gordion.utils.yellow(repo.handle.active_branch.name)
+        else:
+          branch_header += repo.handle.active_branch.name
       else:
-        branch_header += gordion.utils.green(repo.handle.active_branch.name)
+        if is_repository_listed:
+          branch_header += gordion.utils.green(repo.handle.active_branch.name)
+        else:
+          branch_header += repo.handle.active_branch.name
 
     # Orthoganally, append untracked, correct branch suggestion, or ahead if necessary.
     def append_warning(warning: str, addition: str):
@@ -206,15 +212,16 @@ class Folder:
     status_string = ''.join(self.get_symbol_row())
     header = gordion.utils.bold_blue(self.name)
     if self.repo:
+      is_repository_listed = does_tree_list_repository(root, self.repo)
       # Branch header.
       # TODO branch coloring
       if self.repo.handle.head.is_detached:
         branch_header = "HEAD detached"
       else:
-        branch_header = Folder.get_branch_header(self.repo, root)
+        branch_header = Folder.get_branch_header(self.repo, root, is_repository_listed)
 
       # Name branch:tag
-      if does_tree_list_repository(root, self.repo):
+      if is_repository_listed:
         header = gordion.utils.bold_green(self.name)
         header += " " + branch_header
         if does_tree_list_repository_with_tag(root, self.repo):
@@ -224,7 +231,7 @@ class Folder:
       else:
         header = gordion.utils.bold_red(self.name)
         header += " " + branch_header
-        header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
+        header += ":" + self.repo.handle.head.commit.hexsha[:7]
 
     status_string += header
 
