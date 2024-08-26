@@ -149,14 +149,16 @@ class Folder:
       return repo._does_local_branch_have_commit(root_branch_name, repo.handle.head.commit)
 
   @staticmethod
+  def does_default_branch_have_commit(repo):
+    return repo._does_local_branch_have_commit(repo.default_branch_name, repo.handle.head.commit)
+
+  @staticmethod
   def get_branch_name(repo):
     if repo.handle.head.is_detached:
       return "HEAD detached"
     else:
       return repo.handle.active_branch.name
 
-  # TODO handle other branch, and detached cases.
-  # TODO swithc statement?
   @staticmethod
   def color_branch(branch_name: str, repo, root: gordion.Tree):
     # Case1: Root branch is checked out.
@@ -175,19 +177,27 @@ class Folder:
     elif repo.handle.head.is_detached:
       if Folder.does_root_branch_have_commit(repo, root):
         return gordion.utils.yellow(branch_name)
-      # TODO check if default branch has commit.
+      elif Folder.does_default_branch_have_commit(repo):
+        return gordion.utils.yellow(branch_name)
       else:
         return gordion.utils.green(branch_name)
 
-  # TODO handle other branch, and detached cases.
   @staticmethod
   def get_branch_warnings(repo, root: gordion.Tree):
     branch_suggestion: Optional[str] = None
 
-    # TODO handle other branch, and detached cases.
+    # Case1: Default branch is checked out.
     if Folder.is_default_branch(repo):
       if Folder.does_root_branch_have_commit(repo, root):
         branch_suggestion = root.handle.active_branch.name
+
+    # Case2: Other branch is checked out. TODO
+    # Case3: DETATCHED
+    elif repo.handle.head.is_detached:
+      if Folder.does_root_branch_have_commit(repo, root):
+        branch_suggestion = root.handle.active_branch.name
+      elif Folder.does_default_branch_have_commit(repo):
+        branch_suggestion = repo.default_branch_name
 
     # Generate suggestions
     def append_warning(warning: str, addition: str):
