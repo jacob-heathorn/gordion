@@ -143,6 +143,12 @@ class Folder:
     return False
 
   @staticmethod
+  def is_other_branch(repo, root) -> bool:
+    if not repo.handle.head.is_detached:
+      return not Folder.is_default_branch(repo) and not Folder.is_root_branch(repo, root)
+    return False
+
+  @staticmethod
   def does_root_branch_have_commit(repo, root):
     if not root.handle.head.is_detached:
       root_branch_name = root.handle.active_branch.name
@@ -172,7 +178,10 @@ class Folder:
       else:
         return gordion.utils.green(branch_name)
 
-    # Case3: Other branch is checked out. TODO
+    # Case3: Other branch is checked out.
+    elif Folder.is_other_branch(repo, root):
+      return gordion.utils.yellow(branch_name)
+
     # Case4: DETATCHED
     elif repo.handle.head.is_detached:
       if Folder.does_root_branch_have_commit(repo, root):
@@ -191,7 +200,13 @@ class Folder:
       if Folder.does_root_branch_have_commit(repo, root):
         branch_suggestion = root.handle.active_branch.name
 
-    # Case2: Other branch is checked out. TODO
+    # Case2: Other branch is checked out.
+    elif Folder.is_other_branch(repo, root):
+      if Folder.does_root_branch_have_commit(repo, root):
+        branch_suggestion = root.handle.active_branch.name
+      elif Folder.does_default_branch_have_commit(repo):
+        branch_suggestion = repo.default_branch_name
+
     # Case3: DETATCHED
     elif repo.handle.head.is_detached:
       if Folder.does_root_branch_have_commit(repo, root):
