@@ -195,19 +195,23 @@ class Folder:
   def get_branch_warnings(repo, root: gordion.Tree):
     branch_suggestion: Optional[str] = None
 
-    # Case1: Default branch is checked out.
-    if Folder.is_default_branch(repo):
+    # Case1: Root branch is checked out.
+    if Folder.is_root_branch(repo, root):
+      pass
+
+    # Case2: Default branch is checked out.
+    elif Folder.is_default_branch(repo):
       if Folder.does_root_branch_have_commit(repo, root):
         branch_suggestion = root.handle.active_branch.name
 
-    # Case2: Other branch is checked out.
+    # Case3: Other branch is checked out.
     elif Folder.is_other_branch(repo, root):
       if Folder.does_root_branch_have_commit(repo, root):
         branch_suggestion = root.handle.active_branch.name
       elif Folder.does_default_branch_have_commit(repo):
         branch_suggestion = repo.default_branch_name
 
-    # Case3: DETATCHED
+    # Case4: DETATCHED
     elif repo.handle.head.is_detached:
       if Folder.does_root_branch_have_commit(repo, root):
         branch_suggestion = root.handle.active_branch.name
@@ -256,10 +260,10 @@ class Folder:
       is_repository_listed = does_tree_list_repository(root, self.repo)
 
       # Branch header.
-      branch_name = Folder.get_branch_name(self.repo)
+      branch_header = Folder.get_branch_name(self.repo)
       if is_repository_listed:
-        branch_name = Folder.color_branch(branch_name, self.repo, root)
-      branch_header = branch_name + Folder.get_branch_warnings(self.repo, root)
+        branch_header = Folder.color_branch(branch_header, self.repo, root)
+        branch_header += Folder.get_branch_warnings(self.repo, root)
 
       # Name branch:tag
       if is_repository_listed:
