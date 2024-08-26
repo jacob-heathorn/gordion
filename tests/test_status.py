@@ -80,7 +80,6 @@ def test_dangling_repository(demo_a):
   root_path = gordion.app.root.gordion_root(demo_a.path)
   root = gordion.Tree(root_path)
   assert TEST_DANGLING_REPOSITORY_STATUS == gordion.app.status.get_status(root)
-  print(gordion.app.status.get_status(root))
 
 
 # =================================================================================================

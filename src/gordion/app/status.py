@@ -192,7 +192,7 @@ class Folder:
         return gordion.utils.green(branch_name)
 
   @staticmethod
-  def get_branch_warnings(repo, root: gordion.Tree):
+  def get_branch_suggestion(repo, root: gordion.Tree):
     branch_suggestion: Optional[str] = None
 
     # Case1: Root branch is checked out.
@@ -218,7 +218,11 @@ class Folder:
       elif Folder.does_default_branch_have_commit(repo):
         branch_suggestion = repo.default_branch_name
 
-    # Generate suggestions
+    return branch_suggestion
+
+  @staticmethod
+  def get_branch_warnings(repo, root: gordion.Tree, branch_suggestion: Optional[str]):
+    # Generate warnings
     def append_warning(warning: str, addition: str):
       if not warning:
         warning = f"({addition})"
@@ -261,9 +265,12 @@ class Folder:
 
       # Branch header.
       branch_header = Folder.get_branch_name(self.repo)
+      branch_suggestion = None
       if is_repository_listed:
         branch_header = Folder.color_branch(branch_header, self.repo, root)
-        branch_header += Folder.get_branch_warnings(self.repo, root)
+        branch_suggestion = Folder.get_branch_suggestion(self.repo, root)
+
+      branch_header += Folder.get_branch_warnings(self.repo, root, branch_suggestion)
 
       # Name branch:tag
       if is_repository_listed:
