@@ -65,7 +65,7 @@ def does_tree_list_repository_with_tag(root: gordion.Tree, repo: gordion.Reposit
         # Otherwise check the child's children ONLY if the child is the correct tag.
         else:
           if child.handle.head.commit == child_target_commit:
-            if does_tree_list_repository(child, repo):
+            if does_tree_list_repository_with_tag(child, repo):
               return True
 
   return False
