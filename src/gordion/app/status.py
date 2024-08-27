@@ -221,6 +221,27 @@ class Folder:
     return branch_suggestion
 
   @staticmethod
+  def is_detached_head_saved(repo) -> bool:
+    # Check if the local HEAD commit is the tip of any local or remote branch.
+    head_commit = repo.handle.head.commit
+
+    # Check local branches.
+    local_branches = [branch for branch in repo.handle.branches
+                      if head_commit.hexsha == branch.commit.hexsha or  # noqa: W504
+                      head_commit.hexsha in  # noqa: W504
+                      [commit.hexsha for commit in branch.commit.iter_parents()]]
+
+    # If not found in local, check remote branches.
+    if not local_branches:
+        remote_branches = [branch for branch in repo.handle.remotes.origin.refs
+                           if head_commit.hexsha == branch.commit.hexsha or  # noqa: W504
+                           head_commit.hexsha in
+                           [commit.hexsha for commit in branch.commit.iter_parents()]]
+        return bool(remote_branches)
+
+    return bool(local_branches)
+
+  @staticmethod
   def get_branch_warnings(repo, root: gordion.Tree, branch_suggestion: Optional[str]):
     # Generate warnings
     def append_warning(warning: str, addition: str):
@@ -251,6 +272,11 @@ class Folder:
           warning_str = append_warning(warning_str, "ahead")
       else:
         warning_str = append_warning(warning_str, "untracked")
+
+    # Detached
+    else:
+      if not Folder.is_detached_head_saved(repo):
+        warning_str = append_warning(warning_str, "unsaved")
 
     if warning_str:
       return gordion.utils.yellow(warning_str)

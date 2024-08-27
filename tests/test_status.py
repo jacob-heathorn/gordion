@@ -150,6 +150,7 @@ def test_branch_color(demo_a):
     10. (ahead)
     11. (wrong tracking branch)
     12. (untracked) -- done
+    13. (unsaved)
   """
 
   # Checkout a new local branch on demoA
@@ -214,13 +215,15 @@ def test_branch_color(demo_a):
                        yellow('DETACHED HEAD') + yellow('(develop?)'), 0)
   assert expected == gordion.app.status.get_status(root)
 
-  # # Make a commit to demoC. Now the default branch is not available at this commit, so 'HEAD
-  # # detatched' becomes green. Verifies situations:
+  # # Make a commit to demoC. Now the default branch is not available at this commit, so 'DETACHED
+  # # HEAD' becomes green. Verifies situations:
   # # 3. Child is DETACHED and root/default branches are not available.
-  # # 10. (ahead)
+  # # 13. (unsaved)
   # demo_d.handle.index.commit("Empty commit for test_branch_color")
   # expected = replace_i(expected,
-  #                      yellow('HEAD detached') + yellow('(develop?)'),
-  #                      green('HEAD detached') + yellow('(ahead)'), 0)
+  #                      yellow('DETACHED HEAD') + yellow('(develop?)'),
+  #                      green('DETACHED HEAD') + yellow('(unsaved)'), 0)
+  # expected = expected.replace(green('1e58b64'), red(demo_d.handle.head.commit.hexsha[0:7]))
+  # # assert expected == gordion.app.status.get_status(root)
   # print(expected)
   # print(gordion.app.status.get_status(root))
