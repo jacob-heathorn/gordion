@@ -161,7 +161,7 @@ class Folder:
   @staticmethod
   def get_branch_name(repo):
     if repo.handle.head.is_detached:
-      return "HEAD detached"
+      return "DETACHED HEAD"
     else:
       return repo.handle.active_branch.name
 

@@ -211,7 +211,7 @@ def test_branch_color(demo_a):
   demo_d.handle.git.checkout(demo_d.handle.head.commit)
   expected = replace_i(expected,
                        green('develop'),
-                       yellow('HEAD detached') + yellow('(develop?)'), 0)
+                       yellow('DETACHED HEAD') + yellow('(develop?)'), 0)
   assert expected == gordion.app.status.get_status(root)
 
   # # Make a commit to demoC. Now the default branch is not available at this commit, so 'HEAD
