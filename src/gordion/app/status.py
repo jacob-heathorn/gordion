@@ -227,7 +227,7 @@ class Folder:
       if not warning:
         warning = f"({addition})"
       else:
-        warning = warning[0:-2]
+        warning = warning[0:-1]
         warning += f", {addition})"
       return warning
 

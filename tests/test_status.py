@@ -2,6 +2,7 @@
 
 import gordion
 from gordion.utils import green, bold_green, bold_blue, red, bold_red, yellow
+from gordion.utils import replace_i
 import pytest
 from tests.conftest import recursive_git_blast
 import os
@@ -123,3 +124,103 @@ def test_dirty_commit(demo_a):
   root_path = gordion.app.root.gordion_root(demo_a.path)
   root = gordion.Tree(root_path)
   assert expected_status == gordion.app.status.get_status(root)
+
+
+# =================================================================================================
+# Tests for branch status
+
+# TODO DETACHED HEAD
+def test_branch_color(demo_a):
+  """
+  Verifies root branch color rendering in the following situations:
+  Green:
+    1. Child same as root branch. -- done
+    2. Child is default branch, while root branch is not available. -- done
+    3. Child is DETACHED and root/default branches are not available.
+
+  Yellow:
+    4. Child is default branch while root branch is available. -- done
+    5. Child is different branch while root branch is available. -- done
+    6. Child is different branch while default branch is available. -- done
+    7. Child is DETACHED while root or default branch is available. -- done
+
+  Suggestions:
+    8.  (root branch?) -- done
+    9.  (default branch?) -- done
+    10. (ahead)
+    11. (wrong tracking branch)
+    12. (untracked) -- done
+  """
+
+  # Checkout a new local branch on demoA
+  demo_a.handle.git.checkout('-b', 'test_branch_color')
+
+  # Verifies situations:
+  # 2. Child branch is default branch, while root branch is not available.
+  # (All children are default branch, and still green)
+  # 12. (untracked)
+  expected = NOMINAL_STATUS.replace(green('test_status'),
+                                    green('test_branch_color') + yellow('(untracked)'))
+  root_path = gordion.app.root.gordion_root(demo_a.path)
+  root = gordion.Tree(root_path)
+  assert expected == gordion.app.status.get_status(root)
+
+  # Now create a new branch on demoB, verify status.
+  demo_b = demo_a.children['gordion_demo_b']
+  demo_b.handle.git.checkout('-b', 'test_branch_color')
+
+  # Verifies situations:
+  # 1. Child same as root branch.
+  expected = replace_i(expected,
+                       green('develop'),
+                       green('test_branch_color') + yellow('(untracked)'), 1)
+  assert expected == gordion.app.status.get_status(root)
+
+  # Now checkout the develop branch again on demoB. The branch will render yellow, and the root
+  # branch will be suggested, now that it is available. Verifies situations:
+  # 4. Child is default branch while root branch is available.
+  # 8. (root branch?)
+  demo_b.handle.branches['develop'].checkout()
+  expected = replace_i(expected,
+                       green('test_branch_color') + yellow('(untracked)'),
+                       yellow('develop') + yellow('(test_branch_color?)'), 1)
+  assert expected == gordion.app.status.get_status(root)
+
+  # On demoC, verify checking out a different branch will suggest default branch (develop). Verifies
+  # situations:
+  # 6. Child is different branch while default branch is available.
+  # 9. (default branch?)
+  demo_c = demo_a.children['gordion_demo_c']
+  demo_c.handle.git.checkout('-b', 'different_branch')
+  expected = replace_i(expected,
+                       green('develop'),
+                       yellow('different_branch') + yellow('(develop?, untracked)'), 1)
+  assert expected == gordion.app.status.get_status(root)
+
+  # On demoB, checkout a different branch. Verifies situations:
+  # 5. Child is different branch while root branch is available.
+  demo_b.handle.git.checkout('-b', 'different_branch')
+  expected = replace_i(expected,
+                       yellow('develop') + yellow('(test_branch_color?)'),
+                       yellow('different_branch') + yellow('(test_branch_color?, untracked)'), 0)
+  assert expected == gordion.app.status.get_status(root)
+
+  # On demoC, checkout a detached HEAD state. Verifies situations:
+  # 7. Child is DETACHED while root or default branch is available.
+  demo_d = demo_b.children['gordion_demo_d']
+  demo_d.handle.git.checkout(demo_d.handle.head.commit)
+  expected = replace_i(expected,
+                       green('develop'),
+                       yellow('HEAD detached') + yellow('(develop?)'), 0)
+  assert expected == gordion.app.status.get_status(root)
+
+  # # Make a commit to demoC. Now the default branch is not available at this commit, so 'HEAD
+  # # detatched' becomes green. Verifies situations:
+  # # 3. Child is DETACHED and root/default branches are not available.
+  # # 10. (ahead)
+  # demo_d.handle.index.commit("Empty commit for test_branch_color")
+  # expected = replace_i(expected,
+  #                      yellow('HEAD detached') + yellow('(develop?)'),
+  #                      green('HEAD detached') + yellow('(ahead)'), 0)
+  # print(expected)
+  # print(gordion.app.status.get_status(root))

@@ -2,6 +2,7 @@ import contextlib
 import os
 from urllib.parse import urlparse
 import traceback
+import re
 
 
 # Context manager for pushd. Example from
@@ -149,3 +150,29 @@ def bold_blue(str):
 
 def yellow(str):
   return '\033[93m' + str + "\033[0m"
+
+
+def replace_i(text, old, new, occurrence_i):
+  """
+  Replaces 'old' with 'new' at the 'occurrence_i' instance index in 'text'.
+
+  Parameters:
+  - text (str): The original string.
+  - old (str): The substring to replace.
+  - new (str): The substring to use as replacement.
+  - occurrence (int): The specific occurrence to replace (0-based index).
+
+  Returns:
+  - str: The modified string with the specified occurrence replaced.
+  """
+  # Find all the start positions of 'old' in 'text'
+  matches = list(re.finditer(re.escape(old), text))
+  if len(matches) < (occurrence_i + 1):
+    return text  # Return the original if there are less occurrences than required
+
+  # Get the specific match
+  specific_match = matches[occurrence_i]
+  start, end = specific_match.start(), specific_match.end()
+
+  # Replace only the specified occurrence
+  return text[:start] + new + text[end:]
