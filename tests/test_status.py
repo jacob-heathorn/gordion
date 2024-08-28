@@ -34,7 +34,6 @@ def demo_a(tree_a):
 # =================================================================================================
 # Nominal status test
 
-
 NOMINAL_STATUS = \
   f"""{bold_green('gordion_demo_a')} {green('test_status')}:{green('7e869f8')}
 └──{bold_blue('gordion')}
@@ -57,7 +56,6 @@ def test_nominal_status(demo_a):
 
 # =================================================================================================
 # Tests for repository status
-
 
 TEST_DANGLING_REPOSITORY_STATUS = \
   f"""{bold_green('gordion_demo_a')} {green('test_dangling_repository')}:{green('cf343cd')}
@@ -86,7 +84,6 @@ def test_dangling_repository(demo_a):
 
 # =================================================================================================
 # Tests for commit status
-
 
 def test_wrong_commit(demo_a):
   """
@@ -129,7 +126,6 @@ def test_dirty_commit(demo_a):
 # =================================================================================================
 # Tests for branch status
 
-# TODO DETACHED HEAD
 def test_branch_color(demo_a):
   """
   Verifies root branch color rendering in the following situations:
@@ -148,7 +144,7 @@ def test_branch_color(demo_a):
     8.  (root branch?) -- done
     9.  (default branch?) -- done
     10. (ahead)
-    11. (wrong tracking branch)
+    11. (wrong tracking branch) -- done
     12. (untracked) -- done
     13. (unsaved) -- done
   """
@@ -224,6 +220,14 @@ def test_branch_color(demo_a):
                        yellow('DETACHED HEAD') + yellow('(develop?)'),
                        green('DETACHED HEAD') + yellow('(unsaved)'), 0)
   expected = expected.replace(green('1e58b64'), red(demo_d.handle.head.commit.hexsha[0:7]))
+  assert expected == gordion.app.status.get_status(root)
+
+  # Make demoC point to the wrong tracking branch. Verifies situations:
+  # 11. (wrong tracking branch)
+  demo_c.handle.active_branch.set_tracking_branch(demo_c.handle.remotes['origin'].refs['develop'])
+  expected = replace_i(expected,
+                       yellow('different_branch') + yellow('(develop?, untracked)'),
+                       yellow('different_branch') + yellow('(develop?, wrong tracking branch)'), 0)
   assert expected == gordion.app.status.get_status(root)
   # print(expected)
   # print(gordion.app.status.get_status(root))
