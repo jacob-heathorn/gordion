@@ -143,23 +143,30 @@ def test_branch_color(demo_a):
   Suggestions:
     8.  (root branch?) -- done
     9.  (default branch?) -- done
-    10. (ahead)
+    10. (ahead) -- done
     11. (wrong tracking branch) -- done
     12. (untracked) -- done
     13. (unsaved) -- done
   """
-
-  # Checkout a new local branch on demoA
-  demo_a.handle.git.checkout('-b', 'test_branch_color')
-
-  # Verifies situations:
-  # 2. Child branch is default branch, while root branch is not available.
-  # (All children are default branch, and still green)
-  # 12. (untracked)
-  expected = NOMINAL_STATUS.replace(green('test_status'),
-                                    green('test_branch_color') + yellow('(untracked)'))
   root_path = gordion.app.root.gordion_root(demo_a.path)
   root = gordion.Tree(root_path)
+
+  # Add an arbitrary commit to repoA. Verifies situations:
+  # 10. (ahead)
+  # 2. Child branch is default branch, while root branch is not available.
+  # (All children are default branch, and still green)
+  demo_a.handle.index.commit("Empty commit for test_branch_color")
+  expected = NOMINAL_STATUS.replace(green('test_status'),
+                                    green('test_status') + yellow('(ahead)'))
+  expected = expected.replace(green('7e869f8'),
+                              green(demo_a.handle.head.commit.hexsha[0:7]))
+  assert expected == gordion.app.status.get_status(root)
+
+  # Checkout a new local branch on demoA. Verifies situations:
+  # 12. (untracked)
+  demo_a.handle.git.checkout('-b', 'test_branch_color')
+  expected = expected.replace(green('test_status') + yellow('(ahead)'),
+                              green('test_branch_color') + yellow('(untracked)'))
   assert expected == gordion.app.status.get_status(root)
 
   # Now create a new branch on demoB, verify status.
@@ -229,5 +236,6 @@ def test_branch_color(demo_a):
                        yellow('different_branch') + yellow('(develop?, untracked)'),
                        yellow('different_branch') + yellow('(develop?, wrong tracking branch)'), 0)
   assert expected == gordion.app.status.get_status(root)
+
   # print(expected)
   # print(gordion.app.status.get_status(root))
