@@ -257,8 +257,8 @@ def test_child_detached_green(demo_a):
     3. Child is DETACHED and root/default branches are not available.
     13. (unsaved)
   """
-  # Make a commit to demoC while detached. Now the default branch is not available at this commit,
-  # so 'DETACHED HEAD' becomes green.
+  # Make a commit to demoC while detached. The default branch is not available at this commit,
+  # so 'DETACHED HEAD' is green.
   demo_d = demo_a.children['gordion_demo_b'].children['gordion_demo_d']
   demo_d.handle.git.checkout(demo_d.handle.head.commit)
   demo_d.handle.index.commit("Empty commit for test_child_detached_green")
