@@ -128,23 +128,23 @@ def test_dirty_commit(demo_a):
 #
 # Verifies root branch color rendering in the following situations:
 # Green:
-#   1. Child same as root branch. -- done
-#   2. Child is default branch, while root branch is not available. -- done
-#   3. Child is DETACHED and root/default branches are not available. -- done
+#   1. Child same as root branch.
+#   2. Child is default branch, while root branch is not available.
+#   3. Child is DETACHED and root/default branches are not available.
 
 # Yellow:
-#   4. Child is default branch while root branch is available. -- done
-#   5. Child is different branch while root branch is available. -- done
-#   6. Child is different branch while default branch is available. -- done
-#   7. Child is DETACHED while root or default branch is available. -- done
+#   4. Child is default branch while root branch is available.
+#   5. Child is different branch while root branch is available.
+#   6. Child is different branch while default branch is available.
+#   7. Child is DETACHED while root or default branch is available.
 
 # Suggestions:
-#   8.  (root branch?) -- done
-#   9.  (default branch?) -- done
-#   10. (ahead) -- done
-#   11. (wrong tracking branch) -- done
-#   12. (untracked) -- done
-#   13. (unsaved) -- done
+#   8.  (root branch?)
+#   9.  (default branch?)
+#   10. (ahead)
+#   11. (wrong tracking branch)
+#   12. (untracked)
+#   13. (unsaved)
 
 def test_branch_ahead(demo_a):
   """
@@ -153,15 +153,29 @@ def test_branch_ahead(demo_a):
     2. Child branch is default branch, while root branch is not available.
        (All children are default branch, and still green)
   """
-
-  root_path = gordion.app.root.gordion_root(demo_a.path)
-  root = gordion.Tree(root_path)
-
   demo_a.handle.index.commit("Empty commit for test_branch_color")
   expected = NOMINAL_STATUS.replace(green('test_status'),
                                     green('test_status') + yellow('(ahead)'))
   expected = expected.replace(green('7e869f8'),
                               green(demo_a.handle.head.commit.hexsha[0:7]))
+  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
+  assert expected == gordion.app.status.get_status(root)
+
+
+def test_wrong_tracking_branch(demo_a):
+  """
+  Verifies situations:
+    6. Child is different branch while default branch is available.
+    9. (default branch?)
+    11. (wrong tracking branch)
+  """
+  demo_c = demo_a.children['gordion_demo_c']
+  demo_c.handle.git.checkout('-b', 'different_branch')
+  demo_c.handle.active_branch.set_tracking_branch(demo_c.handle.remotes['origin'].refs['develop'])
+  expected = replace_i(NOMINAL_STATUS,
+                       green('develop'),
+                       yellow('different_branch') + yellow('(develop?, wrong tracking branch)'), 2)
+  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
   assert expected == gordion.app.status.get_status(root)
 
 
@@ -171,7 +185,6 @@ def test_child_branch_is_root_branch(demo_a):
     12. (untracked)
     1. Child same as root branch.
   """
-
   demo_a.handle.git.checkout('-b', 'root_branch')
   demo_b = demo_a.children['gordion_demo_b']
   demo_b.handle.git.checkout('-b', 'root_branch')
@@ -191,7 +204,6 @@ def test_child_default_root_available(demo_a):
     4. Child is default branch while root branch is available.
     8. (root branch?)
   """
-
   demo_a.handle.git.checkout('-b', 'root_branch')
   demo_b = demo_a.children['gordion_demo_b']
   demo_b.handle.git.checkout('-b', 'root_branch')
@@ -202,22 +214,6 @@ def test_child_default_root_available(demo_a):
   expected = replace_i(expected,
                        green('develop'),
                        yellow('develop') + yellow('(root_branch?)'), 1)
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
-
-
-def test_child_different_default_available(demo_a):
-  """
-  Verifies situations:
-    6. Child is different branch while default branch is available.
-    9. (default branch?)
-  """
-
-  demo_c = demo_a.children['gordion_demo_c']
-  demo_c.handle.git.checkout('-b', 'different_branch')
-  expected = replace_i(NOMINAL_STATUS,
-                       green('develop'),
-                       yellow('different_branch') + yellow('(develop?, untracked)'), 2)
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
   assert expected == gordion.app.status.get_status(root)
 
@@ -240,59 +236,35 @@ def test_child_different_root_available(demo_a):
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
   assert expected == gordion.app.status.get_status(root)
 
-# def test_branch_color(demo_a):
-#   """
-#   Verifies root branch color rendering in the following situations:
-#   Green:
-#     1. Child same as root branch. -- done
-#     2. Child is default branch, while root branch is not available. -- done
-#     3. Child is DETACHED and root/default branches are not available. -- done
 
-#   Yellow:
-#     4. Child is default branch while root branch is available. -- done
-#     5. Child is different branch while root branch is available. -- done
-#     6. Child is different branch while default branch is available. -- done
-#     7. Child is DETACHED while root or default branch is available. -- done
-
-#   Suggestions:
-#     8.  (root branch?) -- done
-#     9.  (default branch?) -- done
-#     10. (ahead) -- done
-#     11. (wrong tracking branch) -- done
-#     12. (untracked) -- done
-#     13. (unsaved) -- done
-#   """
-#   root_path = gordion.app.root.gordion_root(demo_a.path)
-#   root = gordion.Tree(root_path)
+def test_child_detached_root_available(demo_a):
+  """
+  Verifies situations:
+    7. Child is DETACHED while root or default branch is available.
+  """
+  demo_d = demo_a.children['gordion_demo_b'].children['gordion_demo_d']
+  demo_d.handle.git.checkout(demo_d.handle.head.commit)
+  expected = replace_i(NOMINAL_STATUS,
+                       green('develop'),
+                       yellow('DETACHED HEAD') + yellow('(develop?)'), 0)
+  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
+  assert expected == gordion.app.status.get_status(root)
 
 
-  # # On demoC, checkout a detached HEAD state. Verifies situations:
-  # # 7. Child is DETACHED while root or default branch is available.
-  # demo_d = demo_b.children['gordion_demo_d']
-  # demo_d.handle.git.checkout(demo_d.handle.head.commit)
-  # expected = replace_i(expected,
-  #                      green('develop'),
-  #                      yellow('DETACHED HEAD') + yellow('(develop?)'), 0)
-  # assert expected == gordion.app.status.get_status(root)
-
-  # # Make a commit to demoC. Now the default branch is not available at this commit, so 'DETACHED
-  # # HEAD' becomes green. Verifies situations:
-  # # 3. Child is DETACHED and root/default branches are not available.
-  # # 13. (unsaved)
-  # demo_d.handle.index.commit("Empty commit for test_branch_color")
-  # expected = replace_i(expected,
-  #                      yellow('DETACHED HEAD') + yellow('(develop?)'),
-  #                      green('DETACHED HEAD') + yellow('(unsaved)'), 0)
-  # expected = expected.replace(green('1e58b64'), red(demo_d.handle.head.commit.hexsha[0:7]))
-  # assert expected == gordion.app.status.get_status(root)
-
-  # # Make demoC point to the wrong tracking branch. Verifies situations:
-  # # 11. (wrong tracking branch)
-  # demo_c.handle.active_branch.set_tracking_branch(demo_c.handle.remotes['origin'].refs['develop'])
-  # expected = replace_i(expected,
-  #                      yellow('different_branch') + yellow('(develop?, untracked)'),
-  #                      yellow('different_branch') + yellow('(develop?, wrong tracking branch)'), 0)
-  # assert expected == gordion.app.status.get_status(root)
-
-  # print(expected)
-  # print(gordion.app.status.get_status(root))
+def test_child_detached_green(demo_a):
+  """
+  Verifies situations:
+    3. Child is DETACHED and root/default branches are not available.
+    13. (unsaved)
+  """
+  # Make a commit to demoC while detached. Now the default branch is not available at this commit,
+  # so 'DETACHED HEAD' becomes green.
+  demo_d = demo_a.children['gordion_demo_b'].children['gordion_demo_d']
+  demo_d.handle.git.checkout(demo_d.handle.head.commit)
+  demo_d.handle.index.commit("Empty commit for test_child_detached_green")
+  expected = replace_i(NOMINAL_STATUS,
+                       green('develop'),
+                       green('DETACHED HEAD') + yellow('(unsaved)'), 0)
+  expected = expected.replace(green('1e58b64'), red(demo_d.handle.head.commit.hexsha[0:7]))
+  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
+  assert expected == gordion.app.status.get_status(root)
