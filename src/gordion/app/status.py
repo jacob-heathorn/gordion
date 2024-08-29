@@ -3,74 +3,6 @@ import os
 from typing import List, Optional
 
 
-def does_tree_list_repository(root: gordion.Tree, repo: gordion.Repository) -> bool:
-  """
-  Returns true if any of the tree lists the provided repository, identified by the name, url, and
-  path. Or if any of the children (with correct tags) list the repository.
-  """
-  if repo == root:
-    return True
-
-  root.yeditor.reload()
-  # Check yaml file for this repository
-  if root.yeditor.exists():
-    for child_name, child_info in root.yeditor.yaml_data['repositories'].items():
-      gpath = root.yeditor.read_repository_gpath(child_name)
-      child_path = os.path.join(gordion.Store().path, gpath)
-
-      # Check if the child repository exists
-      if gordion.Repository._exists(child_path):
-
-        # If the child matches the repo by name, path, and url, then it is in the tree.
-        if repo.name == child_name and repo.path == child_path and repo.url == child_info['url']:
-          return True
-
-        # Otherwise check the child's children ONLY if the child is the correct tag.
-        else:
-          child = gordion.Tree(child_path)
-          child_target_commit = child._verify_tag(child_info['tag'])
-          if child.handle.head.commit == child_target_commit:
-            if does_tree_list_repository(child, repo):
-              return True
-
-  return False
-
-
-# TODO duiplicate code
-def does_tree_list_repository_with_tag(root: gordion.Tree, repo: gordion.Repository) -> bool:
-  """
-  Returns true if any of the tree lists the provided repository, identified by the name, url,
-  path, and tag. Or if any of the children (with correct tags) list the repository.
-  """
-  if repo == root:
-    return True
-
-  root.yeditor.reload()
-  # Check yaml file for this repository
-  if root.yeditor.exists():
-    for child_name, child_info in root.yeditor.yaml_data['repositories'].items():
-      gpath = root.yeditor.read_repository_gpath(child_name)
-      child_path = os.path.join(gordion.Store().path, gpath)
-
-      # Check if the child repository exists
-      if gordion.Repository._exists(child_path):
-        child = gordion.Tree(child_path)
-        child_target_commit = child._verify_tag(child_info['tag'])
-
-        # If the child matches the repo by name, path, and url, and tag then return true.
-        if (repo.name == child_name and repo.path == child_path and  # noqa: W504
-            repo.url == child_info['url'] and repo.handle.head.commit == child_target_commit):
-          return True
-
-        # Otherwise check the child's children ONLY if the child is the correct tag.
-        else:
-          if child.handle.head.commit == child_target_commit:
-            if does_tree_list_repository_with_tag(child, repo):
-              return True
-
-  return False
-
-
 def get_repository_listings(root: gordion.Tree, repo: gordion.Repository) -> set[str]:
   """
   Returns a list of tags from the tree if the tree lists the repository identified by name, url and
@@ -94,9 +26,8 @@ def get_repository_listings(root: gordion.Tree, repo: gordion.Repository) -> set
         child = gordion.Tree(child_path)
         child_target_commit = child._verify_tag(child_info['tag'])
 
-        # If the child matches the repo by name, path, and url, and tag then return true.
-        if (repo.name == child_name and repo.path == child_path and  # noqa: W504
-            repo.url == child_info['url']):
+        # If the child matches the repo by name, path, and url, then add the listing tag.
+        if (repo.name == child_name and repo.path == child_path and repo.url == child_info['url']):
           tags.add(child_target_commit.hexsha)
 
         # Also check the child's children ONLY if the child is the correct tag.
