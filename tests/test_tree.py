@@ -57,19 +57,27 @@ def test_same_repo_different_tag(demo_a):
   demo_a.handle.git.commit('-m', "Point to latest B")
 
   # Save some information before the update.
-  b_ref_d = demo_a.children['gordion_demo_b'].children['gordion_demo_d']
-  b_ref_d_tag = demo_a.children['gordion_demo_b'].yeditor.read_repository_tag('gordion_demo_d')
-  c_ref_d = demo_a.children['gordion_demo_c'].children['gordion_demo_d']
-  c_ref_d_tag = demo_a.children['gordion_demo_c'].yeditor.read_repository_tag('gordion_demo_d')
+  b_ref_d = demo_b.children['gordion_demo_d']
+  b_ref_d_commit = b_ref_d._verify_tag(demo_b.yeditor.read_repository_tag('gordion_demo_d'))
+  demo_c = demo_a.children['gordion_demo_c']
+  c_ref_d = demo_c.children['gordion_demo_d']
+  c_ref_d_commit = c_ref_d._verify_tag(demo_c.yeditor.read_repository_tag('gordion_demo_d'))
 
   # Now update, it should raise error, tag mismatch.
   with pytest.raises(gordion.UpdateSameRepoDifferentTagError) as context:
     demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
 
   # Verify the exception.
-  expected = gordion.UpdateSameRepoDifferentTagError(b_ref_d.path, b_ref_d._listed_path(),
-                                                     b_ref_d_tag, c_ref_d._listed_path(),
-                                                     c_ref_d_tag)
+  listings = []
+  listings.append(gordion.Tree.Listing(b_ref_d, b_ref_d_commit))
+  listings.append(gordion.Tree.Listing(c_ref_d, c_ref_d_commit))
+  expected = gordion.UpdateSameRepoDifferentTagError(b_ref_d.path, listings)
+
+  print("\n")
+  print(expected)
+  print("\n")
+  print(context.value)
+  print("\n")
   assert str(context.value) == str(expected)
 
 

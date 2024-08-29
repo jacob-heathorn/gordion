@@ -68,11 +68,10 @@ class UpdateSameRepoDifferentPathError(UpdateError):
 
 
 class UpdateSameRepoDifferentTagError(UpdateError):
-  def __init__(self, target_path, target_listed_path, target_tag, other_listed_path,
-               other_tag):
-    reason = (f"Gordion repository tag mismatch!\n"
-              f"{target_listed_path}:{target_tag}\n"
-              f"{other_listed_path}:{other_tag}\n")
+  def __init__(self, target_path, listings):
+    reason = "Gordion repository tag mismatch!\n"
+    for listing in listings:
+      reason += f"{listing.tree._listed_path()}:{listing.commit.hexsha}\n"
     suggestion = ("The tags need to match. I guess that's kinda the whole point of this thing")
     super().__init__(target_path, reason, suggestion)
 

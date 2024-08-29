@@ -151,13 +151,10 @@ class Tree(gordion.Repository):
 
     listings = self.child_listings(target)
 
-    # TODO better error about all mismatched listings.
+    # Raise an error if any of the listings don't match.
     for listing in listings:
       if listing.commit != target_commit:
-        raise gordion.UpdateSameRepoDifferentTagError(
-          target.path, target._listed_path(),
-          target_commit, listing.tree._listed_path(),
-          listing.commit)
+        raise gordion.UpdateSameRepoDifferentTagError(target.path, listings)
 
   # TODO use child listings for other errors too. And in status.
   Listing = namedtuple('Listing', ['tree', 'commit'])
