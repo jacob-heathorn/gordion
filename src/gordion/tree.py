@@ -2,6 +2,7 @@ import gordion
 import os
 import git
 from typing import List
+from collections import namedtuple
 
 
 class Tree(gordion.Repository):
@@ -143,27 +144,6 @@ class Tree(gordion.Repository):
     for _, other_child in other.children.items():
       Tree._check_same_repo_different_path(target_path, target_url, other_child)
 
-  # def _check_duplicate_commit(self, target_commit: git.Commit, other):
-  #   """
-  #   Recursively checks the repository tag against another repository and it's children.
-  #   """
-
-  #   if self is not other:
-  #     host, username, repo_name = gordion.extract_repo_details(self.url)
-  #     other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
-
-  #     # Check if the remote repository is the same
-  #     if host == other_host and username == other_username and repo_name == other_repo_name:
-  #       # Make sure the repository has the same tag.
-  #       if target_commit != other.handle.head.commit:
-  #         raise gordion.UpdateSameRepoDifferentTagError(self.path, self._listed_path(),
-  #                                                       target_commit, other._listed_path(),
-  #                                                       other.handle.head.commit)
-
-  #   # Check against the other's children
-  #   for _, other_child in other.children.items():
-  #     Tree._check_duplicate_commit(self, target_commit, other_child)
-
   def _check_duplicate_commit(self, target, target_commit: git.Commit):
     """
     Recursively checks the target repository & tag for duplicate listings in this tree.
@@ -173,27 +153,21 @@ class Tree(gordion.Repository):
 
     # TODO better error about all mismatched listings.
     for listing in listings:
-      if listing[1] != target_commit:
+      if listing.commit != target_commit:
         raise gordion.UpdateSameRepoDifferentTagError(
           target.path, target._listed_path(),
-          target_commit, listing[0]._listed_path(),
-          listing[1])
+          target_commit, listing.tree._listed_path(),
+          listing.commit)
 
-    # # Check against the other's children
-    # for _, other_child in other.children.items():
-    #   Tree._check_duplicate_commit(self, target_commit, other_child)
+  # TODO use child listings for other errors too. And in status.
+  Listing = namedtuple('Listing', ['tree', 'commit'])
 
-  # -> list[Tuple[gordion.Tree, git.Commit]]:
-  def child_listings(self, target: gordion.Repository):
+  def child_listings(self, target: gordion.Repository) -> List[Listing]:
     """
     Searches the tree for listings of the provided target repository and returns a list of Tuples of
     gordion.Tree and the commit listing of the target repository.
     """
-    tags = []
-
-    # if target == self:
-    #   tags.append((self, self.handle.head.commit))
-    #   return tags
+    listings = []
 
     self.yeditor.reload()
     # Check yaml file for this repository
@@ -212,10 +186,10 @@ class Tree(gordion.Repository):
             # Check if the child matches the target by name, path, and url
             if (target.name == child_name and target.path == child_path and  # noqa: W504
                 target.url == child_info['url']):
-              tags.append((child, child_target_commit))
+              listings.append(gordion.Tree.Listing(tree=child, commit=child_target_commit))
 
             # Also check the child's children ONLY if the child is the correct tag.
             if child.handle.head.commit == child_target_commit:
-              tags.extend(child.child_listings(target))
+              listings.extend(child.child_listings(target))
 
-    return tags
+    return listings
