@@ -5,8 +5,8 @@ from typing import List, Optional
 
 def get_repository_listings(root: gordion.Tree, repo: gordion.Repository) -> set[str]:
   """
-  Returns a list of tags from the tree if the tree lists the repository identified by name, url and
-  path 1 or more times.
+  Searches the tree for listings of the provided repository and returns a unique set of tags to
+  represent these listings.
   """
   tags = set()
 

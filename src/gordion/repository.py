@@ -304,6 +304,11 @@ class Repository:
       # If Repo initialization fails, the path is not a Git repository
       return False
 
+  @staticmethod
+  def _url(path: str) -> str:
+    repo = git.Repo(path)
+    return repo.remotes.origin.url
+
   def _fetch_once(self):
     """
     Fetches only once for the lifetime of this Repository object.
