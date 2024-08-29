@@ -270,7 +270,7 @@ class Folder:
         header = gordion.utils.bold_green(self.name)
         header += " " + branch_header
         if len(listings) > 1:
-          header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]} (mismatch)")
+          header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
         elif len(listings) == 1:
           if list(listings)[0] == self.repo.handle.head.commit.hexsha:
             header += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")

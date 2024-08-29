@@ -5,7 +5,6 @@ from gordion.utils import green, bold_green, bold_blue, red, bold_red, yellow
 from gordion.utils import replace_i
 import pytest
 from tests.conftest import recursive_git_blast
-import os
 
 
 @pytest.fixture
@@ -16,7 +15,7 @@ def demo_a(tree_a):
   # Setup
   #
   # Set the object to a known commit and branch.
-  tag = '7e869f8de5bc0e1b5edc44682d5fd330e68b0d74'
+  tag = '4d95f11'
   branch_name = 'test_status'
 
   # Set the target branch/commit.
@@ -35,13 +34,13 @@ def demo_a(tree_a):
 # Nominal status test
 
 NOMINAL_STATUS = \
-  f"""{bold_green('gordion_demo_a')} {green('test_status')}:{green('7e869f8')}
+  f"""{bold_green('gordion_demo_a')} {green('test_status')}:{green('4d95f11')}
 └──{bold_blue('gordion')}
-    ├──{bold_green('gordion_demo_d')} {green('develop')}:{green('1e58b64')}
+    ├──{bold_green('gordion_demo_d')} {green('develop')}:{green('c516fff')}
     ├──{bold_blue('level_1')}
-    │   └──{bold_green('gordion_demo_b')} {green('develop')}:{green('64d65c2')}
+    │   └──{bold_green('gordion_demo_b')} {green('develop')}:{green('fe4fd4d')}
     └──{bold_blue('level_2')}
-        └──{bold_green('gordion_demo_c')} {green('develop')}:{green('ef7aabb')}"""
+        └──{bold_green('gordion_demo_c')} {green('develop')}:{green('1a8f7fe')}"""
 
 
 def test_nominal_status(demo_a):
@@ -49,37 +48,27 @@ def test_nominal_status(demo_a):
   Verifies the nominal status string (all green).
   """
 
-  root_path = gordion.app.root.gordion_root(demo_a.path)
-  root = gordion.Tree(root_path)
+  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
   assert NOMINAL_STATUS == gordion.app.status.get_status(root)
 
 
 # =================================================================================================
 # Tests for repository status
 
-TEST_DANGLING_REPOSITORY_STATUS = \
-  f"""{bold_green('gordion_demo_a')} {green('test_dangling_repository')}:{green('cf343cd')}
-└──{bold_blue('gordion')}
-    ├──{bold_green('gordion_demo_d')} {green('develop')}:{green('1e58b64')}
-    ├──{bold_blue('level_1')}
-    │   └──{bold_green('gordion_demo_b')} {green('develop')}:{green('64d65c2')}
-    └──{bold_blue('level_2')}
-        └──{bold_red('gordion_demo_c')} {'develop'}:{'ef7aabb'}"""
-
-
 def test_dangling_repository(demo_a):
   """
   Verifies the repository will appear RED if it is unlisted. The commit and branch will appear
   white.
   """
-
-  # Checkout branch test_dangling_repository.
   demo_a.handle.git.checkout('-b', 'test_dangling_repository', 'origin/test_dangling_repository')
+  expected = NOMINAL_STATUS.replace(f"{green('test_status')}:{green('4d95f11')}",
+                                    f"{green('test_dangling_repository')}:{green('4b8e62f')}")
+  expected = \
+    expected.replace(f"{bold_green('gordion_demo_c')} {green('develop')}:{green('1a8f7fe')}",
+                     f"{bold_red('gordion_demo_c')} develop:1a8f7fe")
 
-  # Get actual status and verify.
-  root_path = gordion.app.root.gordion_root(demo_a.path)
-  root = gordion.Tree(root_path)
-  assert TEST_DANGLING_REPOSITORY_STATUS == gordion.app.status.get_status(root)
+  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
+  assert expected == gordion.app.status.get_status(root)
 
 
 # =================================================================================================
@@ -96,31 +85,29 @@ def test_wrong_commit(demo_a):
 
   # Get the expected status string.
   demo_c_new_commit = demo_c.handle.head.commit.hexsha[:7]
-  expected_status = NOMINAL_STATUS.replace(green('ef7aabb'), red(demo_c_new_commit))
-
-  # Get actual status and verify.
-  root_path = gordion.app.root.gordion_root(demo_a.path)
-  root = gordion.Tree(root_path)
-  assert expected_status == gordion.app.status.get_status(root)
+  expected = NOMINAL_STATUS.replace(green('1a8f7fe'), red(demo_c_new_commit))
+  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
+  assert expected == gordion.app.status.get_status(root)
 
 
-def test_dirty_commit(demo_a):
+def test_child_mismatch(demo_a):
   """
-  Verifies the commit have a "-dirty" flag if there are uncommitted changes.
+  Verifies the following commit appendages:
+    -mismatch
+    -dirty
   """
+  # Change demoB's listing of demoD to HEAD~1
+  demo_b = demo_a.children['gordion_demo_b']
+  demo_d = demo_b.children['gordion_demo_d']
+  dminus1 = demo_d.handle.head.commit.parents[0]
+  demo_b.yeditor.write_repository_tag('gordion_demo_d', dminus1.hexsha)
+  demo_b.yeditor.save()
 
-  # Make demoB dirty.
-  file_path = os.path.join(demo_a.children['gordion_demo_b'].path, 'README.md')
-  with open(file_path, 'w') as file:
-    file.write('test_dirty_commit wrote this.\n')
-
-  # Get the expected status string.
-  expected_status = NOMINAL_STATUS.replace(green('64d65c2'), green('64d65c2') + yellow('-dirty'))
-
-  # Get actual status and verify.
-  root_path = gordion.app.root.gordion_root(demo_a.path)
-  root = gordion.Tree(root_path)
-  assert expected_status == gordion.app.status.get_status(root)
+  # Verify.
+  expected = NOMINAL_STATUS.replace(green('c516fff'), red('c516fff-mismatch'))
+  expected = expected.replace(green('fe4fd4d'), green('fe4fd4d') + yellow('-dirty'))
+  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
+  assert expected == gordion.app.status.get_status(root)
 
 
 # =================================================================================================
@@ -156,7 +143,7 @@ def test_branch_ahead(demo_a):
   demo_a.handle.index.commit("Empty commit for test_branch_color")
   expected = NOMINAL_STATUS.replace(green('test_status'),
                                     green('test_status') + yellow('(ahead)'))
-  expected = expected.replace(green('7e869f8'),
+  expected = expected.replace(green('4d95f11'),
                               green(demo_a.handle.head.commit.hexsha[0:7]))
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
   assert expected == gordion.app.status.get_status(root)
@@ -265,6 +252,6 @@ def test_child_detached_green(demo_a):
   expected = replace_i(NOMINAL_STATUS,
                        green('develop'),
                        green('DETACHED HEAD') + yellow('(unsaved)'), 0)
-  expected = expected.replace(green('1e58b64'), red(demo_d.handle.head.commit.hexsha[0:7]))
+  expected = expected.replace(green('c516fff'), red(demo_d.handle.head.commit.hexsha[0:7]))
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
   assert expected == gordion.app.status.get_status(root)

@@ -23,7 +23,8 @@ class Tree(gordion.Repository):
     """
     # Check for duplicate tag
     root = self._root()
-    self._check_duplicate_repo_tag(tag, root)
+    commit: git.Commit = self._verify_tag(tag)
+    self._check_duplicate_commit(commit, root)
 
     super().update(tag, branch_name, force)
 
@@ -142,7 +143,7 @@ class Tree(gordion.Repository):
     for _, other_child in other.children.items():
       Tree._check_same_repo_different_path(target_path, target_url, other_child)
 
-  def _check_duplicate_repo_tag(self, target_tag, other):
+  def _check_duplicate_commit(self, target_commit: git.Commit, other):
     """
     Recursively checks the repository tag against another repository and it's children.
     """
@@ -154,11 +155,11 @@ class Tree(gordion.Repository):
       # Check if the remote repository is the same
       if host == other_host and username == other_username and repo_name == other_repo_name:
         # Make sure the repository has the same tag.
-        if target_tag != other.handle.head.commit.hexsha:
+        if target_commit != other.handle.head.commit:
           raise gordion.UpdateSameRepoDifferentTagError(self.path, self._listed_path(),
-                                                        target_tag, other._listed_path(),
-                                                        other.handle.head.commit.hexsha)
+                                                        target_commit, other._listed_path(),
+                                                        other.handle.head.commit)
 
     # Check against the other's children
     for _, other_child in other.children.items():
-      Tree._check_duplicate_repo_tag(self, target_tag, other_child)
+      Tree._check_duplicate_commit(self, target_commit, other_child)
