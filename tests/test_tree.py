@@ -93,12 +93,7 @@ def test_same_repo_different_path(demo_a):
     demo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
 
   expected = gordion.UpdateSameRepoDifferentPathError(demo_c.path, demo_b.path, demo_b.url)
-  print("\n")
-  print(str(expected))
-  print("\n")
-  print(str(context.value))
-  print("\n")
-  # assert str(context.value) == str(expected)
+  assert str(context.value) == str(expected)
 
 
 def test_different_repo_same_path(demo_a):
