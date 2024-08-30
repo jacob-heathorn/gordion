@@ -223,7 +223,6 @@ class Folder:
       correct_tag = True
       mismatch = False
 
-      # TODO get listings only once and pass as arg?
       if self.repo == root:
         is_repository_listed = True
         correct_tag = True
