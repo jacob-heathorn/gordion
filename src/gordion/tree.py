@@ -148,8 +148,6 @@ class Tree(gordion.Repository):
       if listing_n_commit != listing_0_commit:
         raise gordion.UpdateSameRepoDifferentTagError(target.path, listings)
 
-  # TODO use child listings for other errors too. And in status.
-  # Listing = namedtuple('Listing', ['tree', 'commit'])
   @dataclass
   class Listing:
     path: str
