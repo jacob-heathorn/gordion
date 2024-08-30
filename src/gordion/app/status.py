@@ -3,40 +3,6 @@ import os
 from typing import List, Optional
 
 
-def get_repository_listings(root: gordion.Tree, repo: gordion.Repository) -> set[str]:
-  """
-  Searches the tree for listings of the provided repository and returns a unique set of tags to
-  represent these listings.
-  """
-  tags = set()
-
-  if repo == root:
-    tags.add(root.handle.head.commit.hexsha)
-    return tags
-
-  root.yeditor.reload()
-  # Check yaml file for this repository
-  if root.yeditor.exists():
-    for child_name, child_info in root.yeditor.yaml_data['repositories'].items():
-      gpath = root.yeditor.read_repository_gpath(child_name)
-      child_path = os.path.join(gordion.Store().path, gpath)
-
-      # Check if the child repository exists
-      if gordion.Repository._exists(child_path):
-        child = gordion.Tree(child_path)
-        child_target_commit = child._verify_tag(child_info['tag'])
-
-        # If the child matches the repo by name, path, and url, then add the listing tag.
-        if (repo.name == child_name and repo.path == child_path and repo.url == child_info['url']):
-          tags.add(child_target_commit.hexsha)
-
-        # Also check the child's children ONLY if the child is the correct tag.
-        if child.handle.head.commit == child_target_commit:
-          tags.update(get_repository_listings(child, repo))
-
-  return tags
-
-
 class Folder:
   """
   TODO
@@ -253,8 +219,31 @@ class Folder:
     status_string = ''.join(self.get_symbol_row())
     header = gordion.utils.bold_blue(self.name)
     if self.repo:
-      listings = get_repository_listings(root, self.repo)
-      is_repository_listed = len(listings) > 0
+      is_repository_listed = False
+      correct_tag = True
+      mismatch = False
+
+      # TODO get listings only once and pass as arg?
+      if self.repo == root:
+        is_repository_listed = True
+        correct_tag = True
+        mismatch = False
+      else:
+        listings = root.child_listings(self.repo.path, self.repo.url)
+        unique_tags = set()
+        for listing in listings:
+          unique_tags.add(listing.commit)
+
+        if len(unique_tags) > 0:
+          is_repository_listed = True
+
+        # If any of the tags are incorrect, the commit is incorrect.
+        for tag in unique_tags:
+          if tag != self.repo.handle.head.commit:
+            correct_tag = False
+
+        if len(unique_tags) > 1:
+          mismatch = True
 
       # Branch header.
       branch_header = Folder.get_branch_name(self.repo)
@@ -269,10 +258,11 @@ class Folder:
       if is_repository_listed:
         header = gordion.utils.bold_green(self.name)
         header += " " + branch_header
-        if len(listings) > 1:
+
+        if mismatch > 0:
           header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
-        elif len(listings) == 1:
-          if list(listings)[0] == self.repo.handle.head.commit.hexsha:
+        else:
+          if correct_tag:
             header += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
           else:
             header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")

@@ -124,7 +124,6 @@ class Tree(gordion.Repository):
                                                        listing.tree.url)
 
   # TODO error with complete list of repos
-  # TODO: get listings once and pass as arg to all these?
   def _check_same_repo_different_path(self, target_path, target_url):
     """
     Recursively checks the repository path against another repository and it's children.
