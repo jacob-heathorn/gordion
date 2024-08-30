@@ -110,12 +110,15 @@ def test_different_repo_same_path(demo_a):
   with pytest.raises(gordion.UpdateDifferentRepoSamePathError) as context:
     demo_a.update('92d294df03a6bbf7ef43b60a0255adca08671328', "test_different_repo_same_path")
 
-  demo_b = demo_a.children['gordion_demo_b']
-
   target_path = os.path.join(demo_a.path, 'gordion', 'gordion_demo_b')
-  target_url = 'https://github.com/jacob-heathorn/gordion_demo_d.git'
-  expected = gordion.UpdateDifferentRepoSamePathError(target_path, target_url, demo_b.path,
-                                                      demo_b.url)
+
+  listings = []
+  listings.append(gordion.Tree.Listing(url='https://github.com/jacob-heathorn/gordion_demo_b.git',
+                                       path='', listed_path='', tag=''))
+  listings.append(gordion.Tree.Listing(url='https://github.com/jacob-heathorn/gordion_demo_d.git',
+                                       path='', listed_path='', tag=''))
+
+  expected = gordion.UpdateDifferentRepoSamePathError(target_path, listings)
   assert str(context.value) == str(expected)
 
 

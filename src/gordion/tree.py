@@ -107,7 +107,6 @@ class Tree(gordion.Repository):
       paths.extend(repo._list_child_repository_paths())
     return paths
 
-  # TODO error with complete list of repos?
   def _check_different_repo_same_path(self, target_path, target_url):
     """
     Recursively checks the repository path against another repository and it's children.
@@ -120,8 +119,7 @@ class Tree(gordion.Repository):
     for listing in listings:
       # Check if the listing repository is different from the target repository.
       if not gordion.utils.compare_urls(listing.url, target_url):
-        raise gordion.UpdateDifferentRepoSamePathError(target_path, target_url, listing.path,
-                                                       listing.url)
+        raise gordion.UpdateDifferentRepoSamePathError(target_path, listings)
 
   def _check_same_repo_different_path(self, target_path, target_url):
     """
