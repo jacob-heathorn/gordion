@@ -68,6 +68,15 @@ def extract_repo_details(url):
   return host, username, repo_name
 
 
+def compare_urls(url_a, url_b):
+  """
+  Returns true if the the two urls identify the same repository.
+  """
+  host_a, username_a, repo_name_a = extract_repo_details(url_a)
+  host_b, username_b, repo_name_b = extract_repo_details(url_b)
+  return host_a == host_b and username_a == username_b and repo_name_a == repo_name_b
+
+
 def is_related_path(directory, paths):
   """
   Returns true if the directory is an exact match, is an ancestor, or is a descendant of one of the

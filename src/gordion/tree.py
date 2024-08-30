@@ -118,15 +118,10 @@ class Tree(gordion.Repository):
 
     # Check each listing to see if there are any that are a different repo.
     for listing in listings:
-      host, username, repo_name = gordion.extract_repo_details(target_url)
-      other_host, other_username, other_repo_name = gordion.extract_repo_details(listing.tree.url)
-
-      # Check if the remote repository is the same
-      if host != other_host or username != other_username or repo_name != other_repo_name:
-        # Make sure the repository does not have the same local path.
-        if target_path == listing.tree.path:
-          raise gordion.UpdateDifferentRepoSamePathError(target_path, target_url, listing.tree.path,
-                                                         listing.tree.url)
+      # Check if the listing repository is different from the target repository.
+      if not gordion.utils.compare_urls(listing.tree.url, target_url):
+        raise gordion.UpdateDifferentRepoSamePathError(target_path, target_url, listing.tree.path,
+                                                       listing.tree.url)
 
   # TODO error with complete list of repos
   # TODO: get listings once and pass as arg to all these?
@@ -181,8 +176,7 @@ class Tree(gordion.Repository):
 
             # Check if the child matches the target by path and/or url
             if target_path is None or target_path == child_path:
-              # TODO not just compare url, compare effective url.
-              if target_url is None or target_url == child_info['url']:
+              if target_url is None or gordion.utils.compare_urls(target_url, child_info['url']):
                 listings.append(gordion.Tree.Listing(tree=child, commit=child_target_commit))
 
             # Also check the child's children ONLY if the child is the correct tag.
