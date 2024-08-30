@@ -123,8 +123,6 @@ class Tree(gordion.Repository):
         raise gordion.UpdateDifferentRepoSamePathError(target_path, target_url, listing.path,
                                                        listing.url)
 
-  # TODO does this work if repoD url is same as root URL? Will it check against root just before
-  # creating D or only root's children?
   def _check_same_repo_different_path(self, target_path, target_url):
     """
     Recursively checks the repository path against another repository and it's children.
@@ -163,8 +161,9 @@ class Tree(gordion.Repository):
 
   def listings(self, target_path: Optional[str], target_url: Optional[str]) -> List[Listing]:
     """
-    Searches the tree for listings of the provided target repository and returns a list of Tuples of
-    gordion.Tree and the commit listing of the target repository.
+    Generates a list of Listings in the recursable Tree, including the self. A listing holds
+    information as-listed in the gordion.yaml file, unless it is the root which doesn't have a
+    parent gordion.yaml file.
     """
     listings = []
 

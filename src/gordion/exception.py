@@ -57,7 +57,6 @@ class UpdateDifferentRepoSamePathError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
-# TODO optional target_path printing?
 class UpdateSameRepoDifferentPathError(UpdateError):
   def __init__(self, target_path, listings):
     reason = "The same repository is attempted to be cloned at different paths!"

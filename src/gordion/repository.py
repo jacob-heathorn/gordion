@@ -31,8 +31,7 @@ class Repository:
     else:
       if gordion.Repository._exists(path):
         repo = git.Repo(path)
-        # TODO compare_urls()?
-        assert url == repo.remotes.origin.url
+        assert gordion.utils.compare_urls(url, repo.remotes.origin.url)
 
     return url
 
