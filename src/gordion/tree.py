@@ -184,8 +184,6 @@ class Tree(gordion.Repository):
         if gordion.Repository._exists(child_path):
           if gordion.Repository._url(child_path) == child_url:
             child = Tree(child_path, child_url, self)
-            # TODO need to silently verify tag. We don't want this to error, we want to just not
-            # recurse.
             child_listed_commit = child._verify_tag(child_tag)
             if child.handle.head.commit == child_listed_commit:
               listings.extend(child.listings(target_path, target_url))

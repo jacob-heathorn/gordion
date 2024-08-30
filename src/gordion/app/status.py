@@ -227,8 +227,6 @@ class Folder:
       listings = root.listings(self.repo.path, self.repo.url)
       unique_tags = set()
       for listing in listings:
-        # TODO verify tag can error. We need to handle this in a good way. anytime something in yaml
-        # errors, during status need to show error in a good way.
         unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
 
       if len(unique_tags) > 0:
