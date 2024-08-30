@@ -4,7 +4,6 @@ import os
 class UpdateError(Exception):
   def __init__(self, target_path, reason, suggestion):
     self.message = (f"Cannot update repository<{os.path.basename(target_path)}>.\n"
-                    f"path<{target_path}>\n"
                     f"{reason}. {suggestion}.")
     super().__init__(self.message)
 
@@ -58,21 +57,23 @@ class UpdateDifferentRepoSamePathError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
+# TODO optional target_path printing?
 class UpdateSameRepoDifferentPathError(UpdateError):
-  def __init__(self, target_path, other_path, other_url):
-    reason = (f"The repository({other_url}) is already cloned at {other_path}. You are trying to "
-              f"clone it again to {target_path}. You cannot do this")
-    suggestion = ("You need to make sure all listings of the same repository have the same "
+  def __init__(self, target_path, listings):
+    reason = "The same repository is attempted to be cloned at different paths!"
+    for listing in listings:
+      reason += f"\nRepository<{listing.url}> at path<{listing.path}>"
+    suggestion = ("\nMake sure all listings of the same repository have the same "
                   "local path in the gordion.yaml file")
     super().__init__(target_path, reason, suggestion)
 
 
 class UpdateSameRepoDifferentTagError(UpdateError):
   def __init__(self, target_path, listings):
-    reason = "Gordion repository tag mismatch!\n"
+    reason = "Gordion repository tag mismatch!"
     for listing in listings:
-      reason += f"{listing.tree._listed_path()}:{listing.commit.hexsha}\n"
-    suggestion = ("The tags need to match. I guess that's kinda the whole point of this thing")
+      reason += f"\n{listing.listed_path}:{listing.tag}"
+    suggestion = ("\nThe tags need to match. I guess that's kinda the whole point of this thing")
     super().__init__(target_path, reason, suggestion)
 
 

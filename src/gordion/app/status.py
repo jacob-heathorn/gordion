@@ -223,26 +223,24 @@ class Folder:
       correct_tag = True
       mismatch = False
 
-      if self.repo == root:
+      # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
+      listings = root.listings(self.repo.path, self.repo.url)
+      unique_tags = set()
+      for listing in listings:
+        # TODO verify tag can error. We need to handle this in a good way. anytime something in yaml
+        # errors, during status need to show error in a good way.
+        unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
+
+      if len(unique_tags) > 0:
         is_repository_listed = True
-        correct_tag = True
-        mismatch = False
-      else:
-        listings = root.child_listings(self.repo.path, self.repo.url)
-        unique_tags = set()
-        for listing in listings:
-          unique_tags.add(listing.commit)
 
-        if len(unique_tags) > 0:
-          is_repository_listed = True
+      # If any of the tags are incorrect, the commit is incorrect.
+      for tag in unique_tags:
+        if tag != self.repo.handle.head.commit.hexsha:
+          correct_tag = False
 
-        # If any of the tags are incorrect, the commit is incorrect.
-        for tag in unique_tags:
-          if tag != self.repo.handle.head.commit:
-            correct_tag = False
-
-        if len(unique_tags) > 1:
-          mismatch = True
+      if len(unique_tags) > 1:
+        mismatch = True
 
       # Branch header.
       branch_header = Folder.get_branch_name(self.repo)

@@ -69,15 +69,13 @@ def test_same_repo_different_tag(demo_a):
 
   # Verify the exception.
   listings = []
-  listings.append(gordion.Tree.Listing(b_ref_d, b_ref_d_commit))
-  listings.append(gordion.Tree.Listing(c_ref_d, c_ref_d_commit))
+  listings.append(gordion.Tree.Listing(url=b_ref_d.url, path=b_ref_d.path,
+                                       listed_path=b_ref_d._listed_path(),
+                                       tag=b_ref_d_commit.hexsha))
+  listings.append(gordion.Tree.Listing(url=c_ref_d.url, path=c_ref_d.path,
+                                       listed_path=c_ref_d._listed_path(),
+                                       tag=c_ref_d_commit.hexsha))
   expected = gordion.UpdateSameRepoDifferentTagError(b_ref_d.path, listings)
-
-  print("\n")
-  print(expected)
-  print("\n")
-  print(context.value)
-  print("\n")
   assert str(context.value) == str(expected)
 
 
@@ -92,7 +90,14 @@ def test_same_repo_different_path(demo_a):
   with pytest.raises(gordion.UpdateSameRepoDifferentPathError) as context:
     demo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
 
-  expected = gordion.UpdateSameRepoDifferentPathError(demo_c.path, demo_b.path, demo_b.url)
+  listings = []
+  listings.append(gordion.Tree.Listing(url=demo_b.url, path=demo_b.path,
+                                       listed_path=demo_b._listed_path(),
+                                       tag=demo_b.handle.head.commit))
+  listings.append(gordion.Tree.Listing(url=demo_b.url, path=demo_c.path,
+                                       listed_path=demo_c._listed_path(),
+                                       tag=demo_c.handle.head.commit))
+  expected = gordion.UpdateSameRepoDifferentPathError(demo_b.path, listings)
   assert str(context.value) == str(expected)
 
 
