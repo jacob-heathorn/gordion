@@ -1,3 +1,4 @@
+from __future__ import annotations
 import gordion
 import os
 from typing import List, Optional
@@ -290,19 +291,26 @@ class Folder:
           return "middle"
 
 
+class StatusRepository(Folder):
+  def __init__(self, name) -> None:
+    super().__init__(name)
+
+
+# =================================================================================================
+
 def get_path_tree(root) -> str:
   status_string = ''
   repos = [root]
   repos.extend(gordion.Store().list_repos())
   repos.sort(key=lambda repo: repo.path)
-  root_folder = Folder(root.name)
+  root_folder = StatusRepository(root.name)
   root_folder.repo = root
 
   for repo in repos:
     relpath = os.path.relpath(repo.path, os.path.dirname(root.path))
     parts = relpath.split(os.sep)
 
-    current_folder = root_folder
+    current_folder: Folder = root_folder
     for index, part in enumerate(parts):
       if current_folder.name == part:
         continue
@@ -315,9 +323,11 @@ def get_path_tree(root) -> str:
             break
 
         if not found_child:
-          new_child = Folder(part)
           if index == len(parts) - 1:
+            new_child: Folder = StatusRepository(part)
             new_child.repo = repo
+          else:
+            new_child = Folder(part)
           new_child.parent = current_folder
           current_folder.children.append(new_child)
           current_folder = new_child
