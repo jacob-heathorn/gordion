@@ -33,6 +33,7 @@ class Folder:
       # Create a repository folder if it exists
       if gordion.Repository._exists(dir):
         repo = gordion.Tree(dir)
+        # TODO don't import this inline. Need to fix cirecular dependency.
         from .repository_folder import RepositoryFolder
         folder = RepositoryFolder(repo, root)
         self.add_child(folder)
@@ -46,8 +47,7 @@ class Folder:
   def get_symbol_row(self):
     symbols = []
     if self.parent:
-      child_type = self.parent.get_child_type(self.name)
-      if child_type == "last":
+      if self.parent.is_last_child(self.name):
         symbols.insert(0, "└──")
       else:
         symbols.insert(0, "├──")
@@ -55,8 +55,7 @@ class Folder:
       current_folder = self.parent
       while current_folder:
         if current_folder.parent:
-          parent_child_type = current_folder.parent.get_child_type(current_folder.name)
-          if parent_child_type == "last":
+          if current_folder.parent.is_last_child(current_folder.name):
             symbols.insert(0, "    ")
           else:
             symbols.insert(0, "│   ")
@@ -75,16 +74,12 @@ class Folder:
 
     return status_string
 
-  def get_child_type(self, child_name):
+  def is_last_child(self, child_name) -> bool:
     total_children = len(self.children)
     for index, child in enumerate(self.children):
       if child.name == child_name:
-        if index == total_children - 1:
-          return "last"
-        elif index == 0:
-          return "first"
-        else:
-          return "middle"
+        return index == total_children - 1
+    return False
 
   def get_display_name(self) -> str:
     return gordion.utils.bold_blue(self.name)
