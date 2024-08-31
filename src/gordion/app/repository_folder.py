@@ -5,7 +5,7 @@ from .folder import Folder
 
 class RepositoryFolder(Folder):
   def __init__(self, repo: gordion.Repository, root: gordion.Tree) -> None:
-    super().__init__(repo.name)
+    super().__init__(repo.path)
     self.repo: gordion.Repository = repo
     self.root: gordion.Tree = root
 

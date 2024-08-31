@@ -1,5 +1,6 @@
 import gordion
 from typing import List, Optional
+import os
 
 
 class Folder:
@@ -8,10 +9,39 @@ class Folder:
 
   """
 
-  def __init__(self, name) -> None:
-    self.name = name
+  def __init__(self, path) -> None:
+    self.path = path
+    self.name = os.path.basename(path)
     self.children: List[Folder] = []
     self.parent: Optional[Folder] = None
+
+  def add_child(self, child):
+    child.parent = self
+    self.children.append(child)
+
+  def discover_children(self, root):
+    # Collect list of path folders in this directory (one level deep), and alphabetize it.
+    dirs = []
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      for dirname in dirnames:
+        dirs.append(os.path.join(self.path, dirpath, dirname))
+      break  # one level deep
+    dirs.sort()
+
+    # Create children.
+    for dir in dirs:
+      # Create a repository folder if it exists
+      if gordion.Repository._exists(dir):
+        repo = gordion.Tree(dir)
+        from .repository_folder import RepositoryFolder
+        folder = RepositoryFolder(repo, root)
+        self.add_child(folder)
+
+      # Otherwise it's just a regular folder. Recurse into it and add it.
+      else:
+        folder = Folder(dir)
+        folder.discover_children(root)
+        self.add_child(folder)
 
   def get_symbol_row(self):
     symbols = []
