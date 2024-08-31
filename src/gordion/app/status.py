@@ -4,7 +4,11 @@ from .folder import Folder
 from .repository_folder import RepositoryFolder
 
 
-def get_path_tree(root) -> str:
+def get_status(root) -> str:
+  """
+  Returns a status string indicating the status of each repository in the tree, which looks cute in
+  a terminal.
+  """
   root_folder = RepositoryFolder(root, root)
   gordion_path = os.path.join(root.path, 'gordion')
 
@@ -14,7 +18,3 @@ def get_path_tree(root) -> str:
     gordion_folder.discover_children(root)
 
   return root_folder.get_status()
-
-
-def get_status(root) -> str:
-  return get_path_tree(root)
