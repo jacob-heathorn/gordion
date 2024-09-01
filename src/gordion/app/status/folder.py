@@ -15,6 +15,16 @@ class Folder:
     self.children: List[Folder] = []
     self.parent: Optional[Folder] = None
 
+  def terminal_status(self) -> str:
+    status_string = ''.join(self.get_symbol_row())
+    status_string += self.get_display_name()
+
+    for child in self.children:
+      status_string += "\n"
+      status_string += child.terminal_status()
+
+    return status_string
+
   def add_child(self, child):
     child.parent = self
     self.children.append(child)
@@ -38,16 +48,6 @@ class Folder:
         current_folder = current_folder.parent
 
     return symbols
-
-  def terminal_status(self) -> str:
-    status_string = ''.join(self.get_symbol_row())
-    status_string += self.get_display_name()
-
-    for child in self.children:
-      status_string += "\n"
-      status_string += child.terminal_status()
-
-    return status_string
 
   def is_last_child(self, child_name) -> bool:
     total_children = len(self.children)

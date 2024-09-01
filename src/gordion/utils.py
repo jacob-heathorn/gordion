@@ -137,6 +137,14 @@ def singleton(cls):
   return get_instance
 
 
+def override(interface_class):
+  def overrider(method):
+    assert (method.__name__ in dir(interface_class)), \
+      f"Error: {method.__name__} does not override any method in {interface_class.__name__}"
+    return method
+  return overrider
+
+
 def red(str):
   return '\033[31m' + str + '\033[0m'
 

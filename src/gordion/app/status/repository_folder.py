@@ -1,6 +1,6 @@
 import gordion
 from typing import Optional
-from .folder import Folder
+from .terminal_status import Folder
 
 
 class RepositoryFolder(Folder):
@@ -170,14 +170,13 @@ class RepositoryFolder(Folder):
       return self.repo.handle.active_branch.name == self.repo.default_branch_name
     return False
 
-  # TODO rename header
+  @gordion.utils.override(Folder)
   def get_display_name(self) -> str:
+    # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
+    listings = self.root.listings(self.repo.path, self.repo.url)
     is_repository_listed = False
     correct_tag = True
     mismatch = False
-
-    # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
-    listings = self.root.listings(self.repo.path, self.repo.url)
     unique_tags = set()
     for listing in listings:
       unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
@@ -204,23 +203,24 @@ class RepositoryFolder(Folder):
 
     # Name branch:tag
     if is_repository_listed:
-      header = gordion.utils.bold_green(self.name)
-      header += " " + branch_header
+      display_name = gordion.utils.bold_green(self.name)
+      display_name += " " + branch_header
 
       if mismatch > 0:
-        header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
+        display_name += ":" + gordion.utils.red(
+          f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
       else:
         if correct_tag:
-          header += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
+          display_name += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
         else:
-          header += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
+          display_name += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
     else:
-      header = gordion.utils.bold_red(self.name)
-      header += " " + branch_header
-      header += ":" + self.repo.handle.head.commit.hexsha[:7]
+      display_name = gordion.utils.bold_red(self.name)
+      display_name += " " + branch_header
+      display_name += ":" + self.repo.handle.head.commit.hexsha[:7]
 
     # Append -dirty to hexsha if necessary.
     if self.repo.handle.is_dirty(untracked_files=True):
-      header += gordion.utils.yellow("-dirty")
+      display_name += gordion.utils.yellow("-dirty")
 
-    return header
+    return display_name
