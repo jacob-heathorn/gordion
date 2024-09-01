@@ -2,6 +2,7 @@ import contextlib
 import os
 from urllib.parse import urlparse
 import traceback
+import re
 
 
 # Context manager for pushd. Example from
@@ -67,6 +68,15 @@ def extract_repo_details(url):
   return host, username, repo_name
 
 
+def compare_urls(url_a, url_b):
+  """
+  Returns true if the the two urls identify the same repository.
+  """
+  host_a, username_a, repo_name_a = extract_repo_details(url_a)
+  host_b, username_b, repo_name_b = extract_repo_details(url_b)
+  return host_a == host_b and username_a == username_b and repo_name_a == repo_name_b
+
+
 def is_related_path(directory, paths):
   """
   Returns true if the directory is an exact match, is an ancestor, or is a descendant of one of the
@@ -125,3 +135,61 @@ def singleton(cls):
       instances[cls] = cls(*args, **kwargs)
     return instances[cls]
   return get_instance
+
+
+def override(interface_class):
+  def overrider(method):
+    assert (method.__name__ in dir(interface_class)), \
+      f"Error: {method.__name__} does not override any method in {interface_class.__name__}"
+    return method
+  return overrider
+
+
+def red(str):
+  return '\033[31m' + str + '\033[0m'
+
+
+def bold_red(str):
+  return '\033[1;31m' + str + '\033[0m'
+
+
+def green(str):
+  return "\033[32m" + str + "\033[0m"
+
+
+def bold_green(str):
+  return "\033[1;32m" + str + "\033[0m"
+
+
+def bold_blue(str):
+  return "\033[1;34m" + str + "\033[0m"
+
+
+def yellow(str):
+  return '\033[93m' + str + "\033[0m"
+
+
+def replace_i(text, old, new, occurrence_i):
+  """
+  Replaces 'old' with 'new' at the 'occurrence_i' instance index in 'text'.
+
+  Parameters:
+  - text (str): The original string.
+  - old (str): The substring to replace.
+  - new (str): The substring to use as replacement.
+  - occurrence (int): The specific occurrence to replace (0-based index).
+
+  Returns:
+  - str: The modified string with the specified occurrence replaced.
+  """
+  # Find all the start positions of 'old' in 'text'
+  matches = list(re.finditer(re.escape(old), text))
+  if len(matches) < (occurrence_i + 1):
+    return text  # Return the original if there are less occurrences than required
+
+  # Get the specific match
+  specific_match = matches[occurrence_i]
+  start, end = specific_match.start(), specific_match.end()
+
+  # Replace only the specified occurrence
+  return text[:start] + new + text[end:]

@@ -31,7 +31,7 @@ class Repository:
     else:
       if gordion.Repository._exists(path):
         repo = git.Repo(path)
-        assert url == repo.remotes.origin.url
+        assert gordion.utils.compare_urls(url, repo.remotes.origin.url)
 
     return url
 
@@ -122,7 +122,7 @@ class Repository:
     """
 
     # Check if target commit is HEAD of local branch.
-    if Repository._does_local_branch_have_commit(self.handle, branch_name, commit):
+    if self._does_local_branch_have_commit(branch_name, commit):
       local_branch = self.handle.branches[branch_name]  # type: ignore
 
       if commit == local_branch.commit:
@@ -158,7 +158,7 @@ class Repository:
     request.
     """
 
-    if Repository._does_remote_branch_have_commit(self.handle, branch_name, commit):
+    if self._does_remote_branch_have_commit(branch_name, commit):
       # Check if there is a local branch to match the remote branch.
       local_branches = [branch.name for branch in self.handle.branches]  # type: ignore
 
@@ -241,15 +241,13 @@ class Repository:
     else:
       raise gordion.UpdateNoTrackingBranchError(self.path, local_branch.name)
 
-  @staticmethod
-  def _does_remote_branch_have_commit(repo: git.Repo, branch_name: str,
-                                      commit: git.Commit) -> bool:
+  def _does_remote_branch_have_commit(self, branch_name: str, commit: git.Commit) -> bool:
     """
     Returns true if there is a remote branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
     """
     try:
-      remote_branch = repo.refs[f"origin/{branch_name}"]  # type: ignore
+      remote_branch = self.handle.refs[f"origin/{branch_name}"]  # type: ignore
     except IndexError:
       # The local branch does not exist, so it cannot contain the commit.
       return False
@@ -279,14 +277,13 @@ class Repository:
 
     return commit
 
-  @staticmethod
-  def _does_local_branch_have_commit(repo: git.Repo, branch_name: str, commit: git.Commit) -> bool:
+  def _does_local_branch_have_commit(self, branch_name: str, commit: git.Commit) -> bool:
     """
     Returns true if there exist a local branch with the specified name, that contains the specified
     commit. Otherwise it returns false.
     """
     try:
-      local_branch = repo.heads[branch_name]
+      local_branch = self.handle.heads[branch_name]
     except IndexError:
       # The local branch does not exist, so it cannot contain the commit.
       return False
@@ -306,6 +303,11 @@ class Repository:
     except (git.NoSuchPathError, git.InvalidGitRepositoryError):
       # If Repo initialization fails, the path is not a Git repository
       return False
+
+  @staticmethod
+  def _url(path: str) -> str:
+    repo = git.Repo(path)
+    return repo.remotes.origin.url
 
   def _fetch_once(self):
     """

@@ -38,7 +38,7 @@ def demo_a(tree_a):
   tree_a.update(tag, branch_name, force=True)
 
 
-def test_same_demo_different_tag(demo_a):
+def test_same_repo_different_tag(demo_a):
   """
   Verifies update will error if two of the same repository reference have different tags.
   """
@@ -57,23 +57,29 @@ def test_same_demo_different_tag(demo_a):
   demo_a.handle.git.commit('-m', "Point to latest B")
 
   # Save some information before the update.
-  b_ref_d = demo_a.children['gordion_demo_b'].children['gordion_demo_d']
-  b_ref_d_tag = demo_a.children['gordion_demo_b'].yeditor.read_repository_tag('gordion_demo_d')
-  c_ref_d = demo_a.children['gordion_demo_c'].children['gordion_demo_d']
-  c_ref_d_tag = demo_a.children['gordion_demo_c'].yeditor.read_repository_tag('gordion_demo_d')
+  b_ref_d = demo_b.children['gordion_demo_d']
+  b_ref_d_commit = b_ref_d._verify_tag(demo_b.yeditor.read_repository_tag('gordion_demo_d'))
+  demo_c = demo_a.children['gordion_demo_c']
+  c_ref_d = demo_c.children['gordion_demo_d']
+  c_ref_d_commit = c_ref_d._verify_tag(demo_c.yeditor.read_repository_tag('gordion_demo_d'))
 
   # Now update, it should raise error, tag mismatch.
   with pytest.raises(gordion.UpdateSameRepoDifferentTagError) as context:
     demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
 
   # Verify the exception.
-  expected = gordion.UpdateSameRepoDifferentTagError(c_ref_d.path, c_ref_d._listed_path(),
-                                                     c_ref_d_tag, b_ref_d._listed_path(),
-                                                     b_ref_d_tag)
+  listings = []
+  listings.append(gordion.Tree.Listing(url=b_ref_d.url, path=b_ref_d.path,
+                                       listed_path=b_ref_d._listed_path(),
+                                       tag=b_ref_d_commit.hexsha))
+  listings.append(gordion.Tree.Listing(url=c_ref_d.url, path=c_ref_d.path,
+                                       listed_path=c_ref_d._listed_path(),
+                                       tag=c_ref_d_commit.hexsha))
+  expected = gordion.UpdateSameRepoDifferentTagError(b_ref_d.path, listings)
   assert str(context.value) == str(expected)
 
 
-def test_same_demo_different_path(demo_a):
+def test_same_repo_different_path(demo_a):
   """
   Verifies update will error if the same repository is attempted to be cloned at different paths.
   """
@@ -84,7 +90,14 @@ def test_same_demo_different_path(demo_a):
   with pytest.raises(gordion.UpdateSameRepoDifferentPathError) as context:
     demo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
 
-  expected = gordion.UpdateSameRepoDifferentPathError(demo_c.path, demo_b.path, demo_b.url)
+  listings = []
+  listings.append(gordion.Tree.Listing(url=demo_b.url, path=demo_b.path,
+                                       listed_path=demo_b._listed_path(),
+                                       tag=demo_b.handle.head.commit))
+  listings.append(gordion.Tree.Listing(url=demo_b.url, path=demo_c.path,
+                                       listed_path=demo_c._listed_path(),
+                                       tag=demo_c.handle.head.commit))
+  expected = gordion.UpdateSameRepoDifferentPathError(demo_b.path, listings)
   assert str(context.value) == str(expected)
 
 
@@ -97,12 +110,15 @@ def test_different_repo_same_path(demo_a):
   with pytest.raises(gordion.UpdateDifferentRepoSamePathError) as context:
     demo_a.update('92d294df03a6bbf7ef43b60a0255adca08671328', "test_different_repo_same_path")
 
-  demo_b = demo_a.children['gordion_demo_b']
-
   target_path = os.path.join(demo_a.path, 'gordion', 'gordion_demo_b')
-  target_url = 'https://github.com/jacob-heathorn/gordion_demo_d.git'
-  expected = gordion.UpdateDifferentRepoSamePathError(target_path, target_url, demo_b.path,
-                                                      demo_b.url)
+
+  listings = []
+  listings.append(gordion.Tree.Listing(url='https://github.com/jacob-heathorn/gordion_demo_b.git',
+                                       path='', listed_path='', tag=''))
+  listings.append(gordion.Tree.Listing(url='https://github.com/jacob-heathorn/gordion_demo_d.git',
+                                       path='', listed_path='', tag=''))
+
+  expected = gordion.UpdateDifferentRepoSamePathError(target_path, listings)
   assert str(context.value) == str(expected)
 
 

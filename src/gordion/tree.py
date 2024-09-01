@@ -1,7 +1,8 @@
 import gordion
 import os
 import git
-from typing import List
+from typing import List, Optional
+from dataclasses import dataclass
 
 
 class Tree(gordion.Repository):
@@ -23,7 +24,8 @@ class Tree(gordion.Repository):
     """
     # Check for duplicate tag
     root = self._root()
-    self._check_duplicate_repo_tag(tag, root)
+    commit: git.Commit = self._verify_tag(tag)
+    root._check_same_repo_different_tag(self, commit)
 
     super().update(tag, branch_name, force)
 
@@ -52,8 +54,8 @@ class Tree(gordion.Repository):
         child_url = child_info['url']
 
         # Check the repository path before creating it.
-        Tree._check_different_repo_same_path(child_path, child_url, root)
-        Tree._check_same_repo_different_path(child_path, child_url, root)
+        root._check_different_repo_same_path(child_path, child_url)
+        root._check_same_repo_different_path(child_path, child_url)
 
         # If a repository with the wrong URL already exists at the child path, remove it. We have
         # already checked that a different repository is not listed at the same path, so if one
@@ -105,60 +107,95 @@ class Tree(gordion.Repository):
       paths.extend(repo._list_child_repository_paths())
     return paths
 
-  @staticmethod
-  def _check_different_repo_same_path(target_path, target_url, other):
+  def _check_different_repo_same_path(self, target_path, target_url):
     """
     Recursively checks the repository path against another repository and it's children.
     """
-    host, username, repo_name = gordion.extract_repo_details(target_url)
-    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
 
-    # Check if the remote repository is the same
-    if host != other_host or username != other_username or repo_name != other_repo_name:
-      # Make sure the repository does not have the same local path.
-      if target_path == other.path:
-        raise gordion.UpdateDifferentRepoSamePathError(target_path, target_url, other.path,
-                                                       other.url)
+    # Collect all child listings with the same path.
+    listings = self.listings(target_path, target_url=None)
 
-    # Check against the other's children
-    for _, other_child in other.children.items():
-      Tree._check_different_repo_same_path(target_path, target_url, other_child)
+    # Check each listing to see if there are any that are a different repo.
+    for listing in listings:
+      # Check if the listing repository is different from the target repository.
+      if not gordion.utils.compare_urls(listing.url, target_url):
+        raise gordion.UpdateDifferentRepoSamePathError(target_path, listings)
 
-  @staticmethod
-  def _check_same_repo_different_path(target_path, target_url, other):
+  def _check_same_repo_different_path(self, target_path, target_url):
     """
     Recursively checks the repository path against another repository and it's children.
     """
-    host, username, repo_name = gordion.extract_repo_details(target_url)
-    other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
+    # Collect all child listings that are the same repository (same effective url).
+    listings = self.listings(target_path=None, target_url=target_url)
 
-    # Check if the remote repository is the same
-    if host == other_host and username == other_username and repo_name == other_repo_name:
-      # Make sure the repository has the same local path.
-      if target_path != other.path:
-        raise gordion.UpdateSameRepoDifferentPathError(target_path, other.path, other.url)
+    # Check each listing to see if there are any that are a different path.
+    for listing in listings:
+      if listing.path != target_path:
+        raise gordion.UpdateSameRepoDifferentPathError(target_path, listings)
 
-    # Check against the other's children
-    for _, other_child in other.children.items():
-      Tree._check_same_repo_different_path(target_path, target_url, other_child)
-
-  def _check_duplicate_repo_tag(self, target_tag, other):
+  def _check_same_repo_different_tag(self, target, target_commit: git.Commit):
     """
-    Recursively checks the repository tag against another repository and it's children.
+    Recursively checks the target repository & tag for duplicate listings with different tags in
+    this tree.
     """
 
-    if self is not other:
-      host, username, repo_name = gordion.extract_repo_details(self.url)
-      other_host, other_username, other_repo_name = gordion.extract_repo_details(other.url)
+    listings = self.listings(target.path, target.url)
 
-      # Check if the remote repository is the same
-      if host == other_host and username == other_username and repo_name == other_repo_name:
-        # Make sure the repository has the same tag.
-        if target_tag != other.handle.head.commit.hexsha:
-          raise gordion.UpdateSameRepoDifferentTagError(self.path, self._listed_path(),
-                                                        target_tag, other._listed_path(),
-                                                        other.handle.head.commit.hexsha)
+    # Raise an error if any two listings don't match tags.
+    listing_0_commit = target._verify_tag(listings[0].tag)
+    for listing_n in listings:
+      listing_n_commit = target._verify_tag(listing_n.tag)
+      if listing_n_commit != listing_0_commit:
+        raise gordion.UpdateSameRepoDifferentTagError(target.path, listings)
 
-    # Check against the other's children
-    for _, other_child in other.children.items():
-      Tree._check_duplicate_repo_tag(self, target_tag, other_child)
+  @dataclass
+  class Listing:
+    path: str
+    listed_path: str
+    url: str
+    tag: str
+
+  def listings(self, target_path: Optional[str], target_url: Optional[str]) -> List[Listing]:
+    """
+    Generates a list of Listings in the recursable Tree, including the self. A listing holds
+    information as-listed in the gordion.yaml file, unless it is the root which doesn't have a
+    parent gordion.yaml file.
+    """
+    listings = []
+
+    # Check if self matches the target path and/or url
+    if not target_path or target_path == self.path:
+      if not target_url or gordion.utils.compare_urls(target_url, self.url):
+        listings.append(gordion.Tree.Listing(path=self.path, listed_path=self._listed_path(),
+                                             url=self.url, tag=self.handle.head.commit.hexsha))
+
+    # Check children.
+    self.yeditor.reload()
+    if self.yeditor.exists():
+      for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
+        gpath = self.yeditor.read_repository_gpath(child_name)
+        child_path = os.path.join(gordion.Store().path, gpath)
+        child_url = child_info['url']
+        child_tag = child_info['tag']
+
+        # If the child exists, and is the correct url and tag, we can create a Tree object and
+        # recurse.
+        recursed = False
+        if gordion.Repository._exists(child_path):
+          if gordion.Repository._url(child_path) == child_url:
+            child = Tree(child_path, child_url, self)
+            child_listed_commit = child._verify_tag(child_tag)
+            if child.handle.head.commit == child_listed_commit:
+              listings.extend(child.listings(target_path, target_url))
+              recursed = True
+
+        # If we didn't recurse into the child Tree, becasue it was the wrong commit or url, we still
+        # need to add it as a listing, if the path and/or url matches the target.
+        if not recursed:
+          if not target_path or target_path == child_path:
+            if not target_url or gordion.utils.compare_urls(target_url, child_url):
+              child_listed_path = f"{self._relpath()} lists {gpath}"
+              listings.append(gordion.Tree.Listing(path=child_path, listed_path=child_listed_path,
+                                                   url=child_url, tag=child_tag))
+
+    return listings

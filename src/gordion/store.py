@@ -44,3 +44,19 @@ class Store:
           print(f"Deleting directory: {full_dirpath}")
           assert not gordion.Repository._exists(full_dirpath)  # Removed above.
           shutil.rmtree(full_dirpath)
+
+  def list_repos(self):
+    repos = []
+
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+        full_dirpath = os.path.join(dirpath, dirname)
+
+        if gordion.Repository._exists(full_dirpath):
+          repos.append(gordion.Repository(full_dirpath))
+          # Remove the current directory's name from dirnames so os.walk will skip its
+          # subdirectories
+          dirnames.remove(dirname)
+
+    return sorted(repos, key=lambda repo: repo.path)

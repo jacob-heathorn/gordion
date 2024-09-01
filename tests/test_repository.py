@@ -65,29 +65,24 @@ def test_does_local_branch_have_commit(demo_a):
   # Verify HEAD of active branch returns true
   assert demo_a.handle.active_branch.name == 'test_single'
   head_commit = demo_a.handle.active_branch.commit
-  assert gordion.Repository._does_local_branch_have_commit(
-      demo_a.handle, 'test_single', head_commit)
+  assert demo_a._does_local_branch_have_commit('test_single', head_commit)
 
   # Verify older commit of active branch returns true
   older_commit = head_commit.parents[0]
-  assert gordion.Repository._does_local_branch_have_commit(
-      demo_a.handle, 'test_single', older_commit)
+  assert demo_a._does_local_branch_have_commit('test_single', older_commit)
 
   # Verify remote branch (test_single_1) that is not local returns false.
-  assert not gordion.Repository._does_local_branch_have_commit(
-      demo_a.handle, 'test_single_1', head_commit)
+  assert not demo_a._does_local_branch_have_commit('test_single_1', head_commit)
 
   # Now checkout "test_single_1" so it exists locally, then switch back to "test_single". The same
   # check should return true.
   demo_a.handle.git.checkout('-b', 'test_single_1', 'origin/test_single_1')
   demo_a.handle.branches['test_single'].checkout()
-  assert gordion.Repository._does_local_branch_have_commit(
-      demo_a.handle, 'test_single_1', head_commit)
+  assert demo_a._does_local_branch_have_commit('test_single_1', head_commit)
 
   # Verfiy commit on remote but not on local returns false.
   future_commit = demo_a._verify_tag('04518b39225d45f69fc9a2f9f5c0dba1fe6a6227')
-  assert not gordion.Repository._does_local_branch_have_commit(
-      demo_a.handle, 'test_single', future_commit)
+  assert not demo_a._does_local_branch_have_commit('test_single', future_commit)
 
 
 def test_update_active_branch_commits_ahead(demo_a):
@@ -153,18 +148,17 @@ def test_does_remote_branch_have_commit(demo_a):
 
   # Verify a commit is on remote branch but not local.
   commit = demo_a._verify_tag('04518b39225d45f69fc9a2f9f5c0dba1fe6a6227')
-  assert not gordion.Repository._does_local_branch_have_commit(demo_a.handle, 'test_single', commit)
-  assert gordion.Repository._does_remote_branch_have_commit(demo_a.handle, 'test_single', commit)
+  assert not demo_a._does_local_branch_have_commit('test_single', commit)
+  assert demo_a._does_remote_branch_have_commit('test_single', commit)
 
   # If remote branch does not exist, it just returns false.
-  assert not gordion.Repository._does_remote_branch_have_commit(demo_a.handle, 'noname', commit)
+  assert not demo_a._does_remote_branch_have_commit('noname', commit)
 
   # Verifies a commit on local but not remote.
   demo_a.handle.index.commit("Empty commit test_does_remote_branch_have_commit()")
   commit = demo_a.handle.active_branch.commit
-  assert gordion.Repository._does_local_branch_have_commit(demo_a.handle, 'test_single', commit)
-  assert not gordion.Repository._does_remote_branch_have_commit(
-      demo_a.handle, 'test_single', commit)
+  assert demo_a._does_local_branch_have_commit('test_single', commit)
+  assert not demo_a._does_remote_branch_have_commit('test_single', commit)
 
 
 def test_update_remote_branch_only(demo_a):

@@ -6,6 +6,7 @@ Just a single test file:
   `tox -e unit -- tests/test_tree.py -s`
   `tox -e unit -- tests/test_app.py -s`
   `tox -e unit -- tests/test_cache.py -s`
+  `tox -e unit -- tests/test_status.py -s`
 
 
 Lint and type check: `tox -e lint`
