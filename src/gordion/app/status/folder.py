@@ -5,7 +5,9 @@ import os
 
 class Folder:
   """
-  TODO
+  Provedes a way to display the directory tree, with control over the "display name" for each
+  folder. A folder displays blue, akin to how the `tree` command displays in Unix-based terminals.
+  Another class can inherit and override _get_display_name() to modify it.
 
   """
 
@@ -16,8 +18,11 @@ class Folder:
     self.parent: Optional[Folder] = None
 
   def terminal_status(self) -> str:
-    status_string = ''.join(self.get_symbol_row())
-    status_string += self.get_display_name()
+    """
+    Returns a string of the Folder tree from this folder downward.
+    """
+    status_string = ''.join(self._get_symbol_row())
+    status_string += self._get_display_name()
 
     for child in self.children:
       status_string += "\n"
@@ -29,10 +34,10 @@ class Folder:
     child.parent = self
     self.children.append(child)
 
-  def get_symbol_row(self):
+  def _get_symbol_row(self):
     symbols = []
     if self.parent:
-      if self.parent.is_last_child(self.name):
+      if self.parent._is_last_child(self.name):
         symbols.insert(0, "└──")
       else:
         symbols.insert(0, "├──")
@@ -40,7 +45,7 @@ class Folder:
       current_folder = self.parent
       while current_folder:
         if current_folder.parent:
-          if current_folder.parent.is_last_child(current_folder.name):
+          if current_folder.parent._is_last_child(current_folder.name):
             symbols.insert(0, "    ")
           else:
             symbols.insert(0, "│   ")
@@ -49,12 +54,12 @@ class Folder:
 
     return symbols
 
-  def is_last_child(self, child_name) -> bool:
+  def _is_last_child(self, child_name) -> bool:
     total_children = len(self.children)
     for index, child in enumerate(self.children):
       if child.name == child_name:
         return index == total_children - 1
     return False
 
-  def get_display_name(self) -> str:
+  def _get_display_name(self) -> str:
     return gordion.utils.bold_blue(self.name)
