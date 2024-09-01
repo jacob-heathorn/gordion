@@ -49,7 +49,7 @@ def test_nominal_status(demo_a):
   """
 
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert NOMINAL_STATUS == gordion.app.status.get_status(root)
+  assert NOMINAL_STATUS == gordion.app.status.terminal_status(root)
 
 
 # =================================================================================================
@@ -68,7 +68,7 @@ def test_dangling_repository(demo_a):
                      f"{bold_red('gordion_demo_c')} develop:1a8f7fe")
 
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 # =================================================================================================
@@ -87,7 +87,7 @@ def test_wrong_commit(demo_a):
   demo_c_new_commit = demo_c.handle.head.commit.hexsha[:7]
   expected = NOMINAL_STATUS.replace(green('1a8f7fe'), red(demo_c_new_commit))
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_child_mismatch(demo_a):
@@ -107,7 +107,7 @@ def test_child_mismatch(demo_a):
   expected = NOMINAL_STATUS.replace(green('c516fff'), red('c516fff-mismatch'))
   expected = expected.replace(green('fe4fd4d'), green('fe4fd4d') + yellow('-dirty'))
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 # =================================================================================================
@@ -146,7 +146,7 @@ def test_branch_ahead(demo_a):
   expected = expected.replace(green('4d95f11'),
                               green(demo_a.handle.head.commit.hexsha[0:7]))
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_wrong_tracking_branch(demo_a):
@@ -163,7 +163,7 @@ def test_wrong_tracking_branch(demo_a):
                        green('develop'),
                        yellow('different_branch') + yellow('(develop?, wrong tracking branch)'), 2)
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_child_branch_is_root_branch(demo_a):
@@ -182,7 +182,7 @@ def test_child_branch_is_root_branch(demo_a):
                        green('develop'),
                        green('root_branch') + yellow('(untracked)'), 1)
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_child_default_root_available(demo_a):
@@ -202,7 +202,7 @@ def test_child_default_root_available(demo_a):
                        green('develop'),
                        yellow('develop') + yellow('(root_branch?)'), 1)
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_child_different_root_available(demo_a):
@@ -221,7 +221,7 @@ def test_child_different_root_available(demo_a):
                        green('develop'),
                        yellow('different_branch') + yellow('(root_branch?, untracked)'), 1)
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_child_detached_root_available(demo_a):
@@ -235,7 +235,7 @@ def test_child_detached_root_available(demo_a):
                        green('develop'),
                        yellow('DETACHED HEAD') + yellow('(develop?)'), 0)
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_child_detached_green(demo_a):
@@ -254,4 +254,4 @@ def test_child_detached_green(demo_a):
                        green('DETACHED HEAD') + yellow('(unsaved)'), 0)
   expected = expected.replace(green('c516fff'), red(demo_d.handle.head.commit.hexsha[0:7]))
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.get_status(root)
+  assert expected == gordion.app.status.terminal_status(root)

@@ -37,7 +37,7 @@ def main(argv=None):
     if args.status:
       with gordion.utils.pushd(root_path):
         root = gordion.Tree(root_path)
-        print(gordion.app.status.get_status(root))
+        print(gordion.app.status.terminal_status(root))
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)

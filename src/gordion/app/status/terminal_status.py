@@ -28,7 +28,7 @@ def discover_children(folder, root):
         folder.add_child(child_folder)
 
 
-def get_status(root) -> str:
+def terminal_status(root) -> str:
   """
   Returns a status string indicating the status of each repository in the tree, which looks cute in
   a terminal.
@@ -41,4 +41,4 @@ def get_status(root) -> str:
     root_folder.add_child(gordion_folder)
     discover_children(gordion_folder, root)
 
-  return root_folder.get_status()
+  return root_folder.terminal_status()

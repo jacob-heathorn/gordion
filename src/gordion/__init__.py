@@ -14,4 +14,4 @@ from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes
 from .yeditor import YamlEditor
 from .store import Store
-from .app import gordion_root, get_status
+from .app import gordion_root, terminal_status

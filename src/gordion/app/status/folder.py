@@ -39,13 +39,13 @@ class Folder:
 
     return symbols
 
-  def get_status(self) -> str:
+  def terminal_status(self) -> str:
     status_string = ''.join(self.get_symbol_row())
     status_string += self.get_display_name()
 
     for child in self.children:
       status_string += "\n"
-      status_string += child.get_status()
+      status_string += child.terminal_status()
 
     return status_string
 
