@@ -13,7 +13,7 @@ def main(argv=None):
   args = parser.parse_args()
 
   try:
-    # Get the root gordion repository path
+    # Get the root gordion repository path.
     root_path = gordion.app.root.gordion_root(os.getcwd())
 
     # Update.
