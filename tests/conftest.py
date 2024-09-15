@@ -17,9 +17,6 @@ def tree_a():
   path = os.path.join(REPOS_DIR, 'gordion_demo_a')
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
-  store = gordion.Store()
-  store.setup(path)
-
   # Create the gordion.Tree interface.
   repo = gordion.Tree(path, url)
 
@@ -34,9 +31,6 @@ def repository_a():
   """
   path = os.path.join(REPOS_DIR, 'gordion_demo_a')
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
-
-  store = gordion.Store()
-  store.setup(path)
 
   # Create the gordion.Repository interface.
   repo = gordion.Repository(path, url)

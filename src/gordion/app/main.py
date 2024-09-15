@@ -16,10 +16,6 @@ def main(argv=None):
     # Get the root gordion repository path
     root_path = gordion.app.root.gordion_root(os.getcwd())
 
-    # Setup the gordion/ folder store object.
-    store = gordion.Store()
-    store.setup(root_path)
-
     # Update.
     if args.update:
       with gordion.utils.pushd(root_path):
@@ -44,4 +40,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+  main()

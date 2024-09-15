@@ -4,6 +4,8 @@ import shutil
 from typing import List
 
 
+# TODO repurpose as workspace?
+
 @gordion.utils.singleton
 class Store:
   """
