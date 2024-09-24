@@ -1,6 +1,7 @@
 import gordion
 import os
 import git
+from pathlib import Path
 
 
 def get_repository_root(cwd: str):
@@ -23,8 +24,48 @@ def is_gordion_repository(path: str) -> bool:
   return False
 
 
-# TODO comment header, potential rename.
-def gordion_root(path):
+def does_directory_contain_gordion_repository(path: str):
+    # Ensure the path is a directory
+  if not os.path.isdir(path):
+    return False
+
+  # Loop over each entry in the directory at the given path
+  for entry in os.listdir(path):
+      # Construct the full path of the entry
+    entry_path = os.path.join(path, entry)
+
+    # Check if the entry is a directory and if it is a Gordion repository
+    if os.path.isdir(entry_path) and is_gordion_repository(entry_path):
+      return True
+
+  # Return False if no Gordion repository is found in the subdirectories
+  return False
+
+
+def find_workspace(path: str) -> str:
+  # Convert string path to Path object if necessary
+  path = Path(path) if not isinstance(path, Path) else path
+
+  # Iterate through parts of the path from root to the last element
+  parts = path.parts
+  current_path = Path(parts[0])  # Start with the root
+
+  for part in parts[1:]:
+    current_path /= part  # Traverse to the next part in the path
+
+    # Check if the current directory contains a gordion repository.
+    for child in current_path.iterdir():
+      if child.is_dir() and os.access(str(child), os.R_OK):
+
+        if does_directory_contain_gordion_repository(str(child)):
+          return str(child)
+
+  # Return the original path parent.
+  return str(path.parent)
+
+
+# TODO comment header, potential rename. Mention must be in a gordion repository.
+def workspace_root(path):
   current_repo_path = get_repository_root(path)
 
   # If we are not in a git repository, then we are not in a gordion repository.
@@ -32,7 +73,7 @@ def gordion_root(path):
     raise gordion.NotAGordionRepositoryError()
 
   if is_gordion_repository(current_repo_path):
-    return current_repo_path
+    return find_workspace(path)
   else:
     raise gordion.NotAGordionRepositoryError()
 
