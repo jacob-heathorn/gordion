@@ -13,27 +13,24 @@ def main(argv=None):
   args = parser.parse_args()
 
   try:
-    # Get the root gordion repository path.
-    workspace = gordion.app.workspace.workspace_root(os.getcwd())
-
     # Update.
     if args.update:
-      with gordion.utils.pushd(workspace):
-        root = gordion.Tree(workspace)
-        branch = None
-        if not root.handle.head.is_detached:
-          branch = root.handle.active_branch.name
-        root.update(root.handle.head.commit.hexsha, branch)
+      root = gordion.workspace.find_tree(os.getcwd())
+      branch = None
+      if not root.handle.head.is_detached:
+        branch = root.handle.active_branch.name
+      root.update(root.handle.head.commit.hexsha, branch)
 
     # Print the workspace path.
     if args.workspace:
+      workspace = gordion.workspace.find_workspace(os.getcwd())
       print(f"{workspace}")
 
-    # Print status.
-    if args.status:
-      with gordion.utils.pushd(workspace):
-        root = gordion.Tree(workspace)
-        print(gordion.app.status.terminal_status(root))
+    # # Print status.
+    # if args.status:
+    #   with gordion.utils.pushd(workspace):
+    #     root = gordion.Tree(workspace)
+    #     print(gordion.app.status.terminal_status(root))
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)

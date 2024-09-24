@@ -14,4 +14,4 @@ from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes
 from .yeditor import YamlEditor
 from .store import Store
-from .app import workspace_root, terminal_status
+from .workspace import find_workspace, find_tree
