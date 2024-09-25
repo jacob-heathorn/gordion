@@ -16,7 +16,7 @@ class Tree(gordion.Repository):
     self.parent: Tree = parent
     self.children: dict[str, Tree] = {}
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
-    self.workspace = gordion.workspace.find_workspace(path)
+    self.workspace = gordion.Workspace()
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
@@ -50,7 +50,7 @@ class Tree(gordion.Repository):
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
         # Create child repository objects
         gpath = self.yeditor.read_repository_gpath(child_name)
-        child_path = os.path.join(self.workspace, gpath)
+        child_path = os.path.join(self.workspace.path, gpath)
         child_url = child_info['url']
 
         # Check the repository path before creating it.
@@ -174,7 +174,7 @@ class Tree(gordion.Repository):
     if self.yeditor.exists():
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
         gpath = self.yeditor.read_repository_gpath(child_name)
-        child_path = os.path.join(self.workspace, gpath)
+        child_path = os.path.join(self.workspace.path, gpath)
         child_url = child_info['url']
         child_tag = child_info['tag']
 

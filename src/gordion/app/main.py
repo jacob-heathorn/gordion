@@ -13,6 +13,10 @@ def main(argv=None):
   args = parser.parse_args()
 
   try:
+    # Initialize workspace.
+    workspace = gordion.Workspace()
+    workspace.setup(os.getcwd())
+
     # Update.
     if args.update:
       root = gordion.Tree.find(os.getcwd())
@@ -23,8 +27,7 @@ def main(argv=None):
 
     # Print the workspace path.
     if args.workspace:
-      workspace = gordion.workspace.find_workspace(os.getcwd())
-      print(f"{workspace}")
+      print(f"{workspace.path}")
 
     # # Print status.
     # if args.status:
