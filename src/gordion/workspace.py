@@ -1,27 +1,68 @@
-import gordion
 import os
-import git
+import gordion
+import shutil
+from typing import List
 from pathlib import Path
 
-
-def get_repository_root(cwd: str):
-  try:
-    # Create a Repo object pointing to the current directory
-    repo = git.Repo(cwd, search_parent_directories=True)
-    # Get the git root directory
-    git_root = repo.git.rev_parse("--show-toplevel")
-    return git_root
-  except Exception:
-    return None
+# TODO repurpose as workspace?
 
 
-def is_gordion_repository(path: str) -> bool:
-  if gordion.Repository._exists(path):
-    yeditor = gordion.YamlEditor(os.path.join(path, 'gordion.yaml'))
-    if yeditor.exists():
-      return True
+@gordion.utils.singleton
+class Store:
+  """
+  Singleton class dedicated to managing the gordion/ folder.
+  """
 
-  return False
+  def __init__(self) -> None:
+    self.path = ''
+
+  def setup(self, root_repository_path):
+    """
+    User must call this function once with the root gordion repository path, where we will store the
+    gordion/ folder managed by this class.
+    """
+    self.path = os.path.join(root_repository_path, 'gordion')
+
+  def trim_repos(self, keep_repos: List[str], force: bool = False):
+    """
+    Removes repositories that are not listed in the keep_repos argument.
+    """
+    assert self.path
+
+    # Delete git repositories.
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      for dirname in dirnames:
+        full_dirpath = os.path.join(dirpath, dirname)
+        if (os.path.exists(full_dirpath) and not gordion.utils.is_related_path(full_dirpath,
+                                                                               keep_repos)):
+          if gordion.Repository._exists(full_dirpath):
+            gordion.Repository.safe_delete(full_dirpath, force)
+
+    # Delete everything else that is not related to the gordion paths.
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      for dirname in dirnames:
+        full_dirpath = os.path.join(dirpath, dirname)
+        if (os.path.exists(full_dirpath) and not gordion.utils.is_related_path(full_dirpath,
+                                                                               keep_repos)):
+          print(f"Deleting directory: {full_dirpath}")
+          assert not gordion.Repository._exists(full_dirpath)  # Removed above.
+          shutil.rmtree(full_dirpath)
+
+  def list_repos(self):
+    repos = []
+
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+        full_dirpath = os.path.join(dirpath, dirname)
+
+        if gordion.Repository._exists(full_dirpath):
+          repos.append(gordion.Repository(full_dirpath))
+          # Remove the current directory's name from dirnames so os.walk will skip its
+          # subdirectories
+          dirnames.remove(dirname)
+
+    return sorted(repos, key=lambda repo: repo.path)
 
 
 def find_workspace(path: str) -> str:
@@ -38,22 +79,8 @@ def find_workspace(path: str) -> str:
     # Check if the current directory contains a gordion repository.
     for child in current_path.iterdir():
       if child.is_dir() and os.access(str(child), os.R_OK):
-        if is_gordion_repository(str(child)):
+        if gordion.Repository.is_gordion(str(child)):
           return str(current_path)
 
   # Return the original path parent.
   return str(path.parent)
-
-
-# TODO comment header, potential rename. Mention must be in a gordion repository.
-def find_tree(path):
-  current_repo_path = get_repository_root(path)
-
-  # If we are not in a git repository, then we are not in a gordion repository.
-  if current_repo_path is None:
-    raise gordion.NotAGordionRepositoryError()
-
-  if is_gordion_repository(current_repo_path):
-    return gordion.Tree(current_repo_path)
-  else:
-    raise gordion.NotAGordionRepositoryError()

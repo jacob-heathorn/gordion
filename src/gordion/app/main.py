@@ -15,7 +15,7 @@ def main(argv=None):
   try:
     # Update.
     if args.update:
-      root = gordion.workspace.find_tree(os.getcwd())
+      root = gordion.Tree.find(os.getcwd())
       branch = None
       if not root.handle.head.is_detached:
         branch = root.handle.active_branch.name

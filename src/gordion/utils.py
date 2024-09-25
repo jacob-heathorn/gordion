@@ -3,6 +3,7 @@ import os
 from urllib.parse import urlparse
 import traceback
 import re
+import git
 
 
 # Context manager for pushd. Example from
@@ -140,7 +141,7 @@ def singleton(cls):
 def override(interface_class):
   def overrider(method):
     assert (method.__name__ in dir(interface_class)), \
-      f"Error: {method.__name__} does not override any method in {interface_class.__name__}"
+        f"Error: {method.__name__} does not override any method in {interface_class.__name__}"
     return method
   return overrider
 
@@ -193,3 +194,17 @@ def replace_i(text, old, new, occurrence_i):
 
   # Replace only the specified occurrence
   return text[:start] + new + text[end:]
+
+
+def get_repository_root(path: str):
+  """
+  Returns the root of a git repository.
+  """
+  try:
+    # Create a Repo object pointing to the current directory
+    repo = git.Repo(path, search_parent_directories=True)
+    # Get the git root directory
+    git_root = repo.git.rev_parse("--show-toplevel")
+    return git_root
+  except Exception:
+    return None

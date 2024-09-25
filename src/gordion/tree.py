@@ -199,3 +199,19 @@ class Tree(gordion.Repository):
                                                    url=child_url, tag=child_tag))
 
     return listings
+
+  @staticmethod
+  def find(path: str) -> str:
+    """
+    Returns the gordion repository Tree object containing this path.
+    """
+    current_repo_path = gordion.utils.get_repository_root(path)
+
+    # If we are not in a git repository, then we are not in a gordion repository.
+    if current_repo_path is None:
+      raise gordion.NotAGordionRepositoryError()
+
+    if gordion.Repository.is_gordion(current_repo_path):
+      return gordion.Tree(current_repo_path)
+    else:
+      raise gordion.NotAGordionRepositoryError()

@@ -37,7 +37,7 @@ class Repository:
 
   @abstractmethod
   def _relpath(self):
-      pass
+    pass
 
   def _ensure(self):
     """
@@ -303,6 +303,18 @@ class Repository:
     except (git.NoSuchPathError, git.InvalidGitRepositoryError):
       # If Repo initialization fails, the path is not a Git repository
       return False
+
+  @staticmethod
+  def is_gordion(path: str) -> bool:
+    """
+    Returns true if the repository at <path> has a gordion.yaml file.
+    """
+    if gordion.Repository._exists(path):
+      yeditor = gordion.YamlEditor(os.path.join(path, 'gordion.yaml'))
+      if yeditor.exists():
+        return True
+
+    return False
 
   @staticmethod
   def _url(path: str) -> str:
