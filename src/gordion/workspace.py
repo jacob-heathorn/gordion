@@ -1,6 +1,7 @@
 import os
 import gordion
 from pathlib import Path
+from typing import List
 
 
 @gordion.utils.singleton
@@ -11,12 +12,14 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
+    self.repos = []
 
   def setup(self, subpath):
     """
     User must call this function once with a path somewhere inside a workspace.
     """
     self.path = self.find_root(subpath)
+    self.repos = self.find_repositories()
 
   def find_root(self, path: str) -> str:
     """
@@ -41,12 +44,24 @@ class Workspace:
     # Return the original path parent.
     return str(path.parent)
 
-  def find_repositories(self):
+  def find_repositories(self) -> List[gordion.Repository]:
     """
     Finds all repository objects in the workspace and caches them in a dictionary.
     """
-    # TODO: here tomorrow. use Repository._exists() on all folders, don't go inside repos to llok
-    # for more. Look at _list_repos()
+    repos = []
+
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+        full_dirpath = os.path.join(dirpath, dirname)
+
+        if gordion.Repository._exists(full_dirpath):
+          repos.append(gordion.Repository(full_dirpath))
+          # Remove the current directory's name from dirnames so os.walk will skip its
+          # subdirectories
+          dirnames.remove(dirname)
+
+    return sorted(repos, key=lambda repo: repo.path)
 
   # def trim_repos(self, keep_repos: List[str], force: bool = False):
   #   """
