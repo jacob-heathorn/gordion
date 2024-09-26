@@ -9,9 +9,12 @@ class RepositoryFolder(Folder):
   repository can print information about the repository in pretty colors.
   """
 
-  def __init__(self, repo: gordion.Repository, root: gordion.Tree) -> None:
-    super().__init__(repo.path)
-    self.repo: gordion.Repository = repo
+  def __init__(self, path: str, url: str, root: gordion.Tree) -> None:
+    super().__init__(path)
+    self.repo: Optional[gordion.Repository] = None
+    if gordion.Repository._exists(path):
+      self.repo = gordion.Repository(path)
+    self.expected_url = url
     self.root: gordion.Tree = root
 
   @gordion.utils.override(Folder)
@@ -55,7 +58,7 @@ class RepositoryFolder(Folder):
 
       if mismatch > 0:
         display_name += ":" + gordion.utils.red(
-          f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
+            f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
       else:
         if correct_tag:
           display_name += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
@@ -158,11 +161,11 @@ class RepositoryFolder(Folder):
 
     # If not found in local, check remote branches.
     if not local_branches:
-        remote_branches = [branch for branch in self.repo.handle.remotes.origin.refs
-                           if head_commit.hexsha == branch.commit.hexsha or  # noqa: W504
-                           head_commit.hexsha in
-                           [commit.hexsha for commit in branch.commit.iter_parents()]]
-        return bool(remote_branches)
+      remote_branches = [branch for branch in self.repo.handle.remotes.origin.refs
+                         if head_commit.hexsha == branch.commit.hexsha or  # noqa: W504
+                         head_commit.hexsha in
+                         [commit.hexsha for commit in branch.commit.iter_parents()]]
+      return bool(remote_branches)
 
     return bool(local_branches)
 

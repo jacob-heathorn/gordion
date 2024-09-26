@@ -29,11 +29,10 @@ def main(argv=None):
     if args.workspace:
       print(f"{workspace.path}")
 
-    # # Print status.
-    # if args.status:
-    #   with gordion.utils.pushd(workspace):
-    #     root = gordion.Tree(workspace)
-    #     print(gordion.app.status.terminal_status(root))
+    # Print status.
+    if args.status:
+      root = gordion.Tree.find(os.getcwd())
+      print(gordion.app.status.terminal_status(root))
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)

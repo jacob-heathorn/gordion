@@ -2,6 +2,7 @@ import os
 from .folder import Folder
 from .repository_folder import RepositoryFolder
 import gordion
+from typing import List
 
 
 def populate_children(folder, root):
@@ -37,12 +38,43 @@ def terminal_status(root) -> str:
   Returns a status string indicating the status of each repository in the tree, which looks cute in
   a terminal.
   """
-  root_folder = RepositoryFolder(root, root)
-  gordion_path = os.path.join(root.path, 'gordion')
+  # 1) Aggregate a list of all folders, starting with the workspace folder.
+  workspace = gordion.Workspace()
+  folders = [Folder(workspace.path)]
 
-  if os.path.exists(gordion_path) and os.path.isdir(gordion_path):
-    gordion_folder = Folder(gordion_path)
-    root_folder.add_child(gordion_folder)
-    populate_children(gordion_folder, root)
+  # Collect all other Folders of interest.
+  #
+  # Collect all listed repos from root.
+  listings = root.listings(None, None)
+  for listing in listings:
+    if not any(folder.path == listing.path for folder in folders):
+      folders.append(RepositoryFolder(listing.path, listing.url, root))
 
-  return root_folder.terminal_status()
+  # Collect any duplicate repos. TODO.
+
+  # Add intermediary folders.
+  intermediary_folders: List[Folder] = []
+  workspace_folder = folders[0]
+  for folder in folders[1:-1]:
+    relative_path = os.path.relpath(folder.path, workspace_folder.path)
+    relative_path_parts = relative_path.strip(os.sep).split(os.sep)
+    current_path = workspace_folder.path
+
+    # Loop over each part of the path
+    for part in relative_path_parts:
+      current_path = os.path.join(current_path, part)
+      # Add new folder if it does not exist
+      if not any(folder.path == current_path for folder in folders):
+        if not any(folder.path == current_path for folder in intermediary_folders):
+          intermediary_folders.append(Folder(current_path))
+
+  # 2) Alphabetize the list based on path.
+  folders = sorted(folders, key=lambda folder: folder.path)
+
+  # # 3) Set the heirarchy of folders.
+  # for folder in folders[1:-1]:
+
+  for folder in folders:
+    print(folder.path)
+
+  return ""
