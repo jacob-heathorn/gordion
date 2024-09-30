@@ -22,8 +22,10 @@ class RepositoryFolder(Folder):
     """
     Returns the repository folder name, with branch:commit and warnings in descriptive colors.
     """
-    # TODO
-    return gordion.utils.bold_blue(self.name)
+
+    # Check if the repository exists.
+    if not self.repo:
+      return gordion.utils.bold_red(self.name) + gordion.utils.red(" (NOT FOUND)")
 
     # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
     listings = self.root.listings(self.repo.path, self.repo.url)

@@ -52,6 +52,8 @@ def terminal_status(root) -> str:
   # Collect all other Folders of interest.
   #
   # Collect all listed repos from root.
+  #
+  # TODO handle wrong url, wrong location, and duplicate repos.
   listings = root.listings(None, None)
   for listing in listings:
     if not any(folder.path == listing.path for folder in folders):
