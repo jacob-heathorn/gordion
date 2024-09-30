@@ -33,6 +33,13 @@ def populate_children(folder, root):
       folder.add_child(child_folder)
 
 
+def set_parent(folder, folders):
+  for f in folders:
+
+    if os.path.dirname(folder.path) == f.path:
+      f.add_child(folder)
+
+
 def terminal_status(root) -> str:
   """
   Returns a status string indicating the status of each repository in the tree, which looks cute in
@@ -55,7 +62,7 @@ def terminal_status(root) -> str:
   # Add intermediary folders.
   intermediary_folders: List[Folder] = []
   workspace_folder = folders[0]
-  for folder in folders[1:-1]:
+  for folder in folders[1:]:
     relative_path = os.path.relpath(folder.path, workspace_folder.path)
     relative_path_parts = relative_path.strip(os.sep).split(os.sep)
     current_path = workspace_folder.path
@@ -67,14 +74,13 @@ def terminal_status(root) -> str:
       if not any(folder.path == current_path for folder in folders):
         if not any(folder.path == current_path for folder in intermediary_folders):
           intermediary_folders.append(Folder(current_path))
+  folders.extend(intermediary_folders)
 
   # 2) Alphabetize the list based on path.
   folders = sorted(folders, key=lambda folder: folder.path)
 
-  # # 3) Set the heirarchy of folders.
-  # for folder in folders[1:-1]:
+  # 3) Set the heirarchy of folders.
+  for folder in folders[1:]:
+    set_parent(folder, folders)
 
-  for folder in folders:
-    print(folder.path)
-
-  return ""
+  return folders[0].terminal_status()
