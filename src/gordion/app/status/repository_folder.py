@@ -27,6 +27,10 @@ class RepositoryFolder(Folder):
     if not self.repo:
       return gordion.utils.bold_red(self.name) + gordion.utils.red(" (NOT FOUND)")
 
+    # Make sure it has the correct url.
+    if not gordion.utils.compare_urls(self.expected_url, self.repo.handle.remotes.origin.url):
+      return gordion.utils.bold_red(self.name) + gordion.utils.red(" (INCORRECT URL)")
+
     # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
     listings = self.root.listings(self.repo.path, self.repo.url)
     is_repository_listed = False
