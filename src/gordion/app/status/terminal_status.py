@@ -1,6 +1,7 @@
 import os
 from .folder import Folder
 from .repository_folder import RepositoryFolder
+from .duplicate_repository_folder import DuplicateRepositoryFolder
 import gordion
 from typing import List
 
@@ -53,13 +54,20 @@ def terminal_status(root) -> str:
   #
   # Collect all listed repos from root.
   #
-  # TODO handle wrong location, and duplicate repos.
   listings = root.listings(None, None)
   for listing in listings:
     if not any(folder.path == listing.path for folder in folders):
       folders.append(RepositoryFolder(listing.path, listing.url, root))
 
-  # Collect any duplicate repos. TODO.
+  # Collect any duplicate repos.
+  for repo in workspace.repos:
+    # If this folder isn't aggregated yet.
+    if not any(folder.path == repo.path for folder in folders):
+      for other_repo in workspace.repos:
+        if other_repo.path != repo.path:
+          if gordion.utils.compare_urls(repo.handle.remotes.origin.url,
+                                        other_repo.handle.remotes.origin.url):
+            folders.append(DuplicateRepositoryFolder(repo.path))
 
   # Add intermediary folders.
   intermediary_folders: List[Folder] = []
