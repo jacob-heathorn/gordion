@@ -46,14 +46,20 @@ class Tree(gordion.Repository):
       duplicates = self.workspace.get_repositories_by_url(listed_repo.url)
       for duplicate in duplicates:
         if duplicate.path != listed_repo.path:
-          self.workspace.safe_delete_repository(duplicate.path)
+          gordion.Repository.safe_delete(duplicate.path)
 
     # Also delete duplicates of any existing repo.
+    uniques = []
     for repo in self.workspace.repos:
-      duplicates = self.workspace.get_repositories_by_url(repo.url)
+      if not any(
+          gordion.utils.compare_urls(repo.handle.remotes.origin.url,
+                                     unique.handle.remotes.origin.url) for unique in uniques):
+        uniques.append(repo)
+    for unique in uniques:
+      duplicates = self.workspace.get_repositories_by_url(unique.url)
       for duplicate in duplicates:
-        if duplicate.path != repo.path:
-          self.workspace.safe_delete_repository(duplicate.path)
+        if duplicate.path != unique.path:
+          gordion.Repository.safe_delete(duplicate.path)
 
   def _update_children(self, branch_name: str, force: bool):
     """
@@ -81,7 +87,7 @@ class Tree(gordion.Repository):
         if gordion.Repository._exists(child_path):
           child_repo = git.Repo(child_path)
           if child_url != child_repo.remotes.origin.url:
-            self.workspace.safe_delete_repository(child_path)
+            gordion.Repository.safe_delete(child_path)
 
         child = Tree(child_path, child_info['url'], self)
         child.update(child_info['tag'], branch_name, force)

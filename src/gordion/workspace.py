@@ -19,7 +19,7 @@ class Workspace:
     User must call this function once with a path somewhere inside a workspace.
     """
     self.path = self.find_root(subpath)
-    self.repos = self.find_repositories()
+    self.repos = self.discover_repositories()
 
   def find_root(self, path: str) -> str:
     """
@@ -51,9 +51,9 @@ class Workspace:
         found.append(repo)
     return found
 
-  def find_repositories(self) -> List[gordion.Repository]:
+  def discover_repositories(self) -> List[gordion.Repository]:
     """
-    Finds all repository objects in the workspace and caches them in a dictionary.
+    Discovers all repository objects in the workspace and caches them in a dictionary.
     """
     repos = []
 
@@ -70,9 +70,14 @@ class Workspace:
 
     return sorted(repos, key=lambda repo: repo.path)
 
-  def safe_delete_repository(self, path, force: bool = False):
-    gordion.Repository.safe_delete(path, force)
-    self.repos = [repo for repo in self.repos if repo.path != path]
+  def update_repository_cache(self, path: str):
+    # If it exists, add it to the repos cache if necessary
+    if gordion.Repository._exists(path):
+      if not any(repo.path == path for repo in self.repos):
+        self.repos.append(gordion.Repository(path))
+    # If it does not exist, remove it from the cache if necessary
+    else:
+      self.repos = [repo for repo in self.repos if repo.path != path]
 
     # def trim_repos(self, keep_repos: List[str], force: bool = False):
     #   """

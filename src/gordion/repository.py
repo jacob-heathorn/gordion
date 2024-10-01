@@ -51,6 +51,7 @@ class Repository:
     if not Repository._exists(self.path):
       args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
       subprocess.check_call(args, stderr=subprocess.STDOUT)
+      gordion.Workspace().update_repository_cache(self.path)
 
     # Reload objects.
     self.handle = git.Repo(self.path)
@@ -373,3 +374,4 @@ class Repository:
     # If we reach here, it's safe to delete the repository
     print(f"Deleting repository: {repo_path}")
     shutil.rmtree(repo_path)
+    gordion.Workspace().update_repository_cache(repo_path)
