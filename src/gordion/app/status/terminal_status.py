@@ -2,6 +2,7 @@ import os
 from .folder import Folder
 from .repository_folder import RepositoryFolder
 from .duplicate_repository_folder import DuplicateRepositoryFolder
+from .wrong_path_repository_folder import WrongPathRepositoryFolder
 import gordion
 from typing import List
 
@@ -59,7 +60,17 @@ def terminal_status(root) -> str:
     if not any(folder.path == listing.path for folder in folders):
       folders.append(RepositoryFolder(listing.path, listing.url, root))
 
-  # Collect any duplicate repos.
+  # Collect repositories that exist at the wrong path.
+  for repo in workspace.repos:
+    # If this folder isn't aggregated yet.
+    if not any(folder.path == repo.path for folder in folders):
+      # If a listing matches the url
+      for listing in listings:
+        if gordion.utils.compare_urls(repo.handle.remotes.origin.url, listing.url):
+          folders.append(WrongPathRepositoryFolder(repo.path))
+          break
+
+  # Collect any pure duplicate repos.
   for repo in workspace.repos:
     # If this folder isn't aggregated yet.
     if not any(folder.path == repo.path for folder in folders):
