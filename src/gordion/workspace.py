@@ -39,10 +39,10 @@ class Workspace:
       for child in current_path.iterdir():
         if child.is_dir() and os.access(str(child), os.R_OK):
           if gordion.Repository.is_gordion(str(child)):
-            return str(current_path)
+            return os.path.normpath(current_path)
 
     # Return the original path parent.
-    return str(path.parent)
+    return os.path.normpath(path.parent)
 
   def get_repositories_by_url(self, url: str) -> List[gordion.Repository]:
     found = []

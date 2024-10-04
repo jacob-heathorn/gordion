@@ -336,18 +336,18 @@ class Repository:
       self.fetched = True
 
   @staticmethod
-  def safe_delete(repo_path, force: bool = False):
+  def safe_delete(path, force: bool = False):
     """
     Deletes the repository as long as information will not be lost. Generates an error if the
     repository has unsaved branches/commits or if it has stashes.
     """
-    assert gordion.Repository._exists(repo_path)
-    repo = git.Repo(repo_path)
+    assert gordion.Repository._exists(path)
+    repo = git.Repo(path)
 
     # Check if repository has local changes.
     if repo.is_dirty(untracked_files=True):
       if not force:
-        raise gordion.UnsafeRemoveDirty(repo_path)
+        raise gordion.UnsafeRemoveDirty(path)
 
     # Check if any information would be lost from local branches if we delete this repository.
     for local_branch in repo.branches:  # type: ignore[attr-defined]
@@ -359,19 +359,32 @@ class Repository:
             f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
 
         if commits_ahead:
-          raise gordion.UnsafeRemoveLocalBranchAhead(repo_path, local_branch.name,
+          raise gordion.UnsafeRemoveLocalBranchAhead(path, local_branch.name,
                                                      tracking_branch.name, len(commits_ahead))
 
       # There is no tracking branch, so error.
       else:
-        raise gordion.UnsafeRemoveLocalBranchNoTrackingBranch(repo_path, local_branch.name)
+        raise gordion.UnsafeRemoveLocalBranchNoTrackingBranch(path, local_branch.name)
 
     # Error if the repository has stashes that will be lost by the deletion.
     stashes = repo.git.stash('list')
     if stashes:
-      raise gordion.UnsafeRemoveStashes(repo_path, stashes)
+      raise gordion.UnsafeRemoveStashes(path, stashes)
 
     # If we reach here, it's safe to delete the repository
-    print(f"Deleting repository: {repo_path}")
-    shutil.rmtree(repo_path)
-    gordion.Workspace().update_repository_cache(repo_path)
+    print(f"Deleting repository: {path}")
+    shutil.rmtree(path)
+    workspace = gordion.Workspace()
+    workspace.update_repository_cache(path)
+
+    # Delete parent folders if they are empty, up until the workspace folder (but not including)
+    parent_folder = os.path.normpath(os.path.dirname(path))
+    while True:
+      is_in_workspace = parent_folder.startswith(workspace.path + os.sep)
+      is_empty = not bool(os.listdir(parent_folder))
+      if is_in_workspace and is_empty:
+        print(f"Deleting empty folder: {parent_folder}")
+        shutil.rmtree(parent_folder)
+        parent_folder = os.path.normpath(os.path.dirname(parent_folder))
+      else:
+        break

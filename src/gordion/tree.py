@@ -34,9 +34,9 @@ class Tree(gordion.Repository):
 
     # Cleanup duplicate repositories.
     if self is root:
-      self._delete_duplicates()
+      self._delete_duplicates(force)
 
-  def _delete_duplicates(self):
+  def _delete_duplicates(self, force: bool):
     listings = self.listings(None, None)
 
     # First delete duplicates of listings.
@@ -46,7 +46,7 @@ class Tree(gordion.Repository):
       duplicates = self.workspace.get_repositories_by_url(listed_repo.url)
       for duplicate in duplicates:
         if duplicate.path != listed_repo.path:
-          gordion.Repository.safe_delete(duplicate.path)
+          gordion.Repository.safe_delete(path=duplicate.path, force=force)
 
     # Also delete duplicates of any existing repo.
     uniques = []
@@ -59,7 +59,7 @@ class Tree(gordion.Repository):
       duplicates = self.workspace.get_repositories_by_url(unique.url)
       for duplicate in duplicates:
         if duplicate.path != unique.path:
-          gordion.Repository.safe_delete(duplicate.path)
+          gordion.Repository.safe_delete(path=duplicate.path, force=force)
 
   def _update_children(self, branch_name: str, force: bool):
     """
