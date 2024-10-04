@@ -1,5 +1,6 @@
 import gordion
 from typing import Optional
+import os
 from .terminal_status import Folder
 
 
@@ -25,7 +26,10 @@ class RepositoryFolder(Folder):
 
     # Check if the repository exists.
     if not self.repo:
-      return gordion.utils.bold_red(self.name) + gordion.utils.red(" (NOT FOUND)")
+      if os.path.exists(self.path):
+        return gordion.utils.bold_red(self.name) + gordion.utils.red(" (NOT A REPOSITORY)")
+      else:
+        return gordion.utils.bold_red(self.name) + gordion.utils.red(" (NOT FOUND)")
 
     # Make sure it has the correct url.
     if not gordion.utils.compare_urls(self.expected_url, self.repo.handle.remotes.origin.url):
