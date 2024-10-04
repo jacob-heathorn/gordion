@@ -2,6 +2,7 @@ import os
 import gordion
 from pathlib import Path
 from typing import List
+import shutil
 
 
 @gordion.utils.singleton
@@ -78,6 +79,22 @@ class Workspace:
     # If it does not exist, remove it from the cache if necessary
     else:
       self.repos = [repo for repo in self.repos if repo.path != path]
+
+  def delete_empty_parent_folders(self, path):
+    """
+    Delete parent folders if they are empty, up until the workspace folder (but not including)
+    """
+    # Delete parent folders if they are empty, up until the workspace folder (but not including)
+    parent_folder = os.path.normpath(os.path.dirname(path))
+    while True:
+      is_in_workspace = parent_folder.startswith(self.path + os.sep)
+      is_empty = not bool(os.listdir(parent_folder))
+      if is_in_workspace and is_empty:
+        print(f"Deleting empty folder: {parent_folder}")
+        shutil.rmtree(parent_folder)
+        parent_folder = os.path.normpath(os.path.dirname(parent_folder))
+      else:
+        break
 
     # def trim_repos(self, keep_repos: List[str], force: bool = False):
     #   """

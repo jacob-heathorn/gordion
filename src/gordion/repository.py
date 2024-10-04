@@ -48,10 +48,33 @@ class Repository:
     # exists. so ensure it first.
     cache = gordion.Cache()
     mirror_path, self.default_branch_name = cache.ensure_mirror(self.url)
+    workspace = gordion.Workspace()
     if not Repository._exists(self.path):
-      args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
-      subprocess.check_call(args, stderr=subprocess.STDOUT)
-      gordion.Workspace().update_repository_cache(self.path)
+      # Make sure the target path doesn't already exist as a non-repository.
+      if os.path.exists(self.path):
+        raise gordion.UpdateTargetPathExistsError(self.path)
+
+      # If the repository exists elsewhere in the workspace, we can move it.
+      other_repos = workspace.get_repositories_by_url(self.url)
+      if len(other_repos) == 0:
+        # Clone it.
+        args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
+        subprocess.check_call(args, stderr=subprocess.STDOUT)
+        gordion.Workspace().update_repository_cache(self.path)
+      elif len(other_repos) == 1:
+        # Ensure destination path.
+        if not os.path.exists(os.path.dirname(self.path)):
+          os.makedirs(os.path.dirname(self.path))
+        # Move repository.
+        # TODO: Consider the fact that this repository might not be connected to the mirror. Is
+        # there a way to connect it?
+        print(f"Moving repository from <{other_repos[0].path}> to <{self.path}>")
+        shutil.move(other_repos[0].path, self.path)
+        gordion.Workspace().update_repository_cache(self.path)
+        gordion.Workspace().update_repository_cache(other_repos[0].path)
+        workspace.delete_empty_parent_folders(other_repos[0].path)
+      else:
+        raise gordion.UpdateMultipleRepositoriesAlreadyExistsError(self.path, other_repos)
 
     # Reload objects.
     self.handle = git.Repo(self.path)
@@ -376,15 +399,4 @@ class Repository:
     shutil.rmtree(path)
     workspace = gordion.Workspace()
     workspace.update_repository_cache(path)
-
-    # Delete parent folders if they are empty, up until the workspace folder (but not including)
-    parent_folder = os.path.normpath(os.path.dirname(path))
-    while True:
-      is_in_workspace = parent_folder.startswith(workspace.path + os.sep)
-      is_empty = not bool(os.listdir(parent_folder))
-      if is_in_workspace and is_empty:
-        print(f"Deleting empty folder: {parent_folder}")
-        shutil.rmtree(parent_folder)
-        parent_folder = os.path.normpath(os.path.dirname(parent_folder))
-      else:
-        break
+    workspace.delete_empty_parent_folders(path)

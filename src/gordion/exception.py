@@ -16,6 +16,22 @@ class UpdateLocalBranchAheadError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
+class UpdateTargetPathExistsError(UpdateError):
+  def __init__(self, target_path):
+    reason = f"{target_path} already exists but is not a repository"
+    suggestion = f"Manually delete {target_path}"
+    super().__init__(target_path, reason, suggestion)
+
+
+class UpdateMultipleRepositoriesAlreadyExistsError(UpdateError):
+  def __init__(self, target_path, other_repos):
+    reason = f"Multiple repositories with url<{other_repos[0].url}> already exist:"
+    for other_repo in other_repos:
+      reason += f"\n * {other_repo.path}"
+    suggestion = "\nDelete duplicate repositories"
+    super().__init__(target_path, reason, suggestion)
+
+
 class UpdateNoTrackingBranchError(UpdateError):
   def __init__(self, target_path, local_branch):
     reason = f"{local_branch} does not have a tracking branch, so commits will be lost"
@@ -79,7 +95,7 @@ class UpdateSameRepoDifferentTagError(UpdateError):
 class UnsafeRemoveDirty(Exception):
   def __init__(self, path):
     self.message = (
-      f"Cannot remove repository<{path}> because it is dirty."
+        f"Cannot remove repository<{path}> because it is dirty."
     )
     super().__init__(self.message)
 
@@ -87,8 +103,8 @@ class UnsafeRemoveDirty(Exception):
 class UnsafeRemoveLocalBranchAhead(Exception):
   def __init__(self, path, local_branch, tracking_branch, num_commits_ahead):
     self.message = (
-      f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that is "
-      f"{num_commits_ahead} commit(s) ahead of tracking branch<{tracking_branch}>."
+        f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that is "
+        f"{num_commits_ahead} commit(s) ahead of tracking branch<{tracking_branch}>."
     )
     super().__init__(self.message)
 
@@ -96,8 +112,8 @@ class UnsafeRemoveLocalBranchAhead(Exception):
 class UnsafeRemoveLocalBranchNoTrackingBranch(Exception):
   def __init__(self, path, local_branch):
     self.message = (
-      f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that does "
-      f"not have a tracking branch."
+        f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that does "
+        f"not have a tracking branch."
     )
     super().__init__(self.message)
 
@@ -105,8 +121,8 @@ class UnsafeRemoveLocalBranchNoTrackingBranch(Exception):
 class UnsafeRemoveStashes(Exception):
   def __init__(self, path, stashes):
     self.message = (
-      f"Cannot remove repository<{path}> because it has the following stashes that would be lost:\n"
-      f"{stashes}."
+        f"Cannot remove repository<{path}> because it has the following stashes that would be lost:\n"
+        f"{stashes}."
     )
     super().__init__(self.message)
 
@@ -114,7 +130,7 @@ class UnsafeRemoveStashes(Exception):
 class NotAGordionRepositoryError(Exception):
   def __init__(self):
     self.message = (
-      "You are not in a gordion repository!"
+        "You are not in a gordion repository!"
     )
     super().__init__(self.message)
 
@@ -122,9 +138,9 @@ class NotAGordionRepositoryError(Exception):
 class DanglingGordionRepositoryError(Exception):
   def __init__(self, current_repo_path, disconnected_parent_path):
     self.message = (
-      f"You are in repository<{current_repo_path}>. There is a parent gordion "
-      f"repository<{disconnected_parent_path}> but it does not list this repository. Therefore "
-      f"this repository appears to be dangling and should be deleted."
+        f"You are in repository<{current_repo_path}>. There is a parent gordion "
+        f"repository<{disconnected_parent_path}> but it does not list this repository. Therefore "
+        f"this repository appears to be dangling and should be deleted."
     )
     super().__init__(self.message)
 
@@ -132,8 +148,8 @@ class DanglingGordionRepositoryError(Exception):
 class BadRepositoryNamePathMismach(Exception):
   def __init__(self, file, path, name):
     self.message = (
-      f"File<{file}> lists repository name<{name}> but the path is <{path}>. The name needs to"
-      f" match the base directory name of the path."
+        f"File<{file}> lists repository name<{name}> but the path is <{path}>. The name needs to"
+        f" match the base directory name of the path."
     )
     super().__init__(self.message)
 

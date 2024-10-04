@@ -12,6 +12,6 @@ from .exception import NotAGordionRepositoryError, DanglingGordionRepositoryErro
 from .exception import BadRepositoryNamePathMismach, UpdateDifferentRepoSamePathError
 from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes
+from .exception import UpdateTargetPathExistsError, UpdateMultipleRepositoriesAlreadyExistsError
 from .yeditor import YamlEditor
-from .store import Store
 from .workspace import Workspace
