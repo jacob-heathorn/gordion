@@ -36,7 +36,3 @@ def main(argv=None):
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)
-
-
-if __name__ == "__main__":
-  main()
