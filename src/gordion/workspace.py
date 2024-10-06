@@ -13,7 +13,8 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
-    self.repos = []
+    self.working: List[gordion.Repository] = []
+    self.dependencies: List[gordion.Repository] = []
 
   def setup(self, subpath):
     """
@@ -21,7 +22,7 @@ class Workspace:
     """
     self.path = self.find_root(subpath)
     self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
-    self.repos = self.discover_repositories()
+    self.working, self.dependencies = self.discover_repositories()
 
   def find_root(self, path: str) -> str:
     """
@@ -47,22 +48,22 @@ class Workspace:
     return os.path.normpath(path.parent)
 
   def get_repositories(self, url: str) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
-    dependencies = []
     working = []
-    for repo in self.repos:
+    dependencies = []
+    for repo in self.working:
       if gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
-        if os.path.commonprefix([self.dependencies_path, repo.path]) == self.dependencies_path:
-          dependencies.append(repo)
-        else:
-          assert os.path.commonprefix([self.path, repo.path]) == self.path
-          working.append(repo)
+        working.append(repo)
+    for repo in self.dependencies:
+      if gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
+        dependencies.append(repo)
     return working, dependencies
 
-  def discover_repositories(self) -> List[gordion.Repository]:
+  def discover_repositories(self) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
-    repos = []
+    working: List[gordion.Repository] = []
+    dependencies: List[gordion.Repository] = []
 
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       # Create a copy of dirnames for iteration to avoid modifying the list while iterating
@@ -70,21 +71,32 @@ class Workspace:
         full_dirpath = os.path.join(dirpath, dirname)
 
         if gordion.Repository._exists(full_dirpath):
-          repos.append(gordion.Repository(full_dirpath))
+          if os.path.commonprefix([self.dependencies_path, full_dirpath]) == self.dependencies_path:
+            dependencies.append(gordion.Repository(full_dirpath))
+          else:
+            assert os.path.commonprefix([self.path, full_dirpath]) == self.path
+            working.append(gordion.Repository(full_dirpath))
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)
 
-    return sorted(repos, key=lambda repo: repo.path)
+    working = sorted(working, key=lambda repo: repo.path)
+    dependencies = sorted(dependencies, key=lambda repo: repo.path)
+    return working, dependencies
 
   def update_repository_cache(self, path: str):
     # If it exists, add it to the repos cache if necessary
     if gordion.Repository._exists(path):
-      if not any(repo.path == path for repo in self.repos):
-        self.repos.append(gordion.Repository(path))
+      if os.path.commonprefix([self.dependencies_path, path]) == self.dependencies_path:
+        if not any(repo.path == path for repo in self.dependencies):
+          self.dependencies.append(gordion.Repository(path))
+      else:
+        if not any(repo.path == path for repo in self.working):
+          self.working.append(gordion.Repository(path))
     # If it does not exist, remove it from the cache if necessary
     else:
-      self.repos = [repo for repo in self.repos if repo.path != path]
+      self.working = [repo for repo in self.working if repo.path != path]
+      self.dependencies = [repo for repo in self.working if repo.path != path]
 
   def delete_empty_parent_folders(self, path):
     """

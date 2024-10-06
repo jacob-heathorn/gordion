@@ -10,12 +10,9 @@ class RepositoryFolder(Folder):
   repository can print information about the repository in pretty colors.
   """
 
-  def __init__(self, path: str, url: str, root: gordion.Tree) -> None:
-    super().__init__(path)
-    self.repo: Optional[gordion.Repository] = None
-    if gordion.Repository._exists(path):
-      self.repo = gordion.Repository(path)
-    self.expected_url = url
+  def __init__(self, repo: gordion.Repository, root: gordion.Tree) -> None:
+    super().__init__(repo.path)
+    self.repo = repo
     self.root: gordion.Tree = root
 
   @gordion.utils.override(Folder)
@@ -24,19 +21,8 @@ class RepositoryFolder(Folder):
     Returns the repository folder name, with branch:commit and warnings in descriptive colors.
     """
 
-    # Check if the repository exists.
-    if not self.repo:
-      if os.path.exists(self.path):
-        return gordion.utils.bold_red(self.name) + gordion.utils.red(" (NOT A REPOSITORY)")
-      else:
-        return gordion.utils.bold_red(self.name) + gordion.utils.red(" (NOT FOUND)")
-
-    # Make sure it has the correct url.
-    if not gordion.utils.compare_urls(self.expected_url, self.repo.handle.remotes.origin.url):
-      return gordion.utils.bold_red(self.name) + gordion.utils.red(" (INCORRECT URL)")
-
     # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
-    listings = self.root.listings(self.repo.path, self.repo.url)
+    listings = self.root.listings(self.repo.url)
     is_repository_listed = False
     correct_tag = True
     mismatch = False

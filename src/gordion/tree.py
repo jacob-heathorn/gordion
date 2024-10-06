@@ -192,55 +192,69 @@ class Tree(gordion.Repository):
       if listing_n_commit != listing_0_commit:
         raise gordion.UpdateSameRepoDifferentTagError(target.path, listings)
 
+  # TODO listings need a name
   @dataclass
   class Listing:
-    path: str
-    listed_path: str
     url: str
     tag: str
 
-  def listings(self, target_path: Optional[str], target_url: Optional[str]) -> List[Listing]:
+  def listings(self, target_url: Optional[str]) -> List[Listing]:
     """
     Generates a list of Listings in the recursable Tree, including the self. A listing holds
     information as-listed in the gordion.yaml file, unless it is the root which doesn't have a
     parent gordion.yaml file.
     """
     listings = []
-
-    # Check if self matches the target path and/or url
-    if not target_path or target_path == self.path:
-      if not target_url or gordion.utils.compare_urls(target_url, self.url):
-        listings.append(gordion.Tree.Listing(path=self.path, listed_path=self._listed_path(),
-                                             url=self.url, tag=self.handle.head.commit.hexsha))
+    if not target_url or gordion.utils.compare_urls(target_url, self.url):
+      listings.append(gordion.Tree.Listing(url=self.url, tag=self.handle.head.commit.hexsha))
 
     # Check children.
     self.yeditor.reload()
     if self.yeditor.exists():
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
-        gpath = self.yeditor.read_repository_gpath(child_name)
-        child_path = os.path.join(self.workspace.path, gpath)
         child_url = child_info['url']
         child_tag = child_info['tag']
 
-        # If the child exists, and is the correct url and tag, we can create a Tree object and
-        # recurse.
-        recursed = False
-        if gordion.Repository._exists(child_path):
-          if gordion.Repository._url(child_path) == child_url:
-            child = Tree(child_path, child_url, self)
-            child_listed_commit = child._verify_tag(child_tag)
-            if child.handle.head.commit == child_listed_commit:
-              listings.extend(child.listings(target_path, target_url))
-              recursed = True
+        # If the child exists (search by url) and is the correct tag. n that case, we can create a
+        # Tree object and recurse.
+        working, dependencies = self.workspace.get_repositories(child_url)
+        if len(working) == 0:
+          if len(dependencies) == 0:
+            # We cannot recurse into this listing, but we still need to add to listings.
+            listings.append(gordion.Tree.Listing(url=child_url, tag=child_tag))
+          else:
+            # If there is a dependency repo at the expected path and tag, we can recurse into it.
+            recursed = False
+            for dependency in dependencies:
+              if dependency.path == os.path.join(self.workspace.dependencies_path, child_name):
+                child = Tree(dependency.path, child_url, self)
+                child_listed_commit = child._verify_tag(child_tag)
+                if child.handle.head.commit == child_listed_commit:
+                  listings.extend(child.listings(target_url))
+                  recursed = True
+            if not recursed:
+              listings.append(gordion.Tree.Listing(url=child_url, tag=child_tag))
 
-        # If we didn't recurse into the child Tree, becasue it was the wrong commit or url, we still
-        # need to add it as a listing, if the path and/or url matches the target.
-        if not recursed:
-          if not target_path or target_path == child_path:
-            if not target_url or gordion.utils.compare_urls(target_url, child_url):
-              child_listed_path = f"{self._relpath()} lists {gpath}"
-              listings.append(gordion.Tree.Listing(path=child_path, listed_path=child_listed_path,
-                                                   url=child_url, tag=child_tag))
+        # If there are working repositories, we ignore the dependencies (they should not exist)
+        else:
+          # The first working repository is the one we choose to look at. If there are more, they
+          # would be marked DUPLICATE in the status command output.
+          #
+          # TODO duplicate code here.
+          recursed = False
+          child = Tree(working[0].path, child_url, self)
+          child_listed_commit = child._verify_tag(child_tag)
+          if child.handle.head.commit == child_listed_commit:
+            listings.extend(child.listings(target_url))
+            recursed = True
+          if not recursed:
+            listings.append(gordion.Tree.Listing(url=child_url, tag=child_tag))
+
+    # If a target_url is specified, only return the listings with that url.
+    if target_url:
+      listings = [
+          listing for listing in listings if gordion.utils.compare_urls(
+              listing.url, target_url)]
 
     return listings
 
