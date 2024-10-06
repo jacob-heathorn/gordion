@@ -65,14 +65,16 @@ def terminal_status(root) -> str:
       if len(listings) > 0:
         folders.append(RepositoryFolder(dependency, root))
 
-      # TODO: If it is not listed by root or any workspace folder, we want to show that it should
+      # If it is not listed by root or any workspace folder, we want to show that it should
       # not exist.
       #
       # TODO handle wrong name here?
-      # for repo in workspace.working:
-      #   listings = repo.listings(target_url=dependency.url)
-      #   if len(listings) == 0:
-      #     folders.append(NotListedRepositoryFolder(dependency.path))
+      for repo in workspace.working:
+        if gordion.Repository.is_gordion(repo.path):
+          tree = gordion.Tree(repo.path)
+          listings = tree.listings(target_url=dependency.url)
+          if len(listings) == 0:
+            folders.append(NotListedRepositoryFolder(dependency.path))
 
   # TODO: Aggregate repositories that are listed by root, but not found in the workspace.
 
