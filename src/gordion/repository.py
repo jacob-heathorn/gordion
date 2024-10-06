@@ -31,7 +31,9 @@ class Repository:
     else:
       if gordion.Repository._exists(path):
         repo = git.Repo(path)
-        assert gordion.utils.compare_urls(url, repo.remotes.origin.url)
+        # If a repository with the wrong URL already exists at the child path, remove it.
+        if not gordion.utils.compare_urls(url, repo.remotes.origin.url):
+          gordion.Repository.safe_delete(path)
 
     return url
 
@@ -48,33 +50,15 @@ class Repository:
     # exists. so ensure it first.
     cache = gordion.Cache()
     mirror_path, self.default_branch_name = cache.ensure_mirror(self.url)
-    workspace = gordion.Workspace()
     if not Repository._exists(self.path):
       # Make sure the target path doesn't already exist as a non-repository.
       if os.path.exists(self.path):
         raise gordion.UpdateTargetPathExistsError(self.path)
 
-      # If the repository exists elsewhere in the workspace, we can move it.
-      other_repos = workspace.get_repositories_by_url(self.url)
-      if len(other_repos) == 0:
-        # Clone it.
-        args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
-        subprocess.check_call(args, stderr=subprocess.STDOUT)
-        gordion.Workspace().update_repository_cache(self.path)
-      elif len(other_repos) == 1:
-        # Ensure destination path.
-        if not os.path.exists(os.path.dirname(self.path)):
-          os.makedirs(os.path.dirname(self.path))
-        # Move repository.
-        # TODO: Consider the fact that this repository might not be connected to the mirror. Is
-        # there a way to connect it?
-        print(f"Moving repository from <{other_repos[0].path}> to <{self.path}>")
-        shutil.move(other_repos[0].path, self.path)
-        gordion.Workspace().update_repository_cache(self.path)
-        gordion.Workspace().update_repository_cache(other_repos[0].path)
-        workspace.delete_empty_parent_folders(other_repos[0].path)
-      else:
-        raise gordion.UpdateMultipleRepositoriesAlreadyExistsError(self.path, other_repos)
+      # Clone it.
+      args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
+      subprocess.check_call(args, stderr=subprocess.STDOUT)
+      gordion.Workspace().update_repository_cache(self.path)
 
     # Reload objects.
     self.handle = git.Repo(self.path)

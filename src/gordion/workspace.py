@@ -1,7 +1,7 @@
 import os
 import gordion
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 import shutil
 
 
@@ -20,6 +20,7 @@ class Workspace:
     User must call this function once with a path somewhere inside a workspace.
     """
     self.path = self.find_root(subpath)
+    self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
     self.repos = self.discover_repositories()
 
   def find_root(self, path: str) -> str:
@@ -45,12 +46,17 @@ class Workspace:
     # Return the original path parent.
     return os.path.normpath(path.parent)
 
-  def get_repositories_by_url(self, url: str) -> List[gordion.Repository]:
-    found = []
+  def get_repositories(self, url: str) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
+    dependencies = []
+    working = []
     for repo in self.repos:
       if gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
-        found.append(repo)
-    return found
+        if os.path.commonprefix([self.dependencies_path, repo.path]) == self.dependencies_path:
+          dependencies.append(repo)
+        else:
+          assert os.path.commonprefix([self.path, repo.path]) == self.path
+          working.append(repo)
+    return working, dependencies
 
   def discover_repositories(self) -> List[gordion.Repository]:
     """

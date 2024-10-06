@@ -3,6 +3,7 @@ import os
 import git
 from typing import List, Optional
 from dataclasses import dataclass
+import shutil
 
 
 class Tree(gordion.Repository):
@@ -23,71 +24,90 @@ class Tree(gordion.Repository):
     Updates this repository and it's children.
     """
     # Check for duplicate tag
-    root = self._root()
-    commit: git.Commit = self._verify_tag(tag)
-    root._check_same_repo_different_tag(self, commit)
+    # root = self._root()
+    # commit: git.Commit = self._verify_tag(tag)
+    # TODO restore.
+    # root._check_same_repo_different_tag(self, commit)
 
     super().update(tag, branch_name, force)
 
     self.yeditor.reload()
     self._update_children(branch_name, force)
 
-    # Cleanup duplicate repositories.
-    if self is root:
-      self._delete_duplicates(force)
+    # # Cleanup duplicate repositories.
+    # if self is root:
+    #   self._delete_duplicates(force)
 
-  def _delete_duplicates(self, force: bool):
-    listings = self.listings(None, None)
+  # def _delete_duplicates(self, force: bool):
+  #   listings = self.listings(None, None)
 
-    # First delete duplicates of listings.
-    for listing in listings:
-      listed_repo = gordion.Repository(listing.path)
-      assert listed_repo.handle.remotes.origin.url == listing.url
-      duplicates = self.workspace.get_repositories_by_url(listed_repo.url)
-      for duplicate in duplicates:
-        if duplicate.path != listed_repo.path:
-          gordion.Repository.safe_delete(path=duplicate.path, force=force)
+  #   # First delete duplicates of listings.
+  #   for listing in listings:
+  #     listed_repo = gordion.Repository(listing.path)
+  #     assert listed_repo.handle.remotes.origin.url == listing.url
+  #     duplicates = self.workspace.get_repositories_by_url(listed_repo.url)
+  #     for duplicate in duplicates:
+  #       if duplicate.path != listed_repo.path:
+  #         gordion.Repository.safe_delete(path=duplicate.path, force=force)
 
-    # Also delete duplicates of any existing repo.
-    uniques = []
-    for repo in self.workspace.repos:
-      if not any(
-          gordion.utils.compare_urls(repo.handle.remotes.origin.url,
-                                     unique.handle.remotes.origin.url) for unique in uniques):
-        uniques.append(repo)
-    for unique in uniques:
-      duplicates = self.workspace.get_repositories_by_url(unique.url)
-      for duplicate in duplicates:
-        if duplicate.path != unique.path:
-          gordion.Repository.safe_delete(path=duplicate.path, force=force)
+  #   # Also delete duplicates of any existing repo.
+  #   uniques = []
+  #   for repo in self.workspace.repos:
+  #     if not any(
+  #         gordion.utils.compare_urls(repo.handle.remotes.origin.url,
+  #                                    unique.handle.remotes.origin.url) for unique in uniques):
+  #       uniques.append(repo)
+  #   for unique in uniques:
+  #     duplicates = self.workspace.get_repositories_by_url(unique.url)
+  #     for duplicate in duplicates:
+  #       if duplicate.path != unique.path:
+  #         gordion.Repository.safe_delete(path=duplicate.path, force=force)
 
   def _update_children(self, branch_name: str, force: bool):
     """
     Updates the children repository listed in this repositorie's yaml.
     """
-    root = self._root()
+    # root = self._root()
     self.children = {}
 
     # Open the gordion yaml file for this repository if it exists.
     if self.yeditor.exists():
       assert self.yeditor.yaml_data
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
-        # Create child repository objects
-        gpath = self.yeditor.read_repository_gpath(child_name)
-        child_path = os.path.join(self.workspace.path, gpath)
-        child_url = child_info['url']
 
-        # Check the repository path before creating it.
-        root._check_different_repo_same_path(child_path, child_url)
-        root._check_same_repo_different_path(child_path, child_url)
+        # Manage existing repositories in the workspace, and resolve the child_path
+        working, dependencies = self.workspace.get_repositories(child_info['url'])
+        child_path = ''
 
-        # If a repository with the wrong URL already exists at the child path, remove it. We have
-        # already checked that a different repository is not listed at the same path, so if one
-        # does, then it's dangling anyway (not listed in yaml yet).
-        if gordion.Repository._exists(child_path):
-          child_repo = git.Repo(child_path)
-          if child_url != child_repo.remotes.origin.url:
-            gordion.Repository.safe_delete(child_path)
+        # If there are no working repositories, than we need to manage the repository in the
+        # .dependencies/ space.
+        if len(working) == 0:
+          # If there are no dependencies yet, set the child_path and it will be cloned.
+          if len(dependencies) == 0:
+            child_path = os.path.join(self.workspace.dependencies_path, child_name)
+
+          # Ensure there is only one dependency repo at the correct location.
+          else:
+            child_path = os.path.join(self.workspace.dependencies_path, child_name)
+            for dependency in dependencies:
+              if dependency.path != child_path:
+                gordion.Repository.safe_delete(dependency.path)
+
+        # If there are working repositories, we can remove any dependencies.
+        else:
+          for dependency in dependencies:
+            gordion.Repository.safe_delete(dependency.path)
+
+          # If there is exactly working repository, good, otherwise bad.
+          if len(working) == 1:
+            child_path = working[0].path
+          else:
+            child_path = working[0].path
+            raise gordion.UpdateMultipleRepositoriesAlreadyExistsError(child_path, working)
+
+        # # Check the repository path before creating it.
+        # root._check_different_repo_same_path(child_path, child_url)
+        # root._check_same_repo_different_path(child_path, child_url)
 
         child = Tree(child_path, child_info['url'], self)
         child.update(child_info['tag'], branch_name, force)
