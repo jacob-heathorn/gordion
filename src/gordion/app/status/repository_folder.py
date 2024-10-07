@@ -107,7 +107,7 @@ class RepositoryFolder(Folder):
 
     if mismatch:
       display_name += ":" + gordion.utils.red(
-          f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
+          f"{self.repo.handle.head.commit.hexsha[:7]}-conflicted")
     else:
       if correct_tag:
         display_name += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
