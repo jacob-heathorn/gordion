@@ -58,6 +58,15 @@ class RepositoryFolder(Folder):
       self.existence_error_string = self.existence_error_string[0:-1]
       self.existence_error_string += f", {error})"
 
+  def unique_listed_tags(self):
+    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
+    listings = [listing for listing in listings if self.repo.url == listing.url]
+    unique_tags = set()
+    for listing in listings:
+      unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
+
+    return unique_tags
+
   @gordion.utils.override(Folder)
   def _get_display_name(self) -> str:
     """
@@ -73,16 +82,9 @@ class RepositoryFolder(Folder):
           self.name) + gordion.utils.red(f" {self.existence_error_string}")
 
     # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
-    listings = self.root.listings(self.name, self.repo.url)
-    is_repository_listed = False
+    unique_tags = self.unique_listed_tags()
     correct_tag = True
     mismatch = False
-    unique_tags = set()
-    for listing in listings:
-      unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
-
-    if len(unique_tags) > 0:
-      is_repository_listed = True
 
     # If any of the tags are incorrect, the commit is incorrect.
     for tag in unique_tags:
@@ -94,30 +96,23 @@ class RepositoryFolder(Folder):
 
     # Branch header.
     branch_header = self._get_branch_name()
-    branch_suggestion = None
-    if is_repository_listed:
-      branch_header = self._color_branch(branch_header)
-      branch_suggestion = self._get_branch_suggestion()
+    branch_header = self._color_branch(branch_header)
+    branch_suggestion = self._get_branch_suggestion()
 
     branch_header += self._get_branch_warnings(branch_suggestion)
 
     # Name branch:tag
-    if is_repository_listed:
-      display_name = gordion.utils.bold_green(self.name)
-      display_name += " " + branch_header
+    display_name = gordion.utils.bold_green(self.name)
+    display_name += " " + branch_header
 
-      if mismatch > 0:
-        display_name += ":" + gordion.utils.red(
-            f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
-      else:
-        if correct_tag:
-          display_name += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
-        else:
-          display_name += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
+    if mismatch:
+      display_name += ":" + gordion.utils.red(
+          f"{self.repo.handle.head.commit.hexsha[:7]}-mismatch")
     else:
-      display_name = gordion.utils.bold_red(self.name)
-      display_name += " " + branch_header
-      display_name += ":" + self.repo.handle.head.commit.hexsha[:7]
+      if correct_tag:
+        display_name += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
+      else:
+        display_name += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
 
     # Append -dirty to hexsha if necessary.
     if self.repo.handle.is_dirty(untracked_files=True):
