@@ -16,56 +16,61 @@ class RepositoryFolder(Folder):
     self.root: gordion.Tree = root
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
-    self.existence_error_string = ""
+    self.existence_errors = []
+    self.listing_errors = []
 
-  def check_duplicate(self):
+  def is_duplicate(self) -> bool:
     all_repos = self.workspace.working + self.workspace.dependencies
     for repo in all_repos:
       if repo.path != self.repo.path:
         if gordion.utils.compare_urls(repo.url, self.repo.url):
-          self.append_existence_error("DUPLICATE")
-          return
+          return True
+    return False
 
-  def check_path(self):
+  def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
       if self.repo.path != os.path.join(self.workspace.dependencies_path, self.repo.name):
-        self.append_existence_error("WRONG_PATH")
+        return False
+    return True
 
-  def check_is_listed(self):
+  def is_listed(self) -> bool:
     """
     Checks that the repository is listed by name and url by at least one of the working
     repositories.
     """
     # Working repositories don't need to be listed
     if not self.workspace.is_dependency(self.repo.path):
-      return
+      return True
 
-    listed = False
     for repo in self.workspace.working:
       if gordion.Repository.is_gordion(repo.path):
         tree = gordion.Tree(repo.path)
         listings = tree.listings(name=self.repo.name, url=self.repo.url)
         if len(listings) > 0:
-          listed = True
-          break
-    if not listed:
-      self.append_existence_error("NOT LISTED")
-
-  def append_existence_error(self, error: str):
-    if not self.existence_error_string:
-      self.existence_error_string = f"({error})"
-    else:
-      self.existence_error_string = self.existence_error_string[0:-1]
-      self.existence_error_string += f", {error})"
+          return True
+    return False
 
   def unique_listed_tags(self):
-    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
-    listings = [listing for listing in listings if self.repo.url == listing.url]
+    listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
     unique_tags = set()
     for listing in listings:
       unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
 
     return unique_tags
+
+  def is_name_conflicted(self):
+    listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
+    for listing in listings:
+      if listing.name != self.repo.name:
+        return True
+    return False
+
+  def is_url_conflicted(self):
+    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
+    for listing in listings:
+      if not gordion.utils.compare_urls(listing.url, self.repo.url):
+        return True
+    return False
 
   @gordion.utils.override(Folder)
   def _get_display_name(self) -> str:
@@ -74,50 +79,70 @@ class RepositoryFolder(Folder):
     """
 
     # Aggregate existence errors and return if they have occured
-    self.check_duplicate()
-    self.check_path()
-    self.check_is_listed()
-    if self.existence_error_string:
+    if self.is_duplicate():
+      self.existence_errors.append("DUPLICATE")
+    if not self.is_correct_path():
+      self.existence_errors.append("WRONG PATH")
+    if not self.is_listed():
+      self.existence_errors.append("NOT LISTED")
+
+    if self.existence_errors:
       return gordion.utils.bold_red(
-          self.name) + gordion.utils.red(f" {self.existence_error_string}")
+          self.name) + gordion.utils.red(f" ({', '.join(self.existence_errors)})")
 
-    # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
-    unique_tags = self.unique_listed_tags()
-    correct_tag = True
-    mismatch = False
+    # Repository name.
+    name_header = gordion.utils.bold_green(self.name)
 
-    # If any of the tags are incorrect, the commit is incorrect.
-    for tag in unique_tags:
-      if tag != self.repo.handle.head.commit.hexsha:
-        correct_tag = False
+    # Check for conflicted name.
+    if self.is_name_conflicted():
+      self.listing_errors.append("CONFLICTED NAME")
+      name_header = gordion.utils.bold_red(self.name)
 
-    if len(unique_tags) > 1:
-      mismatch = True
+    # Check for conflicting URL.
+    if self.is_url_conflicted():
+      name_header = gordion.utils.bold_red(self.name)
+      self.listing_errors.append("CONFLICTED URL")
 
     # Branch header.
     branch_header = self._get_branch_name()
     branch_header = self._color_branch(branch_header)
     branch_suggestion = self._get_branch_suggestion()
-
     branch_header += self._get_branch_warnings(branch_suggestion)
 
-    # Name branch:tag
-    display_name = gordion.utils.bold_green(self.name)
-    display_name += " " + branch_header
+    # Tag header.
+    #
+    # If any of the tags are incorrect, the commit is incorrect.
+    unique_tags = self.unique_listed_tags()
+    correct_tag = True
+    conflicted_tag = False
+    for tag in unique_tags:
+      if tag != self.repo.handle.head.commit.hexsha:
+        correct_tag = False
+    if len(unique_tags) > 1:
+      conflicted_tag = True
 
-    if mismatch:
-      display_name += ":" + gordion.utils.red(
-          f"{self.repo.handle.head.commit.hexsha[:7]}-conflicted")
+    tag_header = ""
+    if conflicted_tag:
+      self.listing_errors.append("CONFLICTED TAG")
+      tag_header = gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
     else:
       if correct_tag:
-        display_name += ":" + gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
+        tag_header = gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
       else:
-        display_name += ":" + gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
+        tag_header = gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
 
     # Append -dirty to hexsha if necessary.
     if self.repo.handle.is_dirty(untracked_files=True):
-      display_name += gordion.utils.yellow("-dirty")
+      tag_header += gordion.utils.yellow("-dirty")
 
+    # Create listing errors header.
+    listing_errors_header = ""
+    if self.listing_errors:
+      listing_errors_header = gordion.utils.red(f"({', '.join(self.listing_errors)})")
+
+    # Create display name
+    display_name = name_header + " " + branch_header + ":" + tag_header
+    display_name += " " + listing_errors_header
     return display_name
 
   def _get_branch_name(self):
