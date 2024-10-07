@@ -1,5 +1,5 @@
 import gordion
-from typing import Optional
+from typing import Optional, List
 import os
 from .terminal_status import Folder
 
@@ -14,6 +14,29 @@ class RepositoryFolder(Folder):
     super().__init__(repo.path)
     self.repo = repo
     self.root: gordion.Tree = root
+    self.root_listings = self.root.listings(name=None, url=None)
+    self.workspace = gordion.Workspace()
+    self.existence_error_string = ""
+
+  def check_duplicate(self):
+    all_repos = self.workspace.working + self.workspace.dependencies
+    for repo in all_repos:
+      if repo.path != self.repo.path:
+        if gordion.utils.compare_urls(repo.url, self.repo.url):
+          self.append_existence_error("DUPLICATE")
+          return
+
+  def check_path(self):
+    if self.workspace.is_dependency(self.repo.path):
+      if self.repo.path != os.path.join(self.workspace.dependencies_path, self.repo.name):
+        self.append_existence_error("WRONG_PATH")
+
+  def append_existence_error(self, error: str):
+    if not self.existence_error_string:
+      self.existence_error_string = f"({error})"
+    else:
+      self.existence_error_string = self.existence_error_string[0:-1]
+      self.existence_error_string += f", {error})"
 
   @gordion.utils.override(Folder)
   def _get_display_name(self) -> str:
@@ -21,8 +44,15 @@ class RepositoryFolder(Folder):
     Returns the repository folder name, with branch:commit and warnings in descriptive colors.
     """
 
+    # Aggregate existence errors and return if they have occured
+    self.check_duplicate()
+    self.check_path()
+    if self.existence_error_string:
+      return gordion.utils.bold_red(
+          self.name) + gordion.utils.red(f" {self.existence_error_string}")
+
     # Get all the listings of this repo in the tree and check for yaml listing discrepencies.
-    listings = self.root.listings(self.repo.url)
+    listings = self.root.listings(self.name, self.repo.url)
     is_repository_listed = False
     correct_tag = True
     mismatch = False

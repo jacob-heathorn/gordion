@@ -47,6 +47,11 @@ class Workspace:
     # Return the original path parent.
     return os.path.normpath(path.parent)
 
+  def is_dependency(self, path: str) -> bool:
+    if os.path.commonprefix([self.dependencies_path, path]) == self.dependencies_path:
+      return True
+    return False
+
   def get_repositories(self, url: str) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
     working = []
     dependencies = []
@@ -71,10 +76,9 @@ class Workspace:
         full_dirpath = os.path.join(dirpath, dirname)
 
         if gordion.Repository._exists(full_dirpath):
-          if os.path.commonprefix([self.dependencies_path, full_dirpath]) == self.dependencies_path:
+          if self.is_dependency(full_dirpath):
             dependencies.append(gordion.Repository(full_dirpath))
           else:
-            assert os.path.commonprefix([self.path, full_dirpath]) == self.path
             working.append(gordion.Repository(full_dirpath))
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
@@ -87,7 +91,7 @@ class Workspace:
   def update_repository_cache(self, path: str):
     # If it exists, add it to the repos cache if necessary
     if gordion.Repository._exists(path):
-      if os.path.commonprefix([self.dependencies_path, path]) == self.dependencies_path:
+      if self.is_dependency(path):
         if not any(repo.path == path for repo in self.dependencies):
           self.dependencies.append(gordion.Repository(path))
       else:

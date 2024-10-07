@@ -55,26 +55,37 @@ def terminal_status(root) -> str:
   # For each repository in the .dependencies/. Decide if it is listed or not by a working repo, and
   # if it is at the correct location.
   for dependency in workspace.dependencies:
-    if dependency.path != os.path.join(workspace.dependencies_path, dependency.name):
-      folders.append(WrongPathRepositoryFolder(dependency.path))
-    else:
+    folders.append(RepositoryFolder(dependency, root))
 
-      # If it is listed by root, then we want to show status for it.
-      # TODO if it is the correct name. If it is the wrong name, need to show it here.
-      listings = root.listings(target_url=dependency.url)
-      if len(listings) > 0:
-        folders.append(RepositoryFolder(dependency, root))
+    # if dependency.path != os.path.join(workspace.dependencies_path, dependency.name):
+    #   folders.append(WrongPathRepositoryFolder(dependency.path))
+    # else:
 
-      # If it is not listed by root or any workspace folder, we want to show that it should
-      # not exist.
-      #
-      # TODO handle wrong name here?
-      for repo in workspace.working:
-        if gordion.Repository.is_gordion(repo.path):
-          tree = gordion.Tree(repo.path)
-          listings = tree.listings(target_url=dependency.url)
-          if len(listings) == 0:
-            folders.append(NotListedRepositoryFolder(dependency.path))
+    #   # If it is listed by root, then we want to show status for it.
+
+    #   # For all listings with this name, make sure the listing has the correct url.
+    #   dependency_folder = RepositoryFolder(dependency, root)
+
+    #   listings = root.listings(name=dependency.name, url=None)
+    #   for listing in listings:
+    #     if gordion.utils.compare_urls(listing.url, dependency.name):
+    #       if not any(folder.path == repo.path for folder in folders):
+    #         folders.append(RepositoryFolder(dependency, root))
+    #     else:
+
+    #   if len(listings) > 0:
+    #     folders.append(RepositoryFolder(dependency, root))
+
+    #   # If it is not listed by root or any workspace folder, we want to show that it should
+    #   # not exist.
+    #   #
+    #   # TODO handle wrong name here?
+    #   for repo in workspace.working:
+    #     if gordion.Repository.is_gordion(repo.path):
+    #       tree = gordion.Tree(repo.path)
+    #       listings = tree.listings(target_url=dependency.url)
+    #       if len(listings) == 0:
+    #         folders.append(NotListedRepositoryFolder(dependency.path))
 
   # TODO: Aggregate repositories that are listed by root, but not found in the workspace.
 
