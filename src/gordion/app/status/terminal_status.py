@@ -2,7 +2,6 @@ import os
 from .folder import Folder
 from .repository_folder import RepositoryFolder
 from .duplicate_repository_folder import DuplicateRepositoryFolder
-from .not_listed_repository_folder import NotListedRepositoryFolder
 import gordion
 from typing import List
 
