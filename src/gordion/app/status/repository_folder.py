@@ -31,6 +31,26 @@ class RepositoryFolder(Folder):
       if self.repo.path != os.path.join(self.workspace.dependencies_path, self.repo.name):
         self.append_existence_error("WRONG_PATH")
 
+  def check_is_listed(self):
+    """
+    Checks that the repository is listed by name and url by at least one of the working
+    repositories.
+    """
+    # Working repositories don't need to be listed
+    if not self.workspace.is_dependency(self.repo.path):
+      return
+
+    listed = False
+    for repo in self.workspace.working:
+      if gordion.Repository.is_gordion(repo.path):
+        tree = gordion.Tree(repo.path)
+        listings = tree.listings(name=self.repo.name, url=self.repo.url)
+        if len(listings) > 0:
+          listed = True
+          break
+    if not listed:
+      self.append_existence_error("NOT LISTED")
+
   def append_existence_error(self, error: str):
     if not self.existence_error_string:
       self.existence_error_string = f"({error})"
@@ -47,6 +67,7 @@ class RepositoryFolder(Folder):
     # Aggregate existence errors and return if they have occured
     self.check_duplicate()
     self.check_path()
+    self.check_is_listed()
     if self.existence_error_string:
       return gordion.utils.bold_red(
           self.name) + gordion.utils.red(f" {self.existence_error_string}")
