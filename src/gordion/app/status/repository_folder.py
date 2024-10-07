@@ -107,7 +107,9 @@ class RepositoryFolder(Folder):
     branch_header = self._get_branch_name()
     branch_header = self._color_branch(branch_header)
     branch_suggestion = self._get_branch_suggestion()
-    branch_header += self._get_branch_warnings(branch_suggestion)
+    branch_warnings = self._get_branch_warnings(branch_suggestion)
+    if branch_warnings:
+      branch_header += gordion.utils.yellow(f"({', '.join(branch_warnings)})")
 
     # Tag header.
     #
@@ -124,12 +126,12 @@ class RepositoryFolder(Folder):
     tag_header = ""
     if conflicted_tag:
       self.listing_errors.append("CONFLICTED TAG")
-      tag_header = gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
+      tag_header = gordion.utils.red(f":{self.repo.handle.head.commit.hexsha[:7]}")
     else:
       if correct_tag:
-        tag_header = gordion.utils.green(f"{self.repo.handle.head.commit.hexsha[:7]}")
+        tag_header = gordion.utils.green(f":{self.repo.handle.head.commit.hexsha[:7]}")
       else:
-        tag_header = gordion.utils.red(f"{self.repo.handle.head.commit.hexsha[:7]}")
+        tag_header = gordion.utils.red(f":{self.repo.handle.head.commit.hexsha[:7]}")
 
     # Append -dirty to hexsha if necessary.
     if self.repo.handle.is_dirty(untracked_files=True):
@@ -141,7 +143,7 @@ class RepositoryFolder(Folder):
       listing_errors_header = gordion.utils.red(f"({', '.join(self.listing_errors)})")
 
     # Create display name
-    display_name = name_header + " " + branch_header + ":" + tag_header
+    display_name = name_header + " " + branch_header + tag_header
     display_name += " " + listing_errors_header
     return display_name
 
@@ -239,20 +241,12 @@ class RepositoryFolder(Folder):
 
     return bool(local_branches)
 
-  def _get_branch_warnings(self, branch_suggestion: Optional[str]):
-    # Generate warnings
-    def append_warning(warning: str, addition: str):
-      if not warning:
-        warning = f"({addition})"
-      else:
-        warning = warning[0:-1]
-        warning += f", {addition})"
-      return warning
+  def _get_branch_warnings(self, branch_suggestion: Optional[str]) -> List[str]:
+    warnings: list['str'] = []
 
     # Generate branch warnings string
-    warning_str = ""
     if branch_suggestion:
-      warning_str = append_warning(warning_str, f"{branch_suggestion}?")
+      warnings.append(f"{branch_suggestion}?")
 
     # Other active branch related warnings.
     if not self.repo.handle.head.is_detached:
@@ -262,23 +256,20 @@ class RepositoryFolder(Folder):
         if self._is_correct_tracking_branch():
           pass
         else:
-          warning_str = append_warning(warning_str, "wrong tracking branch")
+          warnings.append("wrong tracking branch")
 
         # Warn if branch is ahead.
         if self._is_ahead():
-          warning_str = append_warning(warning_str, "ahead")
+          warnings.append("ahead")
       else:
-        warning_str = append_warning(warning_str, "untracked")
+        warnings.append("untracked")
 
     # Detached
     else:
       if not self._is_detached_head_saved():
-        warning_str = append_warning(warning_str, "unsaved")
+        warnings.append("unsaved")
 
-    if warning_str:
-      return gordion.utils.yellow(warning_str)
-    else:
-      return ''
+    return warnings
 
   def _is_root_branch(self) -> bool:
     if not self.repo.handle.head.is_detached:
