@@ -1,7 +1,7 @@
 import os
 import gordion
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import shutil
 
 
@@ -52,16 +52,64 @@ class Workspace:
       return True
     return False
 
-  def get_repositories(self, url: str) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
+  def get_repositories(self, name: Optional[str], url: Optional[str]
+                       ) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
     working = []
     dependencies = []
     for repo in self.working:
-      if gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
-        working.append(repo)
+      if not name or name == repo.name:
+        if not url or gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
+          working.append(repo)
     for repo in self.dependencies:
-      if gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
-        dependencies.append(repo)
+      if not name or name == repo.name:
+        if not url or gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
+          dependencies.append(repo)
     return working, dependencies
+
+  def get_repository(self, name: str, url: str) -> Optional[gordion.Repository]:
+    """
+    Provides a deterministic way to select a repository by name and url from a workspace that could
+    have duplicates or misnamed repositories.
+    """
+
+    # First filter url.
+    working, dependencies = self.get_repositories(name=None, url=url)
+
+    def get_correctly_named_or_none(repos, name):
+      correctly_named = []
+      for repo in repos:
+        if repo.name == name:
+          correctly_named.append(repo)
+      if len(correctly_named) == 1:
+        return correctly_named[0]
+      else:
+        # Cannot decide which working is the correct repo, return None.
+        return None
+
+    # First handle situation where there are no working repositories with this url.
+    if len(working) == 0:
+      if len(dependencies) == 0:
+        return None
+
+      # If there is exactly one dependency repository with this url, we select it even if it has the
+      # wrong name. Although status will tell you it has the wrong name.
+      elif len(dependencies) == 1:
+        return dependencies[0]
+
+      # If there is more than one dependency repository, but only one has the correct name, we
+      # select it. NOTE: it might be at the wrong path in the /dependencies folder.
+      else:
+        return get_correctly_named_or_none(dependencies, name)
+
+    # If there is exactly one working repository with this url, we select it even if it has the
+    # wrong name. Although status will tell you it has the wrong name.
+    elif working == 1:
+      return working[0]
+
+    # If there is more than one working repository. But only one has the
+    # correct name, select that one.
+    else:
+      return get_correctly_named_or_none(working, name)
 
   def discover_repositories(self) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
     """
@@ -89,18 +137,16 @@ class Workspace:
     return working, dependencies
 
   def update_repository_cache(self, path: str):
-    # If it exists, add it to the repos cache if necessary
+    # First remove any repository at this path if it exists.
+    self.working = [repo for repo in self.working if repo.path != path]
+    self.dependencies = [repo for repo in self.working if repo.path != path]
+
+    # Then add it back, if it exists:
     if gordion.Repository._exists(path):
       if self.is_dependency(path):
-        if not any(repo.path == path for repo in self.dependencies):
-          self.dependencies.append(gordion.Repository(path))
+        self.dependencies.append(gordion.Repository(path))
       else:
-        if not any(repo.path == path for repo in self.working):
-          self.working.append(gordion.Repository(path))
-    # If it does not exist, remove it from the cache if necessary
-    else:
-      self.working = [repo for repo in self.working if repo.path != path]
-      self.dependencies = [repo for repo in self.working if repo.path != path]
+        self.working.append(gordion.Repository(path))
 
   def delete_empty_parent_folders(self, path):
     """

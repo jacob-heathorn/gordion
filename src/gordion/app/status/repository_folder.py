@@ -18,6 +18,7 @@ class RepositoryFolder(Folder):
     self.workspace = gordion.Workspace()
 
   def is_duplicate(self) -> bool:
+
     all_repos = self.workspace.working + self.workspace.dependencies
     for repo in all_repos:
       if repo.path != self.repo.path:

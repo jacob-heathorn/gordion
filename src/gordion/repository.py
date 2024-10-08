@@ -343,6 +343,24 @@ class Repository:
       self.fetched = True
 
   @staticmethod
+  def safe_move(source, destination):
+    # If there is already a different repository at the destination, safe delete it.
+    if gordion.Repository._exists(destination):
+      gordion.Repository.safe_delete(destination)
+    # If there is already something else there, error:
+    elif os.path.exists(destination):
+      raise gordion.UpdateTargetPathExistsError(destination)
+
+    # Move it
+    shutil.move(source, destination)
+
+    workspace = gordion.Workspace()
+    workspace.update_repository_cache(source)
+    workspace.update_repository_cache(destination)
+    workspace.delete_empty_parent_folders(source)
+    return gordion.Repository(destination)
+
+  @staticmethod
   def safe_delete(path, force: bool = False):
     """
     Deletes the repository as long as information will not be lost. Generates an error if the

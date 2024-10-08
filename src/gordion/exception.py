@@ -32,6 +32,13 @@ class UpdateMultipleRepositoriesAlreadyExistsError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
+class UpdateWorkingRepositoryWrongNameError(UpdateError):
+  def __init__(self, path, correct_name):
+    reason = f"The working repository name{os.path.basename(path)} is incorrect"
+    suggestion = f"Manually rename it to {correct_name}"
+    super().__init__(path, reason, suggestion)
+
+
 class UpdateNoTrackingBranchError(UpdateError):
   def __init__(self, target_path, local_branch):
     reason = f"{local_branch} does not have a tracking branch, so commits will be lost"
