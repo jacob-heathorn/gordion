@@ -16,8 +16,6 @@ class RepositoryFolder(Folder):
     self.root: gordion.Tree = root
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
-    self.existence_errors = []
-    self.listing_errors = []
 
   def is_duplicate(self) -> bool:
     all_repos = self.workspace.working + self.workspace.dependencies
@@ -79,29 +77,31 @@ class RepositoryFolder(Folder):
     """
 
     # Aggregate existence errors and return if they have occured
+    existence_errors = []
     if self.is_duplicate():
-      self.existence_errors.append("DUPLICATE")
+      existence_errors.append("DUPLICATE")
     if not self.is_correct_path():
-      self.existence_errors.append("WRONG PATH")
+      existence_errors.append("WRONG PATH")
     if not self.is_listed():
-      self.existence_errors.append("NOT LISTED")
+      existence_errors.append("NOT LISTED")
 
-    if self.existence_errors:
+    if existence_errors:
       return gordion.utils.bold_red(
-          self.name) + gordion.utils.red(f" ({', '.join(self.existence_errors)})")
+          self.name) + gordion.utils.red(f" ({', '.join(existence_errors)})")
 
     # Repository name.
     name_header = gordion.utils.bold_green(self.name)
 
     # Check for conflicted name.
+    listing_errors = []
     if self.is_name_conflicted():
-      self.listing_errors.append("CONFLICTED NAME")
+      listing_errors.append("CONFLICTED NAME")
       name_header = gordion.utils.bold_red(self.name)
 
     # Check for conflicting URL.
     if self.is_url_conflicted():
       name_header = gordion.utils.bold_red(self.name)
-      self.listing_errors.append("CONFLICTED URL")
+      listing_errors.append("CONFLICTED URL")
 
     # Branch header.
     branch_header = self._get_branch_name()
@@ -139,7 +139,7 @@ class RepositoryFolder(Folder):
 
     # Create listing errors header.
     listing_errors_header = ""
-    if self.listing_errors:
+    if listing_errors:
       listing_errors_header = gordion.utils.red(f"({', '.join(self.listing_errors)})")
 
     # Create display name
