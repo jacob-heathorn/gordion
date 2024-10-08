@@ -226,6 +226,7 @@ class Tree(gordion.Repository):
         # First try to get repo if it exists and is selectable among duplicates.
         repo = self.workspace.get_repository(child_name, child_url)
 
+        recursed = False
         if repo:
           child = Tree(repo.path, child_url, self)
           child_listed_commit = child._verify_tag(child_tag)

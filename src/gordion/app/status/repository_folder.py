@@ -18,36 +18,47 @@ class RepositoryFolder(Folder):
     self.workspace = gordion.Workspace()
 
   def is_duplicate(self) -> bool:
+    """
+    A repository is marked duplicate if one of ...
+      a) It is not listed, and there is another repo with the same URL.
+      b) It is listed, and it is a dependency among duplicate listed dependencies.
+      c) If it is a dependency and one or more working exist.
+      d) If it is a working among duplicate working.
+    """
+    workspace = gordion.Workspace()
+    working, dependencies = workspace.get_repositories(name=None, url=self.repo.url)
 
-    all_repos = self.workspace.working + self.workspace.dependencies
-    for repo in all_repos:
-      if repo.path != self.repo.path:
-        if gordion.utils.compare_urls(repo.url, self.repo.url):
+    # If it is not listed, and there is another repo with this URL.
+    if not self.workspace.is_listed(self.repo):
+      if len(working + dependencies) > 1:
+        return True
+
+    # If it is listed...
+    else:
+      # If it is a dependency among duplicate listed dependencies.
+      if len(working) == 0:
+        assert workspace.is_dependency(self.repo.path)
+        num_listed_dependencies = 0
+        for dependency in dependencies:
+          if self.workspace.is_listed(dependency):
+            num_listed_dependencies += 1
+        print(num_listed_dependencies)
+        return num_listed_dependencies > 1
+      else:
+        # If it is a dependency and one or more working exist.
+        if workspace.is_dependency(self.repo.path):
           return True
-    return False
+
+        # If it is a working among duplicate working.
+        else:
+          if len(working) > 1:
+            return True
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
       if self.repo.path != os.path.join(self.workspace.dependencies_path, self.repo.name):
         return False
     return True
-
-  def is_listed(self) -> bool:
-    """
-    Checks that the repository is listed by name and url by at least one of the working
-    repositories.
-    """
-    # Working repositories don't need to be listed
-    if not self.workspace.is_dependency(self.repo.path):
-      return True
-
-    for repo in self.workspace.working:
-      if gordion.Repository.is_gordion(repo.path):
-        tree = gordion.Tree(repo.path)
-        listings = tree.listings(name=self.repo.name, url=self.repo.url)
-        if len(listings) > 0:
-          return True
-    return False
 
   def unique_listed_tags(self):
     listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
@@ -83,7 +94,7 @@ class RepositoryFolder(Folder):
       existence_errors.append("DUPLICATE")
     if not self.is_correct_path():
       existence_errors.append("WRONG PATH")
-    if not self.is_listed():
+    if not self.workspace.is_listed(self.repo):
       existence_errors.append("NOT LISTED")
 
     if existence_errors:
@@ -126,7 +137,7 @@ class RepositoryFolder(Folder):
 
     tag_header = ""
     if conflicted_tag:
-      self.listing_errors.append("CONFLICTED TAG")
+      listing_errors.append("CONFLICTED TAG")
       tag_header = gordion.utils.red(f":{self.repo.handle.head.commit.hexsha[:7]}")
     else:
       if correct_tag:
@@ -141,7 +152,7 @@ class RepositoryFolder(Folder):
     # Create listing errors header.
     listing_errors_header = ""
     if listing_errors:
-      listing_errors_header = gordion.utils.red(f"({', '.join(self.listing_errors)})")
+      listing_errors_header = gordion.utils.red(f"({', '.join(listing_errors)})")
 
     # Create display name
     display_name = name_header + " " + branch_header + tag_header

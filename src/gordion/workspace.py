@@ -164,6 +164,23 @@ class Workspace:
       else:
         break
 
+  def is_listed(self, target: gordion.Repository) -> bool:
+    """
+    Checks that the repository is listed by name and url by at least one of the working
+    repositories.
+    """
+    # Working repositories don't need to be listed
+    if not self.is_dependency(target.path):
+      return True
+
+    for repo in self.working:
+      if gordion.Repository.is_gordion(repo.path):
+        tree = gordion.Tree(repo.path)
+        listings = tree.listings(name=target.name, url=target.url)
+        if len(listings) > 0:
+          return True
+    return False
+
     # def trim_repos(self, keep_repos: List[str], force: bool = False):
     #   """
     #   Removes repositories that are not listed in the keep_repos argument.
