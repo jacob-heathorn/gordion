@@ -66,6 +66,13 @@ def terminal_status(root: gordion.Tree) -> str:
     #   if not any(folder.path == repo.path for folder in folders):
     #     folders.append(RepositoryFolder(repo, root))
 
+  # Add any repo in /dependencies that is not listed by the workspace.
+  working, dependencies = workspace.get_repositories(name=None, url=None)
+  for repo in dependencies:
+    if not workspace.is_listed(repo):
+      if not any(folder.path == repo.path for folder in folders):
+        folders.append(RepositoryFolder(repo, root))
+
   # Also any duplicates.
   working, dependencies = workspace.get_repositories(name=None, url=None)
   for repo in (working + dependencies):
