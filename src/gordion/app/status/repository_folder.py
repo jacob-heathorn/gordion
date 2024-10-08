@@ -53,6 +53,15 @@ class RepositoryFolder(Folder):
           if len(working) > 1:
             return True
 
+  def has_duplicate(self) -> bool:
+    working, dependencies = self.workspace.get_repositories(name=None, url=self.repo.url)
+    all = working + dependencies
+    if len(all) > 1:
+      return True
+    return False
+
+  # # For each repository in the .dependencies/. Decide if it is listed or not by a working repo, and
+
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
       if self.repo.path != os.path.join(self.workspace.dependencies_path, self.repo.name):
@@ -88,35 +97,42 @@ class RepositoryFolder(Folder):
     """
 
     # Aggregate existence errors and return if they have occured
-    existence_errors = []
+    errors = []
     if self.is_duplicate():
-      existence_errors.append("DUPLICATE")
+      errors.append("DUPLICATE")
     if not self.is_correct_path():
-      existence_errors.append("WRONG PATH")
+      errors.append("WRONG PATH")
     if not self.workspace.is_listed(self.repo):
-      existence_errors.append("NOT LISTED")
+      errors.append("NOT LISTED")
 
-    if existence_errors:
+    if errors:
       return gordion.utils.bold_red(
-          self.name) + gordion.utils.red(f" ({', '.join(existence_errors)})")
+          self.name) + gordion.utils.red(f" ({', '.join(errors)})")
 
-    # If it isn't listed, we must have created the object to show it is duplicate.
+    # If we reach here, it isn't a duplicate, but it can still have a duplicate.
+    if self.has_duplicate():
+      errors.append("HAS DUPLICATE")
+
+    # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
+    # color the repo, but we can display it in the workspace.
     if not self.root.is_listed(self.repo):
-      return f"{self.name}" + gordion.utils.red(" (HAS DUPLICATE)")
+      errors_header = ""
+      if errors:
+        errors_header = gordion.utils.red(f"({', '.join(errors)})")
+      return f"{self.name} " + errors_header
 
     # Repository name.
     name_header = gordion.utils.bold_green(self.name)
 
     # Check for conflicted name.
-    listing_errors = []
     if self.is_name_conflicted():
-      listing_errors.append("CONFLICTED NAME")
+      errors.append("CONFLICTED NAME")
       name_header = gordion.utils.bold_red(self.name)
 
     # Check for conflicting URL.
     if self.is_url_conflicted():
       name_header = gordion.utils.bold_red(self.name)
-      listing_errors.append("CONFLICTED URL")
+      errors.append("CONFLICTED URL")
 
     # Branch header.
     branch_header = self._get_branch_name()
@@ -140,7 +156,7 @@ class RepositoryFolder(Folder):
 
     tag_header = ""
     if conflicted_tag:
-      listing_errors.append("CONFLICTED TAG")
+      errors.append("CONFLICTED TAG")
       tag_header = gordion.utils.red(f":{self.repo.handle.head.commit.hexsha[:7]}")
     else:
       if correct_tag:
@@ -153,13 +169,13 @@ class RepositoryFolder(Folder):
       tag_header += gordion.utils.yellow("-dirty")
 
     # Create listing errors header.
-    listing_errors_header = ""
-    if listing_errors:
-      listing_errors_header = gordion.utils.red(f"({', '.join(listing_errors)})")
+    errors_header = ""
+    if errors:
+      errors_header = gordion.utils.red(f"({', '.join(errors)})")
 
     # Create display name
     display_name = name_header + " " + branch_header + tag_header
-    display_name += " " + listing_errors_header
+    display_name += " " + errors_header
     return display_name
 
   def _get_branch_name(self):
