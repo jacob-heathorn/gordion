@@ -100,6 +100,10 @@ class RepositoryFolder(Folder):
       return gordion.utils.bold_red(
           self.name) + gordion.utils.red(f" ({', '.join(existence_errors)})")
 
+    # If it isn't listed, we must have created the object to show it is duplicate.
+    if not self.root.is_listed(self.repo):
+      return f"{self.name}" + gordion.utils.red(" (HAS DUPLICATE)")
+
     # Repository name.
     name_header = gordion.utils.bold_green(self.name)
 

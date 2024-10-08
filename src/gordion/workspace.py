@@ -176,8 +176,7 @@ class Workspace:
     for repo in self.working:
       if gordion.Repository.is_gordion(repo.path):
         tree = gordion.Tree(repo.path)
-        listings = tree.listings(name=target.name, url=target.url)
-        if len(listings) > 0:
+        if tree.is_listed(target):
           return True
     return False
 

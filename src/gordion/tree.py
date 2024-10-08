@@ -245,6 +245,10 @@ class Tree(gordion.Repository):
 
     return listings
 
+  def is_listed(self, repo: gordion.Repository):
+    listings = self.listings(name=repo.name, url=repo.url)
+    return len(listings) > 0
+
   @staticmethod
   def find(path: str) -> str:
     """
