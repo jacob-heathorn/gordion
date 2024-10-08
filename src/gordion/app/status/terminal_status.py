@@ -1,7 +1,7 @@
 import os
 from .folder import Folder
 from .repository_folder import RepositoryFolder
-from .duplicate_repository_folder import DuplicateRepositoryFolder
+from .not_found_repository_folder import NotFoundRepositoryFolder
 import gordion
 from typing import List
 
@@ -41,7 +41,7 @@ def set_parent(folder, folders):
       f.add_child(folder)
 
 
-def terminal_status(root) -> str:
+def terminal_status(root: gordion.Tree) -> str:
   """
   Returns a status string indicating the status of each repository in the tree, which looks cute in
   a terminal.
@@ -50,40 +50,66 @@ def terminal_status(root) -> str:
   workspace = gordion.Workspace()
   folders = [Folder(workspace.path)]
 
-  # For each repository in the .dependencies/. Decide if it is listed or not by a working repo, and
-  # if it is at the correct location.
-  for dependency in workspace.dependencies:
-    folders.append(RepositoryFolder(dependency, root))
+  listings = root.listings(name=None, url=None)
+  for listing in listings:
+    repo = workspace.get_repository(listing.name, listing.url)
+    if repo:
+      if not any(folder.path == repo.path for folder in folders):
+        folders.append(RepositoryFolder(repo, root))
+    else:
+      if not any(folder.path == repo.path for folder in folders):
+        folders.append(NotFoundRepositoryFolder())
 
-    # if dependency.path != os.path.join(workspace.dependencies_path, dependency.name):
-    #   folders.append(WrongPathRepositoryFolder(dependency.path))
-    # else:
+    # # Also duplicates of listings
+    # working, dependencies = workspace.get_repositories(name=None, url=listing.url)
+    # for repo in (working + dependencies):
+    #   if not any(folder.path == repo.path for folder in folders):
+    #     folders.append(RepositoryFolder(repo, root))
 
-    #   # If it is listed by root, then we want to show status for it.
+  # Also any duplicates.
+  working, dependencies = workspace.get_repositories(name=None, url=None)
+  for repo in (working + dependencies):
+    duplicate_working, duplicate_dependencies = workspace.get_repositories(name=None, url=repo.url)
+    duplicates = duplicate_working + duplicate_dependencies
+    if len(duplicates) > 1:
+      for duplicate in duplicates:
+        if not any(folder.path == duplicate.path for folder in folders):
+          folders.append(RepositoryFolder(duplicate, root))
 
-    #   # For all listings with this name, make sure the listing has the correct url.
-    #   dependency_folder = RepositoryFolder(dependency, root)
+  # # For each repository in the .dependencies/. Decide if it is listed or not by a working repo, and
+  # # if it is at the correct location.
+  # for dependency in workspace.dependencies:
+  #   folders.append(RepositoryFolder(dependency, root))
 
-    #   listings = root.listings(name=dependency.name, url=None)
-    #   for listing in listings:
-    #     if gordion.utils.compare_urls(listing.url, dependency.name):
-    #       if not any(folder.path == repo.path for folder in folders):
-    #         folders.append(RepositoryFolder(dependency, root))
-    #     else:
+  # if dependency.path != os.path.join(workspace.dependencies_path, dependency.name):
+  #   folders.append(WrongPathRepositoryFolder(dependency.path))
+  # else:
 
-    #   if len(listings) > 0:
-    #     folders.append(RepositoryFolder(dependency, root))
+  #   # If it is listed by root, then we want to show status for it.
 
-    #   # If it is not listed by root or any workspace folder, we want to show that it should
-    #   # not exist.
-    #   #
-    #   # TODO handle wrong name here?
-    #   for repo in workspace.working:
-    #     if gordion.Repository.is_gordion(repo.path):
-    #       tree = gordion.Tree(repo.path)
-    #       listings = tree.listings(target_url=dependency.url)
-    #       if len(listings) == 0:
-    #         folders.append(NotListedRepositoryFolder(dependency.path))
+  #   # For all listings with this name, make sure the listing has the correct url.
+  #   dependency_folder = RepositoryFolder(dependency, root)
+
+  #   listings = root.listings(name=dependency.name, url=None)
+  #   for listing in listings:
+  #     if gordion.utils.compare_urls(listing.url, dependency.name):
+  #       if not any(folder.path == repo.path for folder in folders):
+  #         folders.append(RepositoryFolder(dependency, root))
+  #     else:
+
+  #   if len(listings) > 0:
+  #     folders.append(RepositoryFolder(dependency, root))
+
+  #   # If it is not listed by root or any workspace folder, we want to show that it should
+  #   # not exist.
+  #   #
+  #   # TODO handle wrong name here?
+  #   for repo in workspace.working:
+  #     if gordion.Repository.is_gordion(repo.path):
+  #       tree = gordion.Tree(repo.path)
+  #       listings = tree.listings(target_url=dependency.url)
+  #       if len(listings) == 0:
+  #         folders.append(NotListedRepositoryFolder(dependency.path))
 
   # TODO: Aggregate repositories that are listed by root, but not found in the workspace.
 

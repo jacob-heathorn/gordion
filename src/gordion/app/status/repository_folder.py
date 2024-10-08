@@ -42,7 +42,6 @@ class RepositoryFolder(Folder):
         for dependency in dependencies:
           if self.workspace.is_listed(dependency):
             num_listed_dependencies += 1
-        print(num_listed_dependencies)
         return num_listed_dependencies > 1
       else:
         # If it is a dependency and one or more working exist.
