@@ -33,7 +33,7 @@ class Tree(gordion.Repository):
     self.yeditor.reload()
     self._update_children(branch_name, force)
 
-    # # Cleanup duplicate repositories.
+    # # TODO Cleanup duplicate repositories.
     # if self is root:
     #   self._delete_duplicates(force)
 
@@ -97,7 +97,8 @@ class Tree(gordion.Repository):
 
         # If we didn't find one, check if one can be created.
         else:
-          working, dependencies = self.workspace.get_repositories(name=None, url=child_url)
+          working = self.workspace.working(name=None, url=child_url)
+          dependencies = self.workspace.dependencies(name=None, url=child_url)
 
           # We can delete dependencies becuase none of them were selectable.
           for dependency in dependencies:

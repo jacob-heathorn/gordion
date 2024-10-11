@@ -25,19 +25,21 @@ class RepositoryFolder(Folder):
       c) If it is a dependency and one or more working exist.
       d) If it is a working among duplicate working.
     """
-    workspace = gordion.Workspace()
-    working, dependencies = workspace.get_repositories(name=None, url=self.repo.url)
+    working = self.workspace.working(name=None, url=self.repo.url)
+    dependencies = self.workspace.dependencies(name=None, url=self.repo.url)
+    all = working
+    all.update(dependencies)
 
     # If it is not listed, and there is another repo with this URL.
     if not self.workspace.is_listed(self.repo):
-      if len(working + dependencies) > 1:
+      if len(all) > 1:
         return True
 
     # If it is listed...
     else:
       # If it is a dependency among duplicate listed dependencies.
       if len(working) == 0:
-        assert workspace.is_dependency(self.repo.path)
+        assert self.workspace.is_dependency(self.repo.path)
         num_listed_dependencies = 0
         for dependency in dependencies:
           if self.workspace.is_listed(dependency):
@@ -45,7 +47,7 @@ class RepositoryFolder(Folder):
         return num_listed_dependencies > 1
       else:
         # If it is a dependency and one or more working exist.
-        if workspace.is_dependency(self.repo.path):
+        if self.workspace.is_dependency(self.repo.path):
           return True
 
         # If it is a working among duplicate working.
@@ -54,13 +56,11 @@ class RepositoryFolder(Folder):
             return True
 
   def has_duplicate(self) -> bool:
-    working, dependencies = self.workspace.get_repositories(name=None, url=self.repo.url)
-    all = working + dependencies
+    all = self.workspace.working(name=None, url=self.repo.url)
+    all.update(self.workspace.dependencies(name=None, url=self.repo.url))
     if len(all) > 1:
       return True
     return False
-
-  # # For each repository in the .dependencies/. Decide if it is listed or not by a working repo, and
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):

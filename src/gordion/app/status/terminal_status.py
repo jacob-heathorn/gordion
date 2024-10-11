@@ -61,26 +61,19 @@ def terminal_status(root: gordion.Tree) -> str:
       if not any(folder.path == repo.path for folder in folders):
         folders.append(NotFoundRepositoryFolder())
 
-    # # Also duplicates of listings
-    # working, dependencies = workspace.get_repositories(name=None, url=listing.url)
-    # for repo in (working + dependencies):
-    #   if not any(folder.path == repo.path for folder in folders):
-    #     folders.append(RepositoryFolder(repo, root))
-
   # Add any repo in /dependencies that is not listed by the workspace.
-  working, dependencies = workspace.get_repositories(name=None, url=None)
-  for repo in dependencies:
+  dependencies = workspace.dependencies(name=None, url=None)
+  for key, repo in dependencies.items():
     if not workspace.is_listed(repo):
       if not any(folder.path == repo.path for folder in folders):
         folders.append(RepositoryFolder(repo, root))
 
   # Also any duplicates.
-  working, dependencies = workspace.get_repositories(name=None, url=None)
-  for repo in (working + dependencies):
-    duplicate_working, duplicate_dependencies = workspace.get_repositories(name=None, url=repo.url)
-    duplicates = duplicate_working + duplicate_dependencies
+  for key, repo in workspace.repos.items():
+    duplicates = workspace.working(name=None, url=repo.url)
+    duplicates.update(workspace.dependencies(name=None, url=repo.url))
     if len(duplicates) > 1:
-      for duplicate in duplicates:
+      for key, duplicate in duplicates.items():
         if not any(folder.path == duplicate.path for folder in folders):
           folders.append(RepositoryFolder(duplicate, root))
 

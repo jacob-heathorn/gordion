@@ -1,8 +1,9 @@
 import os
 import gordion
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 import shutil
+import git
 
 
 @gordion.utils.singleton
@@ -13,8 +14,7 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
-    self.working: List[gordion.Tree] = []
-    self.dependencies: List[gordion.Tree] = []
+    self.repos: Dict[str, gordion.Tree] = {}
 
   def setup(self, subpath):
     """
@@ -22,7 +22,9 @@ class Workspace:
     """
     self.path = self.find_root(subpath)
     self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
-    self.working, self.dependencies = self.discover_repositories()
+    self.discover_repositories()
+    # self.woringrepos = self.working(name='gordion_demo_b',
+    #                                 url='https://github.com/jacob-heathorn/gordion_demo_b.git')
 
   def find_root(self, path: str) -> str:
     """
@@ -52,19 +54,13 @@ class Workspace:
       return True
     return False
 
-  def get_repositories(self, name: Optional[str], url: Optional[str]
-                       ) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
-    working = []
-    dependencies = []
-    for repo in self.working:
-      if not name or name == repo.name:
-        if not url or gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
-          working.append(repo)
-    for repo in self.dependencies:
-      if not name or name == repo.name:
-        if not url or gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
-          dependencies.append(repo)
-    return working, dependencies
+  def working(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Tree]:
+    return {key: value for key, value in self.repos.items() if not self.is_dependency(
+        key) and (not name or name == value.name) and (not url or url == value.url)}
+
+  def dependencies(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Tree]:
+    return {key: value for key, value in self.repos.items() if self.is_dependency(
+        key) and (not name or name == value.name) and (not url or url == value.url)}
 
   def get_repository(self, name: str, url: str) -> Optional[gordion.Repository]:
     """
@@ -72,12 +68,11 @@ class Workspace:
     have duplicates or misnamed repositories.
     """
 
-    # First filter url.
-    working, dependencies = self.get_repositories(name=None, url=url)
-
-    def get_correctly_named_or_none(repos, name):
+    # Define a helper function
+    def get_correctly_named_or_none(
+            repos: Dict[str, gordion.Tree], name: str) -> Optional[gordion.Tree]:
       correctly_named = []
-      for repo in repos:
+      for key, repo in repos.items():
         if repo.name == name:
           correctly_named.append(repo)
       if len(correctly_named) == 1:
@@ -87,14 +82,16 @@ class Workspace:
         return None
 
     # First handle situation where there are no working repositories with this url.
+    working = self.working(name=None, url=url)
     if len(working) == 0:
+      dependencies = self.dependencies(name=None, url=url)
       if len(dependencies) == 0:
         return None
 
       # If there is exactly one dependency repository with this url, we select it even if it has the
       # wrong name. Although status will tell you it has the wrong name.
       elif len(dependencies) == 1:
-        return dependencies[0]
+        return next(iter(dependencies.values()))
 
       # If there is more than one dependency repository, but only one has the correct name, we
       # select it. NOTE: it might be at the wrong path in the /dependencies folder.
@@ -104,37 +101,38 @@ class Workspace:
     # If there is exactly one working repository with this url, we select it even if it has the
     # wrong name. Although status will tell you it has the wrong name.
     elif working == 1:
-      return working[0]
+      return next(iter(working.values()))
 
     # If there is more than one working repository. But only one has the
     # correct name, select that one.
     else:
       return get_correctly_named_or_none(working, name)
 
-  def discover_repositories(self) -> Tuple[List[gordion.Tree], List[gordion.Tree]]:
+  def does_repository_exist_on_filesystem(self, path: str) -> bool:
+    try:
+        # Initialize the Repo object
+      repo = git.Repo(path)
+      # Compare the absolute paths to determine if 'path' is the repository root
+      return os.path.abspath(str(repo.working_tree_dir)) == os.path.abspath(path)
+    except (git.NoSuchPathError, git.InvalidGitRepositoryError):
+      # If Repo initialization fails, the path is not a Git repository
+      return False
+
+  def discover_repositories(self):
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
-    working: List[gordion.Tree] = []
-    dependencies: List[gordion.Tree] = []
 
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       # Create a copy of dirnames for iteration to avoid modifying the list while iterating
       for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
         full_dirpath = os.path.join(dirpath, dirname)
 
-        if gordion.Repository._exists(full_dirpath):
-          if self.is_dependency(full_dirpath):
-            dependencies.append(gordion.Tree(full_dirpath))
-          else:
-            working.append(gordion.Tree(full_dirpath))
+        if self.does_repository_exist_on_filesystem(full_dirpath):
+          self.repos[full_dirpath] = gordion.Tree(full_dirpath)
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)
-
-    working = sorted(working, key=lambda repo: repo.path)
-    dependencies = sorted(dependencies, key=lambda repo: repo.path)
-    return working, dependencies
 
   def update_repository_cache(self, path: str):
     # First remove any repository at this path if it exists.
@@ -173,7 +171,7 @@ class Workspace:
     if not self.is_dependency(target.path):
       return True
 
-    for tree in self.working:
+    for key, tree in self.working(name=None, url=None).items():
       if tree.is_listed(target):
         return True
     return False
