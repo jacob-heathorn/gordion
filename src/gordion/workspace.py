@@ -62,9 +62,9 @@ class Workspace:
     return {key: value for key, value in self.repos.items() if self.is_dependency(
         key) and (not name or name == value.name) and (not url or url == value.url)}
 
-  def get_repository(self, name: str, url: str) -> Optional[gordion.Repository]:
+  def get_repository(self, name: str, url: str) -> Optional[gordion.Tree]:
     """
-    Provides a deterministic way to select a repository by name and url from a workspace that could
+    Provides a deterministic way to select a tree by name and url from a workspace that could
     have duplicates or misnamed repositories.
     """
 
@@ -108,15 +108,8 @@ class Workspace:
     else:
       return get_correctly_named_or_none(working, name)
 
-  def does_repository_exist_on_filesystem(self, path: str) -> bool:
-    try:
-        # Initialize the Repo object
-      repo = git.Repo(path)
-      # Compare the absolute paths to determine if 'path' is the repository root
-      return os.path.abspath(str(repo.working_tree_dir)) == os.path.abspath(path)
-    except (git.NoSuchPathError, git.InvalidGitRepositoryError):
-      # If Repo initialization fails, the path is not a Git repository
-      return False
+  # def does_repository_exist(self, path: str) -> bool:
+  #   return bool(self.repos.get(path, None))
 
   def discover_repositories(self):
     """
@@ -128,7 +121,7 @@ class Workspace:
       for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
         full_dirpath = os.path.join(dirpath, dirname)
 
-        if self.does_repository_exist_on_filesystem(full_dirpath):
+        if gordion.Repository._exists(full_dirpath):
           self.repos[full_dirpath] = gordion.Tree(full_dirpath)
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories

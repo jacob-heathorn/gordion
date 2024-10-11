@@ -6,7 +6,7 @@ import os
 import cProfile
 import pstats
 
-PROFILE = False
+PROFILE = True
 
 
 def main(argv=None):

@@ -199,18 +199,16 @@ class Tree(gordion.Repository):
         gordion.Tree.Listing(self.name, self.url, self.handle.head.commit.hexsha))
 
     # Get all listings in the tree.
-    self.yeditor.reload()
     if self.yeditor.exists():
       for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
         child_url = child_info['url']
         child_tag = child_info['tag']
 
         # First try to get repo if it exists and is selectable among duplicates.
-        repo = self.workspace.get_repository(child_name, child_url)
+        child = self.workspace.get_repository(child_name, child_url)
 
         recursed = False
-        if repo:
-          child = Tree(repo.path, child_url, self)
+        if child:
           child_listed_commit = child._verify_tag(child_tag)
           if child.handle.head.commit == child_listed_commit:
             listings.extend(child.listings(name, url))
