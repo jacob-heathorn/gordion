@@ -46,6 +46,7 @@ def terminal_status(root: gordion.Tree) -> str:
   Returns a status string indicating the status of each repository in the tree, which looks cute in
   a terminal.
   """
+
   # 1) Aggregate a list of all folders, starting with the workspace folder.
   workspace = gordion.Workspace()
   folders = [Folder(workspace.path)]

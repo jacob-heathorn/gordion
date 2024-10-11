@@ -3,9 +3,14 @@
 import argparse
 import gordion
 import os
+import cProfile
+import pstats
 
 
 def main(argv=None):
+  profiler = cProfile.Profile()
+  profiler.enable()
+
   parser = argparse.ArgumentParser(description="Process some applications.")
   parser.add_argument('-u', '--update', action='store_true', help='Update the gordion tree')
   parser.add_argument('-w', '--workspace', action='store_true', help='Print the gordion workspace')
@@ -36,3 +41,7 @@ def main(argv=None):
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)
+
+  profiler.disable()
+  stats = pstats.Stats(profiler).sort_stats('cumulative')
+  stats.print_stats()
