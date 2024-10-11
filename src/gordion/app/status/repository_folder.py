@@ -27,7 +27,7 @@ class RepositoryFolder(Folder):
     """
     working = self.workspace.working(name=None, url=self.repo.url)
     dependencies = self.workspace.dependencies(name=None, url=self.repo.url)
-    all = working
+    all = working.copy()
     all.update(dependencies)
 
     # If it is not listed, and there is another repo with this URL.
@@ -41,7 +41,7 @@ class RepositoryFolder(Folder):
       if len(working) == 0:
         assert self.workspace.is_dependency(self.repo.path)
         num_listed_dependencies = 0
-        for dependency in dependencies:
+        for _, dependency in dependencies.items():
           if self.workspace.is_listed(dependency):
             num_listed_dependencies += 1
         return num_listed_dependencies > 1

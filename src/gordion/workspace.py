@@ -1,7 +1,7 @@
 import os
 import gordion
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict
+from typing import Optional, Dict
 import shutil
 import git
 
