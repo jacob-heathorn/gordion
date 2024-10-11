@@ -13,8 +13,8 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
-    self.working: List[gordion.Repository] = []
-    self.dependencies: List[gordion.Repository] = []
+    self.working: List[gordion.Tree] = []
+    self.dependencies: List[gordion.Tree] = []
 
   def setup(self, subpath):
     """
@@ -111,12 +111,12 @@ class Workspace:
     else:
       return get_correctly_named_or_none(working, name)
 
-  def discover_repositories(self) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
+  def discover_repositories(self) -> Tuple[List[gordion.Tree], List[gordion.Tree]]:
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
-    working: List[gordion.Repository] = []
-    dependencies: List[gordion.Repository] = []
+    working: List[gordion.Tree] = []
+    dependencies: List[gordion.Tree] = []
 
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       # Create a copy of dirnames for iteration to avoid modifying the list while iterating
@@ -125,9 +125,9 @@ class Workspace:
 
         if gordion.Repository._exists(full_dirpath):
           if self.is_dependency(full_dirpath):
-            dependencies.append(gordion.Repository(full_dirpath))
+            dependencies.append(gordion.Tree(full_dirpath))
           else:
-            working.append(gordion.Repository(full_dirpath))
+            working.append(gordion.Tree(full_dirpath))
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)
@@ -173,11 +173,9 @@ class Workspace:
     if not self.is_dependency(target.path):
       return True
 
-    for repo in self.working:
-      if gordion.Repository.is_gordion(repo.path):
-        tree = gordion.Tree(repo.path)
-        if tree.is_listed(target):
-          return True
+    for tree in self.working:
+      if tree.is_listed(target):
+        return True
     return False
 
     # def trim_repos(self, keep_repos: List[str], force: bool = False):
