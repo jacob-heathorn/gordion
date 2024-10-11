@@ -130,25 +130,6 @@ class Tree(gordion.Repository):
     else:
       return self
 
-  def _relpath(self) -> str:
-    """
-    Returns the path relative to the root repository.
-    """
-    return os.path.relpath(self.path, os.path.dirname(self._root().path))
-
-  def _listed_path(self) -> str:
-    """
-    Describes the parent path listing of this repository.
-    """
-    listed_path = ''
-    if self.parent:
-      gpath = self.parent.yeditor.read_repository_gpath(self.name)
-      listed_path = f"{self.parent._relpath()} lists {gpath}"
-    else:
-      listed_path = f"{self._relpath()} (root)"
-
-    return listed_path
-
   def _list_child_repository_paths(self) -> List[str]:
     """
     Returns a list of the child repository paths.

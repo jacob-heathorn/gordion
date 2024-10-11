@@ -37,10 +37,6 @@ class Repository:
 
     return url
 
-  @abstractmethod
-  def _relpath(self):
-    pass
-
   def _ensure(self):
     """
     Clones the repository if necessary and creates the underlying git repository handle.
@@ -152,7 +148,7 @@ class Repository:
           self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
         # Good to go move the local branch HEAD to the target commit.
-        print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
+        print(f"{self.path}: checking out {local_branch.name}:{commit.hexsha}")
         local_branch.checkout()
         self.handle.head.reset(commit=commit, index=True, working_tree=True)
         return True
@@ -181,7 +177,7 @@ class Repository:
           self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
         # Good to go move the local branch HEAD to the target commit.
-        print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
+        print(f"{self.path}: checking out {local_branch.name}:{commit.hexsha}")
         local_branch.checkout()
         self.handle.head.reset(commit=commit, index=True, working_tree=True)
         return True
