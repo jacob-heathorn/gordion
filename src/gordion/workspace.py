@@ -3,7 +3,6 @@ import gordion
 from pathlib import Path
 from typing import Optional, Dict
 import shutil
-import git
 
 
 @gordion.utils.singleton
@@ -14,7 +13,7 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
-    self.repos: Dict[str, gordion.Tree] = {}
+    self.repos: Dict[str, gordion.Repository] = {}
 
   def setup(self, subpath):
     """
@@ -23,8 +22,6 @@ class Workspace:
     self.path = self.find_root(subpath)
     self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
     self.discover_repositories()
-    # self.woringrepos = self.working(name='gordion_demo_b',
-    #                                 url='https://github.com/jacob-heathorn/gordion_demo_b.git')
 
   def find_root(self, path: str) -> str:
     """
@@ -54,15 +51,15 @@ class Workspace:
       return True
     return False
 
-  def working(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Tree]:
+  def working(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Repository]:
     return {key: value for key, value in self.repos.items() if not self.is_dependency(
         key) and (not name or name == value.name) and (not url or url == value.url)}
 
-  def dependencies(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Tree]:
+  def dependencies(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Repository]:
     return {key: value for key, value in self.repos.items() if self.is_dependency(
         key) and (not name or name == value.name) and (not url or url == value.url)}
 
-  def get_repository(self, name: str, url: str) -> Optional[gordion.Tree]:
+  def get_repository(self, name: str, url: str) -> Optional[gordion.Repository]:
     """
     Provides a deterministic way to select a tree by name and url from a workspace that could
     have duplicates or misnamed repositories.
@@ -70,9 +67,9 @@ class Workspace:
 
     # Define a helper function
     def get_correctly_named_or_none(
-            repos: Dict[str, gordion.Tree], name: str) -> Optional[gordion.Tree]:
+            repos: Dict[str, gordion.Repository], name: str) -> Optional[gordion.Repository]:
       correctly_named = []
-      for key, repo in repos.items():
+      for _, repo in repos.items():
         if repo.name == name:
           correctly_named.append(repo)
       if len(correctly_named) == 1:
@@ -122,22 +119,18 @@ class Workspace:
         full_dirpath = os.path.join(dirpath, dirname)
 
         if gordion.Repository._exists(full_dirpath):
-          self.repos[full_dirpath] = gordion.Tree(full_dirpath)
+          self.repos[full_dirpath] = gordion.Repository(full_dirpath)
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)
 
   def update_repository_cache(self, path: str):
     # First remove any repository at this path if it exists.
-    self.working = [repo for repo in self.working if repo.path != path]
-    self.dependencies = [repo for repo in self.working if repo.path != path]
+    self.repos.pop(path, None)
 
     # Then add it back, if it exists:
     if gordion.Repository._exists(path):
-      if self.is_dependency(path):
-        self.dependencies.append(gordion.Repository(path))
-      else:
-        self.working.append(gordion.Repository(path))
+      self.repos[path] = gordion.Repository(path)
 
   def delete_empty_parent_folders(self, path):
     """
@@ -164,7 +157,8 @@ class Workspace:
     if not self.is_dependency(target.path):
       return True
 
-    for key, tree in self.working(name=None, url=None).items():
+    for key, repo in self.working(name=None, url=None).items():
+      tree = gordion.Tree(repo)
       if tree.is_listed(target):
         return True
     return False

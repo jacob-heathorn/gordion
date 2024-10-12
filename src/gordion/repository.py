@@ -2,7 +2,7 @@ import os
 import subprocess
 import git
 import gordion
-from abc import abstractmethod
+from typing import Optional
 import shutil
 
 
@@ -12,14 +12,56 @@ class Repository:
 
   """
 
-  def __init__(self, path: str, url: str = '') -> None:
+  def __init__(self, path: str) -> None:
     self.path = path
     self.name = os.path.basename(self.path)
-    self.url = Repository._derive_url(path, url)
-    self.default_branch_name = ''
+    assert gordion.Repository._exists(path)
+    self.handle: git.Repo = git.Repo(path)
+    self.url = self.handle.remotes.origin.url
+    cache = gordion.Cache()
+    _, self.default_branch_name = cache.ensure_mirror(self.url)
     self.fetched = False
-    self.handle: git.Repo
-    self._ensure()
+
+  @staticmethod
+  def get(path, url: Optional[str]):
+    workspace = gordion.Workspace()
+    repo = workspace.repos.get(path, None)
+    if repo:
+      if url:
+        if gordion.utils.compare_urls(url, repo.url):
+          return repo
+        else:
+          gordion.Repository.safe_delete(path)
+      else:
+        return repo
+
+    return gordion.Repository.clone(path, url)
+
+  @staticmethod
+  def clone(path, url):
+    """
+    Clones the repository and returns it.
+    """
+    assert not gordion.Repository._exists(path)
+    workspace = gordion.Workspace()
+
+    # Make sure the target path doesn't already exist as a non-repository.
+    if os.path.exists(path):
+      raise gordion.UpdateTargetPathExistsError(path)
+
+    # At this point the mirror should exist regardless of whether the repository exists. so ensure
+    # it first.
+    cache = gordion.Cache()
+    mirror_path, default_branch_name = cache.ensure_mirror(url)
+
+    # Clone it.
+    args = ['git', 'clone', '--reference', mirror_path, url, path]
+    subprocess.check_call(args, stderr=subprocess.STDOUT)
+    workspace.update_repository_cache(path)
+
+    # Now update the workspace cache and return the repo from there.
+    workspace.update_repository_cache(path)
+    return workspace.repos.get(path)
 
   @staticmethod
   def _derive_url(path: str, url: str):
@@ -36,28 +78,6 @@ class Repository:
           gordion.Repository.safe_delete(path)
 
     return url
-
-  def _ensure(self):
-    """
-    Clones the repository if necessary and creates the underlying git repository handle.
-    """
-
-    # Clone if necessary. At this point the mirror should exist regardless of whether the repository
-    # exists. so ensure it first.
-    cache = gordion.Cache()
-    mirror_path, self.default_branch_name = cache.ensure_mirror(self.url)
-    if not Repository._exists(self.path):
-      # Make sure the target path doesn't already exist as a non-repository.
-      if os.path.exists(self.path):
-        raise gordion.UpdateTargetPathExistsError(self.path)
-
-      # Clone it.
-      args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
-      subprocess.check_call(args, stderr=subprocess.STDOUT)
-      gordion.Workspace().update_repository_cache(self.path)
-
-    # Reload objects.
-    self.handle = git.Repo(self.path)
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
@@ -354,7 +374,7 @@ class Repository:
     workspace.update_repository_cache(source)
     workspace.update_repository_cache(destination)
     workspace.delete_empty_parent_folders(source)
-    return gordion.Repository(destination)
+    return gordion.Repository.get(path=destination, url=None)
 
   @staticmethod
   def safe_delete(path, force: bool = False):

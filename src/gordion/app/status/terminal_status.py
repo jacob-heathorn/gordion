@@ -6,34 +6,6 @@ import gordion
 from typing import List
 
 
-def populate_children(folder, root):
-  """
-  Populates the children member on the folder object. Maybe better as a method on Folder, but avoids
-  a circular dependecy on RepositoryFolder if moved outside the class.
-  """
-  # Collect list of path folders in this directory (one level deep), and alphabetize it.
-  dirs = []
-  for dirpath, dirnames, _ in os.walk(folder.path, topdown=True):
-    for dirname in dirnames:
-      dirs.append(os.path.join(folder.path, dirpath, dirname))
-    break  # one level deep
-  dirs.sort()
-
-  # Create children.
-  for dir in dirs:
-    # Create a repository folder if it exists
-    if gordion.Repository._exists(dir):
-      repo = gordion.Tree(dir)
-      child_folder = RepositoryFolder(repo, root)
-      folder.add_child(child_folder)
-
-    # Otherwise it's just a regular folder. Recurse into it and add it.
-    else:
-      child_folder = Folder(dir)
-      populate_children(child_folder, root)
-      folder.add_child(child_folder)
-
-
 def set_parent(folder, folders):
   for f in folders:
 

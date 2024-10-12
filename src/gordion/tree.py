@@ -5,17 +5,18 @@ from typing import List, Optional
 from dataclasses import dataclass
 
 
-class Tree(gordion.Repository):
+class Tree:
   """
   Extends a gordion.Repository to add tree functionality. A gordion repository can have children
   gordion repositories that have children and so on.
   """
 
-  def __init__(self, path: str, url: str = '', parent=None) -> None:
-    super().__init__(path, url)
+  def __init__(self, repo: gordion.Repository, parent=None) -> None:
+    self.repo: gordion.Repository = repo
     self.parent: Tree = parent
     self.children: dict[str, Tree] = {}
-    self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
+    # TODO yeditor in gordion.Repository constructor so it is loaded only once.
+    self.yeditor = gordion.YamlEditor(os.path.join(self.repo.path, 'gordion.yaml'))
     self.workspace = gordion.Workspace()
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
@@ -28,7 +29,7 @@ class Tree(gordion.Repository):
     # TODO restore.
     # root._check_same_repo_different_tag(self, commit)
 
-    super().update(tag, branch_name, force)
+    self.repo.update(tag, branch_name, force)
 
     self.yeditor.reload()
     self._update_children(branch_name, force)
@@ -78,10 +79,11 @@ class Tree(gordion.Repository):
         child_path = ''
 
         # First try to get repo if it exists and is selectable among duplicates.
-        repo = self.workspace.get_repository(child_name, child_url)
+        child_repo = self.workspace.get_repository(child_name, child_url)
+        # TODO workspace should return a repo, not a tree, then we need to create tree from it.
 
         # If we found one, it might still need to be moved.
-        if repo:
+        if child:
           # If it is a dependency, we might need to move it to the right location in .dependencies/
           if self.workspace.is_dependency(repo.path):
             child_path = os.path.join(self.workspace.dependencies_path, child_name)
@@ -116,8 +118,8 @@ class Tree(gordion.Repository):
         # # Check the repository path before creating it.
         # root._check_different_repo_same_path(child_path, child_url)
         # root._check_same_repo_different_path(child_path, child_url)
-
-        child = Tree(child_path, child_url, self)
+        child_repo = gordion.Repository.get(path=child_path, url=child_url)
+        child = Tree(child_repo, self)
         child.update(child_tag, branch_name, force)
         self.children[child_name] = child
 
@@ -196,7 +198,7 @@ class Tree(gordion.Repository):
     # Add self.
     listings = []
     listings.append(
-        gordion.Tree.Listing(self.name, self.url, self.handle.head.commit.hexsha))
+        gordion.Tree.Listing(self.repo.name, self.repo.url, self.repo.handle.head.commit.hexsha))
 
     # Get all listings in the tree.
     if self.yeditor.exists():
@@ -205,13 +207,14 @@ class Tree(gordion.Repository):
         child_tag = child_info['tag']
 
         # First try to get repo if it exists and is selectable among duplicates.
-        child = self.workspace.get_repository(child_name, child_url)
+        child_repo = self.workspace.get_repository(child_name, child_url)
 
         recursed = False
-        if child:
-          child_listed_commit = child._verify_tag(child_tag)
-          if child.handle.head.commit == child_listed_commit:
-            listings.extend(child.listings(name, url))
+        if child_repo:
+          child_listed_commit = child_repo._verify_tag(child_tag)
+          if child_repo.handle.head.commit == child_listed_commit:
+            tree = gordion.Tree(child_repo)
+            listings.extend(tree.listings(name, url))
             recursed = True
 
         if not recursed:
@@ -241,6 +244,6 @@ class Tree(gordion.Repository):
       raise gordion.NotAGordionRepositoryError()
 
     if gordion.Repository.is_gordion(current_repo_path):
-      return gordion.Tree(current_repo_path)
+      return gordion.Tree(gordion.Workspace().repos.get(current_repo_path))
     else:
       raise gordion.NotAGordionRepositoryError()

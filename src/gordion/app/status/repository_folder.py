@@ -219,19 +219,19 @@ class RepositoryFolder(Folder):
     # Case2: Default branch is checked out.
     elif self._is_default_branch():
       if self._does_root_branch_have_commit():
-        branch_suggestion = self.root.handle.active_branch.name
+        branch_suggestion = self.root.repo.handle.active_branch.name
 
     # Case3: Other branch is checked out.
     elif self._is_other_branch():
       if self._does_root_branch_have_commit():
-        branch_suggestion = self.root.handle.active_branch.name
+        branch_suggestion = self.root.repo.handle.active_branch.name
       elif self._does_default_branch_have_commit():
         branch_suggestion = self.repo.default_branch_name
 
     # Case4: DETATCHED
     elif self.repo.handle.head.is_detached:
       if self._does_root_branch_have_commit():
-        branch_suggestion = self.root.handle.active_branch.name
+        branch_suggestion = self.root.repo.handle.active_branch.name
       elif self._does_default_branch_have_commit():
         branch_suggestion = self.repo.default_branch_name
 
@@ -243,8 +243,8 @@ class RepositoryFolder(Folder):
     return False
 
   def _does_root_branch_have_commit(self):
-    if not self.root.handle.head.is_detached:
-      root_branch_name = self.root.handle.active_branch.name
+    if not self.root.repo.handle.head.is_detached:
+      root_branch_name = self.root.repo.handle.active_branch.name
       return self.repo._does_local_branch_have_commit(root_branch_name,
                                                       self.repo.handle.head.commit)
 
@@ -304,8 +304,8 @@ class RepositoryFolder(Folder):
 
   def _is_root_branch(self) -> bool:
     if not self.repo.handle.head.is_detached:
-      if not self.root.handle.head.is_detached:
-        return self.repo.handle.active_branch.name == self.root.handle.active_branch.name
+      if not self.root.repo.handle.head.is_detached:
+        return self.repo.handle.active_branch.name == self.root.repo.handle.active_branch.name
 
     return False
 
