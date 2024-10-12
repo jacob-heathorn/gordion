@@ -117,7 +117,7 @@ class Workspace:
       for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
         full_dirpath = os.path.join(dirpath, dirname)
 
-        if gordion.Repository._exists(full_dirpath):
+        if gordion.Repository.exists(full_dirpath):
           gordion.Repository.register(key=full_dirpath, path=full_dirpath)
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories

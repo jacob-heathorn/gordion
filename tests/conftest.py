@@ -39,7 +39,7 @@ def repository_a():
 
 
 def git_clean(path):
-  if gordion.Repository._exists(path):
+  if gordion.Repository.exists(path):
     repo = gordion.Repository(path)
     repo.handle.git.reset('--hard')
     repo.handle.git.clean('-fdx')
@@ -47,7 +47,7 @@ def git_clean(path):
 
 
 def git_delete_non_develop_branches(path):
-  if gordion.Repository._exists(path):
+  if gordion.Repository.exists(path):
     repo = gordion.Repository(path)
     repo.handle.branches['develop'].checkout()
     branches = list(repo.handle.branches)
@@ -65,6 +65,6 @@ def recursive_git_blast(path):
   for root, dirs, _ in os.walk(path):
     for dir in dirs:
       dir = os.path.join(root, dir)
-      if gordion.Repository._exists(dir):
+      if gordion.Repository.exists(dir):
         git_clean(dir)
         git_delete_non_develop_branches(dir)

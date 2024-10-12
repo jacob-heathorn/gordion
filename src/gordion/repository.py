@@ -17,7 +17,7 @@ class Repository:
   def __init__(self, path: str) -> None:
     self.path = path
     self.name = os.path.basename(self.path)
-    assert gordion.Repository._exists(path)
+    assert gordion.Repository.exists(path)
     self.handle: git.Repo = git.Repo(path)
     self.url = self.handle.remotes.origin.url
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
@@ -44,7 +44,7 @@ class Repository:
     """
     Clones the repository and returns it.
     """
-    assert not gordion.Repository._exists(path)
+    assert not gordion.Repository.exists(path)
 
     # Make sure the target path doesn't already exist as a non-repository.
     if os.path.exists(path):
@@ -66,11 +66,11 @@ class Repository:
   def _derive_url(path: str, url: str):
     # Derive url if necessary.
     if not url:
-      assert gordion.Repository._exists(path)
+      assert gordion.Repository.exists(path)
       repo = git.Repo(path)
       url = repo.remotes.origin.url
     else:
-      if gordion.Repository._exists(path):
+      if gordion.Repository.exists(path):
         repo = git.Repo(path)
         # If a repository with the wrong URL already exists at the child path, remove it.
         if not gordion.utils.compare_urls(url, repo.remotes.origin.url):
@@ -317,7 +317,7 @@ class Repository:
       return commit in local_branch.commit.iter_parents()
 
   @staticmethod
-  def _exists(path: str) -> bool:
+  def exists(path: str) -> bool:
     try:
         # Initialize the Repo object
       repo = git.Repo(path)
@@ -332,7 +332,7 @@ class Repository:
     """
     Returns true if the repository at <path> has a gordion.yaml file.
     """
-    if gordion.Repository._exists(path):
+    if gordion.Repository.exists(path):
       yeditor = gordion.YamlEditor(os.path.join(path, 'gordion.yaml'))
       if yeditor.exists():
         return True
@@ -360,18 +360,19 @@ class Repository:
   @staticmethod
   def safe_move(source, destination):
     # If there is already a different repository at the destination, safe delete it.
-    if gordion.Repository._exists(destination):
+    if gordion.Repository.exists(destination):
       gordion.Repository.safe_delete(destination)
     # If there is already something else there, error:
     elif os.path.exists(destination):
       raise gordion.UpdateTargetPathExistsError(destination)
 
     # Move it
+    print(f"Moving repository: {source} -> {destination}")
     shutil.move(source, destination)
     gordion.Repository.unregister(key=source)
     gordion.Repository.register(key=destination, path=destination)
 
-    return gordion.Repository.registry.get(path=destination)
+    return gordion.Repository.registry().get(destination)
 
   @staticmethod
   def safe_delete(path, force: bool = False):
@@ -379,7 +380,7 @@ class Repository:
     Deletes the repository as long as information will not be lost. Generates an error if the
     repository has unsaved branches/commits or if it has stashes.
     """
-    assert gordion.Repository._exists(path)
+    assert gordion.Repository.exists(path)
     repo = gordion.Repository.registry().get(path)
 
     # Check if repository has local changes.
