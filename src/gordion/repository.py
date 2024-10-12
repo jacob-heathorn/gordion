@@ -18,6 +18,7 @@ class Repository:
     assert gordion.Repository._exists(path)
     self.handle: git.Repo = git.Repo(path)
     self.url = self.handle.remotes.origin.url
+    self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
     cache = gordion.Cache()
     _, self.default_branch_name = cache.ensure_mirror(self.url)
     self.fetched = False

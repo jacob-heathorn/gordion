@@ -11,12 +11,11 @@ class Tree:
   gordion repositories that have children and so on.
   """
 
+  # TODO add_child function.
   def __init__(self, repo: gordion.Repository, parent=None) -> None:
     self.repo: gordion.Repository = repo
     self.parent: Tree = parent
     self.children: dict[str, Tree] = {}
-    # TODO yeditor in gordion.Repository constructor so it is loaded only once.
-    self.yeditor = gordion.YamlEditor(os.path.join(self.repo.path, 'gordion.yaml'))
     self.workspace = gordion.Workspace()
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
@@ -31,7 +30,7 @@ class Tree:
 
     self.repo.update(tag, branch_name, force)
 
-    self.yeditor.reload()
+    self.repo.yeditor.reload()
     self._update_children(branch_name, force)
 
     # # TODO Cleanup duplicate repositories.
@@ -71,31 +70,30 @@ class Tree:
     self.children = {}
 
     # Open the gordion yaml file for this repository if it exists.
-    if self.yeditor.exists():
-      assert self.yeditor.yaml_data
-      for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
+    if self.repo.yeditor.exists():
+      assert self.repo.yeditor.yaml_data
+      for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
         child_url = child_info['url']
         child_tag = child_info['tag']
         child_path = ''
 
         # First try to get repo if it exists and is selectable among duplicates.
         child_repo = self.workspace.get_repository(child_name, child_url)
-        # TODO workspace should return a repo, not a tree, then we need to create tree from it.
 
         # If we found one, it might still need to be moved.
-        if child:
+        if child_repo:
           # If it is a dependency, we might need to move it to the right location in .dependencies/
-          if self.workspace.is_dependency(repo.path):
+          if self.workspace.is_dependency(child_repo.path):
             child_path = os.path.join(self.workspace.dependencies_path, child_name)
-            if repo.path != child_path:
-              repo = gordion.Repository.safe_move(repo.path, child_path)
+            if child_repo.path != child_path:
+              child_repo = gordion.Repository.safe_move(child_repo.path, child_path)
 
           # If it is a working repository, we might need to rename it. This should just error,
           # because we never automatically move things in the working area.
           else:
-            child_path = os.path.join(os.path.dirname(repo.path), child_name)
-            if repo.path != child_path:
-              raise gordion.UpdateWorkingRepositoryWrongNameError(repo.path, child_name)
+            child_path = os.path.join(os.path.dirname(child_repo.path), child_name)
+            if child_repo.path != child_path:
+              raise gordion.UpdateWorkingRepositoryWrongNameError(child_repo.path, child_name)
 
         # If we didn't find one, check if one can be created.
         else:
@@ -103,7 +101,7 @@ class Tree:
           dependencies = self.workspace.dependencies(name=None, url=child_url)
 
           # We can delete dependencies becuase none of them were selectable.
-          for dependency in dependencies:
+          for _, dependency in dependencies.items():
             gordion.Repository.safe_delete(dependency.path)
 
           # There might have been more than one working repository.
@@ -201,8 +199,8 @@ class Tree:
         gordion.Tree.Listing(self.repo.name, self.repo.url, self.repo.handle.head.commit.hexsha))
 
     # Get all listings in the tree.
-    if self.yeditor.exists():
-      for child_name, child_info in self.yeditor.yaml_data['repositories'].items():
+    if self.repo.yeditor.exists():
+      for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
         child_url = child_info['url']
         child_tag = child_info['tag']
 
