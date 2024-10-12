@@ -29,9 +29,9 @@ def main(argv=None):
     if args.update:
       root = gordion.Tree.find(os.getcwd())
       branch = None
-      if not root.handle.head.is_detached:
-        branch = root.handle.active_branch.name
-      root.update(root.handle.head.commit.hexsha, branch)
+      if not root.repo.handle.head.is_detached:
+        branch = root.repo.handle.active_branch.name
+      root.update(root.repo.handle.head.commit.hexsha, branch)
 
     # Print the workspace path.
     if args.workspace:
