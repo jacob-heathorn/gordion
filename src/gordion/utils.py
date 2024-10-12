@@ -130,11 +130,22 @@ def singleton(cls):
   Decorator to turn a class into a Singleton
   """
   instances = {}
+  import functools
 
+  @functools.wraps(cls)  # This helps in preserving the original class's metadata
   def get_instance(*args, **kwargs):
     if cls not in instances:
       instances[cls] = cls(*args, **kwargs)
     return instances[cls]
+
+  # Copy static methods and other attributes to the get_instance function
+  for attr in dir(cls):
+    if not hasattr(get_instance, attr):
+      try:
+        setattr(get_instance, attr, getattr(cls, attr))
+      except TypeError:
+        pass  # Skip setting attributes that cause TypeError
+
   return get_instance
 
 

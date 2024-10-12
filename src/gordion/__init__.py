@@ -1,9 +1,9 @@
 # flake8: noqa: F401
+from .utils import extract_repo_details, is_related_path, find_ancestor_dir
+from .utils import print_exception, singleton
 from .repository import Repository
 from .tree import Tree
 from .cache import Cache
-from .utils import extract_repo_details, is_related_path, find_ancestor_dir
-from .utils import print_exception, singleton
 from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
 from .exception import UpdateRepoIsDirtyError, UpdateSameRepoDifferentPathError
