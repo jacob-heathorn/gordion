@@ -25,25 +25,22 @@ class Repository:
     _, self.default_branch_name = cache.ensure_mirror(self.url)
     self.fetched = False
 
-  # TODO rename it ensure?
-
   @staticmethod
-  def get(path, url: Optional[str]):
-    workspace = gordion.Workspace()
-    repo = workspace.repos().get(path, None)
+  def ensure(path: str, url: str):
+    """
+    Ensures the repository exists at <path> with <url> and clones it with <url> if not.
+    """
+    repo = gordion.Repository.registry().get(path, None)
     if repo:
-      if url:
-        if gordion.utils.compare_urls(url, repo.url):
-          return repo
-        else:
-          gordion.Repository.safe_delete(path)
-      else:
+      if gordion.utils.compare_urls(url, repo.url):
         return repo
+      else:
+        gordion.Repository.safe_delete(path)
 
-    return gordion.Repository.clone(path, url)
+    return gordion.Repository._clone(path, url)
 
   @staticmethod
-  def clone(path, url):
+  def _clone(path, url):
     """
     Clones the repository and returns it.
     """

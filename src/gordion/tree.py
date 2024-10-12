@@ -91,7 +91,7 @@ class Tree:
         # # Check the repository path before creating it.
         # root._check_different_repo_same_path(child_path, child_url)
         # root._check_same_repo_different_path(child_path, child_url)
-        child_repo = gordion.Repository.get(path=child_path, url=child_url)
+        child_repo = gordion.Repository.ensure(path=child_path, url=child_url)
         child = Tree(child_repo, self)
         child.update(child_tag, branch_name, force)
         self.children[child_name] = child
