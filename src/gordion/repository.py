@@ -416,3 +416,4 @@ class Repository:
     print(f"Deleting repository: {path}")
     shutil.rmtree(path)
     gordion.Repository.unregister(path)
+    gordion.workspace().delete_empty_parent_folders()
