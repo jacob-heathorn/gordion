@@ -30,7 +30,7 @@ class Repository:
   @staticmethod
   def get(path, url: Optional[str]):
     workspace = gordion.Workspace()
-    repo = workspace.repos.get(path, None)
+    repo = workspace.repos().get(path, None)
     if repo:
       if url:
         if gordion.utils.compare_urls(url, repo.url):
@@ -66,7 +66,7 @@ class Repository:
 
     # Now update the workspace cache and return the repo from there.
     workspace.update_repository_cache(path)
-    return workspace.repos.get(path)
+    return workspace.repos().get(path)
 
   @staticmethod
   def _derive_url(path: str, url: str):

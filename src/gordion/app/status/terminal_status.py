@@ -41,7 +41,7 @@ def terminal_status(root: gordion.Tree) -> str:
         folders.append(RepositoryFolder(repo, root))
 
   # Also any duplicates.
-  for key, repo in workspace.repos.items():
+  for key, repo in workspace.repos().items():
     duplicates = workspace.working(name=None, url=repo.url)
     duplicates.update(workspace.dependencies(name=None, url=repo.url))
     if len(duplicates) > 1:

@@ -242,6 +242,6 @@ class Tree:
       raise gordion.NotAGordionRepositoryError()
 
     if gordion.Repository.is_gordion(current_repo_path):
-      return gordion.Tree(gordion.Workspace().repos.get(current_repo_path))
+      return gordion.Tree(gordion.Workspace().repos().get(current_repo_path))
     else:
       raise gordion.NotAGordionRepositoryError()

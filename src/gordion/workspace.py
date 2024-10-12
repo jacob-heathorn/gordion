@@ -54,11 +54,11 @@ class Workspace:
     return False
 
   def working(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Repository]:
-    return {key: value for key, value in self.repos.items() if not self.is_dependency(
+    return {key: value for key, value in self.repos().items() if not self.is_dependency(
         key) and (not name or name == value.name) and (not url or url == value.url)}
 
   def dependencies(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Repository]:
-    return {key: value for key, value in self.repos.items() if self.is_dependency(
+    return {key: value for key, value in self.repos().items() if self.is_dependency(
         key) and (not name or name == value.name) and (not url or url == value.url)}
 
   def get_repository(self, name: str, url: str) -> Optional[gordion.Repository]:
@@ -123,9 +123,10 @@ class Workspace:
           # subdirectories
           dirnames.remove(dirname)
 
+  # TODO bad remove this
   def update_repository_cache(self, path: str):
     # First remove any repository at this path if it exists.
-    self.repos.pop(path, None)
+    self.repos().pop(path, None)
 
     # Then add it back, if it exists:
     if gordion.Repository._exists(path):
@@ -161,44 +162,3 @@ class Workspace:
       if tree.is_listed(target):
         return True
     return False
-
-    # def trim_repos(self, keep_repos: List[str], force: bool = False):
-    #   """
-    #   Removes repositories that are not listed in the keep_repos argument.
-    #   """
-    #   assert self.path
-
-    #   # Delete git repositories.
-    #   for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-    #     for dirname in dirnames:
-    #       full_dirpath = os.path.join(dirpath, dirname)
-    #       if (os.path.exists(full_dirpath) and not gordion.utils.is_related_path(full_dirpath,
-    #                                                                              keep_repos)):
-    #         if gordion.Repository._exists(full_dirpath):
-    #           gordion.Repository.safe_delete(full_dirpath, force)
-
-    #   # Delete everything else that is not related to the gordion paths.
-    #   for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-    #     for dirname in dirnames:
-    #       full_dirpath = os.path.join(dirpath, dirname)
-    #       if (os.path.exists(full_dirpath) and not gordion.utils.is_related_path(full_dirpath,
-    #                                                                              keep_repos)):
-    #         print(f"Deleting directory: {full_dirpath}")
-    #         assert not gordion.Repository._exists(full_dirpath)  # Removed above.
-    #         shutil.rmtree(full_dirpath)
-
-    # def list_repos(self):
-    #   repos = []
-
-    #   for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-    #     # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-    #     for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-    #       full_dirpath = os.path.join(dirpath, dirname)
-
-    #       if gordion.Repository._exists(full_dirpath):
-    #         repos.append(gordion.Repository(full_dirpath))
-    #         # Remove the current directory's name from dirnames so os.walk will skip its
-    #         # subdirectories
-    #         dirnames.remove(dirname)
-
-    #   return sorted(repos, key=lambda repo: repo.path)
