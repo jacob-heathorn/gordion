@@ -16,6 +16,8 @@ class RepositoryFolder(Folder):
     self.root: gordion.Tree = root
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
+    self.wrong_name = False
+    self.has_duplicate = False
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -32,17 +34,14 @@ class RepositoryFolder(Folder):
     return unique_tags
 
   def is_name_conflicted(self):
+    """
+    Name is conflicted if two or more listings of the same url have different names.
+    """
     listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
+    unique_names = set()
     for listing in listings:
-      if listing.name != self.repo.name:
-        return True
-    return False
-
-  def is_wrong_name(self):
-    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
-    if len(listings) == 0:
-      return True
-    return False
+      unique_names.add(listing.name)
+    return len(unique_names) > 1
 
   def is_url_conflicted(self):
     listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
@@ -57,39 +56,43 @@ class RepositoryFolder(Folder):
     Returns the repository folder name, with branch:commit and warnings in descriptive colors.
     """
 
-    # Aggregate existence errors and return if they have occured
+    # # Aggregate existence errors and return if they have occured
     errors = []
-    if self.workspace.is_duplicate(self.repo):
-      errors.append("DUPLICATE")
-    if not self.is_correct_path():
-      errors.append("WRONG PATH")
-    if not self.workspace.is_listed(self.repo):
-      # Check if it just has the wrong name.
-      if self.is_wrong_name():
-        errors.append("WRONG_NAME")
-      else:
-        errors.append("NOT LISTED")
+    # if self.workspace.is_duplicate(self.repo):
+    #   errors.append("DUPLICATE")
+    # if not self.is_correct_path():
+    #   errors.append("WRONG PATH")
+    # if not self.workspace.is_listed(self.repo):
+    #   # Check if it just has the wrong name.
+    #   if self.is_wrong_name():
+    #     errors.append("WRONG_NAME")
+    #   else:
+    #     errors.append("NOT LISTED")
 
-    if errors:
-      return gordion.utils.bold_red(
-          self.name) + gordion.utils.red(f" ({', '.join(errors)})")
+    # if errors:
+    #   return gordion.utils.bold_red(
+    #       self.name) + gordion.utils.red(f" ({', '.join(errors)})")
 
-    # If we reach here, it isn't a duplicate, but it can still have a duplicate.
-    if self.workspace.has_duplicate(self.repo):
-      errors.append("HAS DUPLICATE")
+    # # If we reach here, it isn't a duplicate, but it can still have a duplicate.
+    # if self.workspace.has_duplicate(self.repo):
+    #   errors.append("HAS DUPLICATE")
 
-    # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
-    # color the repo, but we can display it in the workspace.
-    if not self.root.is_listed(self.repo):
-      errors_header = ""
-      if errors:
-        errors_header = gordion.utils.red(f"({', '.join(errors)})")
-      return f"{self.name} " + errors_header
+    # # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
+    # # color the repo, but we can display it in the workspace.
+    # if not self.root.is_listed(self.repo):
+    #   errors_header = ""
+    #   if errors:
+    #     errors_header = gordion.utils.red(f"({', '.join(errors)})")
+    #   return f"{self.name} " + errors_header
 
     # Repository name.
     name_header = gordion.utils.bold_green(self.name)
 
-    # Check for conflicted name.
+    # Check for wrong and/or conflicted name.
+    if self.wrong_name:
+      errors.append("WRONG NAME")
+      name_header = gordion.utils.bold_red(self.name)
+
     if self.is_name_conflicted():
       errors.append("CONFLICTED NAME")
       name_header = gordion.utils.bold_red(self.name)

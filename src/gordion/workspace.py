@@ -99,12 +99,14 @@ class Workspace:
 
     # If there is exactly one working repository with this url, we select it even if it has the
     # wrong name. Although status will tell you it has the wrong name.
-    elif working == 1:
+    elif len(working) == 1:
       return next(iter(working.values()))
 
     # If there is more than one working repository. But only one has the
     # correct name, select that one.
     else:
+      for _, work in working.items():
+        print(f"{work.path}")
       return get_correctly_named_or_none(working, name)
 
   def discover_repositories(self):

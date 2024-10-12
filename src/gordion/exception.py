@@ -3,7 +3,7 @@ import os
 
 class UpdateError(Exception):
   def __init__(self, target_path, reason, suggestion):
-    self.message = (f"Cannot update repository<{os.path.basename(target_path)}>.\n"
+    self.message = (f"Cannot update repository<{target_path}>. "
                     f"{reason}. {suggestion}.")
     super().__init__(self.message)
 
@@ -34,8 +34,8 @@ class UpdateMultipleRepositoriesAlreadyExistsError(UpdateError):
 
 class UpdateWorkingRepositoryWrongNameError(UpdateError):
   def __init__(self, path, correct_name):
-    reason = f"The working repository name{os.path.basename(path)} is incorrect"
-    suggestion = f"Manually rename it to {correct_name}"
+    reason = f"The working repository name<{os.path.basename(path)}> is incorrect"
+    suggestion = f"Manually rename it to <{correct_name}>"
     super().__init__(path, reason, suggestion)
 
 

@@ -43,7 +43,7 @@ def main(argv=None):
       print(gordion.app.status.terminal_status(root))
 
   except Exception as e:
-    gordion.utils.print_exception(e=e, trace=True)
+    gordion.utils.print_exception(e=e, trace=False)
 
   if PROFILE:
     profiler.disable()
