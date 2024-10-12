@@ -17,51 +17,6 @@ class RepositoryFolder(Folder):
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
 
-  def is_duplicate(self) -> bool:
-    """
-    A repository is marked duplicate if one of ...
-      a) It is not listed, and there is another repo with the same URL.
-      b) It is listed, and it is a dependency among duplicate listed dependencies.
-      c) If it is a dependency and one or more working exist.
-      d) If it is a working among duplicate working.
-    """
-    working = self.workspace.working(name=None, url=self.repo.url)
-    dependencies = self.workspace.dependencies(name=None, url=self.repo.url)
-    all = working.copy()
-    all.update(dependencies)
-
-    # If it is not listed, and there is another repo with this URL.
-    if not self.workspace.is_listed(self.repo):
-      if len(all) > 1:
-        return True
-
-    # If it is listed...
-    else:
-      # If it is a dependency among duplicate listed dependencies.
-      if len(working) == 0:
-        assert self.workspace.is_dependency(self.repo.path)
-        num_listed_dependencies = 0
-        for _, dependency in dependencies.items():
-          if self.workspace.is_listed(dependency):
-            num_listed_dependencies += 1
-        return num_listed_dependencies > 1
-      else:
-        # If it is a dependency and one or more working exist.
-        if self.workspace.is_dependency(self.repo.path):
-          return True
-
-        # If it is a working among duplicate working.
-        else:
-          if len(working) > 1:
-            return True
-
-  def has_duplicate(self) -> bool:
-    all = self.workspace.working(name=None, url=self.repo.url)
-    all.update(self.workspace.dependencies(name=None, url=self.repo.url))
-    if len(all) > 1:
-      return True
-    return False
-
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
       if self.repo.path != os.path.join(self.workspace.dependencies_path, self.repo.name):
@@ -98,7 +53,7 @@ class RepositoryFolder(Folder):
 
     # Aggregate existence errors and return if they have occured
     errors = []
-    if self.is_duplicate():
+    if self.workspace.is_duplicate(self.repo):
       errors.append("DUPLICATE")
     if not self.is_correct_path():
       errors.append("WRONG PATH")
@@ -110,7 +65,7 @@ class RepositoryFolder(Folder):
           self.name) + gordion.utils.red(f" ({', '.join(errors)})")
 
     # If we reach here, it isn't a duplicate, but it can still have a duplicate.
-    if self.has_duplicate():
+    if self.workspace.has_duplicate(self.repo):
       errors.append("HAS DUPLICATE")
 
     # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not

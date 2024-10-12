@@ -168,8 +168,8 @@ def registry(cls):
 
     @classmethod
     def unregister(cls, key):
-      if key in cls._registry:
-        instance = cls._registry.pop(key)
+      if key in registry_:
+        instance = registry_.pop(key)
         if LIFETIME_METHODS:
           cls.on_destroy(instance)
 

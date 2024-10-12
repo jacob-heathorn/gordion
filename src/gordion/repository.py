@@ -386,17 +386,17 @@ class Repository:
     repo = gordion.Repository.registry().get(path)
 
     # Check if repository has local changes.
-    if repo.is_dirty(untracked_files=True):
+    if repo.handle.is_dirty(untracked_files=True):
       if not force:
         raise gordion.UnsafeRemoveDirty(path)
 
     # Check if any information would be lost from local branches if we delete this repository.
-    for local_branch in repo.branches:  # type: ignore[attr-defined]
+    for local_branch in repo.handle.branches:  # type: ignore[attr-defined]
       # If there is a tracking branch, ensure the local branch is not ahead of it.
       tracking_branch = local_branch.tracking_branch()
       if tracking_branch:
-        merge_base = repo.merge_base(local_branch, tracking_branch)
-        commits_ahead = list(repo.iter_commits(
+        merge_base = repo.handle.merge_base(local_branch, tracking_branch)
+        commits_ahead = list(repo.handle.iter_commits(
             f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
 
         if commits_ahead:
@@ -408,7 +408,7 @@ class Repository:
         raise gordion.UnsafeRemoveLocalBranchNoTrackingBranch(path, local_branch.name)
 
     # Error if the repository has stashes that will be lost by the deletion.
-    stashes = repo.git.stash('list')
+    stashes = repo.handle.git.stash('list')
     if stashes:
       raise gordion.UnsafeRemoveStashes(path, stashes)
 
@@ -416,4 +416,4 @@ class Repository:
     print(f"Deleting repository: {path}")
     shutil.rmtree(path)
     gordion.Repository.unregister(path)
-    gordion.workspace().delete_empty_parent_folders()
+    gordion.Workspace().delete_empty_parent_folders(path)

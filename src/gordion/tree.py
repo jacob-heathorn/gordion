@@ -23,7 +23,7 @@ class Tree:
     Updates this repository and it's children.
     """
     # Check for duplicate tag
-    # root = self._root()
+    root = self._root()
     # commit: git.Commit = self._verify_tag(tag)
     # TODO restore.
     # root._check_same_repo_different_tag(self, commit)
@@ -33,34 +33,9 @@ class Tree:
     self.repo.yeditor.reload()
     self._update_children(branch_name, force)
 
-    # # TODO Cleanup duplicate repositories.
-    # if self is root:
-    #   self._delete_duplicates(force)
-
-  # def _delete_duplicates(self, force: bool):
-  #   listings = self.listings(None, None)
-
-  #   # First delete duplicates of listings.
-  #   for listing in listings:
-  #     listed_repo = gordion.Repository(listing.path)
-  #     assert listed_repo.handle.remotes.origin.url == listing.url
-  #     duplicates = self.workspace.get_repositories_by_url(listed_repo.url)
-  #     for duplicate in duplicates:
-  #       if duplicate.path != listed_repo.path:
-  #         gordion.Repository.safe_delete(path=duplicate.path, force=force)
-
-  #   # Also delete duplicates of any existing repo.
-  #   uniques = []
-  #   for repo in self.workspace.repos:
-  #     if not any(
-  #         gordion.utils.compare_urls(repo.handle.remotes.origin.url,
-  #                                    unique.handle.remotes.origin.url) for unique in uniques):
-  #       uniques.append(repo)
-  #   for unique in uniques:
-  #     duplicates = self.workspace.get_repositories_by_url(unique.url)
-  #     for duplicate in duplicates:
-  #       if duplicate.path != unique.path:
-  #         gordion.Repository.safe_delete(path=duplicate.path, force=force)
+    # TODO move outside of tree so don't need root, so dont need parent?
+    if self is root:
+      self.workspace.delete_duplicate_repositories()
 
   def _update_children(self, branch_name: str, force: bool):
     """
