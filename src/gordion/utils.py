@@ -153,23 +153,37 @@ def registry(cls):
   """
   A decorator that adds registry functionality to a class.
   """
-  registry = {}
+  registry_ = {}
+  LIFETIME_METHODS = False
 
   class WrappedClass(cls):
     @classmethod
     def register(cls, key, *args, **kwargs):
-      if key not in registry:
-        registry[key] = super(WrappedClass, cls).__new__(cls)
-        cls.__init__(registry[key], *args, **kwargs)
-      return registry[key]
+      if key not in registry_:
+        registry_[key] = super(WrappedClass, cls).__new__(cls)
+        cls.__init__(registry_[key], *args, **kwargs)
+        if LIFETIME_METHODS:
+          cls.on_create(registry_[key])
+      return registry_[key]
 
     @classmethod
-    def get_instance(cls, key):
-      return registry.get(key)
+    def unregister(cls, key):
+      if key in cls._registry:
+        instance = cls._registry.pop(key)
+        if LIFETIME_METHODS:
+          cls.on_destroy(instance)
 
     @classmethod
-    def get_registry(cls):
-      return registry
+    def on_create(cls, instance):
+      print(f"Instance created: {instance.name}")
+
+    @classmethod
+    def on_destroy(cls, instance):
+      print(f"Instance destroyed: {instance.name}")
+
+    @classmethod
+    def registry(cls):
+      return registry_
 
   return WrappedClass
 

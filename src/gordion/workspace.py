@@ -15,7 +15,7 @@ class Workspace:
     self.path = ''
 
   def repos(self) -> Dict[str, gordion.Repository]:
-    return gordion.Repository.get_registry()
+    return gordion.Repository.registry()
 
   def setup(self, subpath):
     """
@@ -122,15 +122,6 @@ class Workspace:
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)
-
-  # TODO bad remove this
-  def update_repository_cache(self, path: str):
-    # First remove any repository at this path if it exists.
-    self.repos().pop(path, None)
-
-    # Then add it back, if it exists:
-    if gordion.Repository._exists(path):
-      gordion.Repository.register(path)
 
   def delete_empty_parent_folders(self, path):
     """

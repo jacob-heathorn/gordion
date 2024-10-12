@@ -48,7 +48,6 @@ class Repository:
     Clones the repository and returns it.
     """
     assert not gordion.Repository._exists(path)
-    workspace = gordion.Workspace()
 
     # Make sure the target path doesn't already exist as a non-repository.
     if os.path.exists(path):
@@ -62,11 +61,9 @@ class Repository:
     # Clone it.
     args = ['git', 'clone', '--reference', mirror_path, url, path]
     subprocess.check_call(args, stderr=subprocess.STDOUT)
-    workspace.update_repository_cache(path)
 
-    # Now update the workspace cache and return the repo from there.
-    workspace.update_repository_cache(path)
-    return workspace.repos().get(path)
+    # Now create and return the repo.
+    return gordion.Repository.register(key=path, path=path)
 
   @staticmethod
   def _derive_url(path: str, url: str):
@@ -374,12 +371,10 @@ class Repository:
 
     # Move it
     shutil.move(source, destination)
+    gordion.Repository.unregister(key=source)
+    gordion.Repository.register(key=destination, path=destination)
 
-    workspace = gordion.Workspace()
-    workspace.update_repository_cache(source)
-    workspace.update_repository_cache(destination)
-    workspace.delete_empty_parent_folders(source)
-    return gordion.Repository.get(path=destination, url=None)
+    return gordion.Repository.registry.get(path=destination)
 
   @staticmethod
   def safe_delete(path, force: bool = False):
@@ -388,7 +383,7 @@ class Repository:
     repository has unsaved branches/commits or if it has stashes.
     """
     assert gordion.Repository._exists(path)
-    repo = git.Repo(path)
+    repo = gordion.Repository.registry().get(path)
 
     # Check if repository has local changes.
     if repo.is_dirty(untracked_files=True):
@@ -420,6 +415,4 @@ class Repository:
     # If we reach here, it's safe to delete the repository
     print(f"Deleting repository: {path}")
     shutil.rmtree(path)
-    workspace = gordion.Workspace()
-    workspace.update_repository_cache(path)
-    workspace.delete_empty_parent_folders(path)
+    gordion.Repository.unregister(path)
