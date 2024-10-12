@@ -38,6 +38,13 @@ class RepositoryFolder(Folder):
         return True
     return False
 
+  def is_wrong_name(self):
+    # TODO here fix.
+    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
+    if len(listings) == 0:
+      return True
+    return False
+
   def is_url_conflicted(self):
     listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
     for listing in listings:
@@ -67,6 +74,10 @@ class RepositoryFolder(Folder):
     # If we reach here, it isn't a duplicate, but it can still have a duplicate.
     if self.workspace.has_duplicate(self.repo):
       errors.append("HAS DUPLICATE")
+
+    # Check if the repos has the wrong name.
+    if self.is_wrong_name():
+      errors.append("WRONG NAME")
 
     # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
     # color the repo, but we can display it in the workspace.
