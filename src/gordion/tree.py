@@ -162,16 +162,21 @@ class Tree:
     url: str
     tag: str
 
-  def listings(self, name: Optional[str], url: Optional[str]) -> List[Listing]:
+  def listings(self, name: Optional[str], url: Optional[str],
+               recursing: bool = False) -> List[Listing]:
     """
     Generates a list of Listings in the recursable Tree, including the self. A listing holds
     information as-listed in the gordion.yaml file, unless it is the root which doesn't have a
     parent gordion.yaml file.
     """
-    # Add self.
+    # Add self if not recursing.
     listings = []
-    listings.append(
-        gordion.Tree.Listing(self.repo.name, self.repo.url, self.repo.handle.head.commit.hexsha))
+    if not recursing:
+      listings.append(
+          gordion.Tree.Listing(
+              self.repo.name,
+              self.repo.url,
+              self.repo.handle.head.commit.hexsha))
 
     # Get all listings in the tree.
     if self.repo.yeditor.exists():
@@ -179,25 +184,24 @@ class Tree:
         child_url = child_info['url']
         child_tag = child_info['tag']
 
-        # First try to get repo if it exists and is selectable among duplicates.
-        child_repo = self.workspace.get_repository(child_name, child_url)
+        # Add this listing.
+        listings.append(gordion.Tree.Listing(child_name, child_url, child_tag))
 
-        recursed = False
+        # Recurse if possible. Try to get the child_repo, and it actually might not be named
+        # correctly.
+        child_repo = self.workspace.get_repository(child_name, child_url)
         if child_repo:
           child_listed_commit = child_repo._verify_tag(child_tag)
           if child_repo.handle.head.commit == child_listed_commit:
             tree = gordion.Tree(child_repo)
-            listings.extend(tree.listings(name, url))
-            recursed = True
+            listings.extend(tree.listings(name=name, url=url, recursing=True))
 
-        if not recursed:
-          listings.append(gordion.Tree.Listing(child_name, child_url, child_tag))
-
-    # Filter by name and url.
-    if name:
-      listings = [listing for listing in listings if name == listing.name]
-    if url:
-      listings = [listing for listing in listings if gordion.utils.compare_urls(listing.url, url)]
+    # Filter by name and url once at the top level.
+    if not recursing:
+      if name:
+        listings = [listing for listing in listings if name == listing.name]
+      if url:
+        listings = [listing for listing in listings if gordion.utils.compare_urls(listing.url, url)]
 
     return listings
 

@@ -39,7 +39,6 @@ class RepositoryFolder(Folder):
     return False
 
   def is_wrong_name(self):
-    # TODO here fix.
     listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
     if len(listings) == 0:
       return True
@@ -65,7 +64,11 @@ class RepositoryFolder(Folder):
     if not self.is_correct_path():
       errors.append("WRONG PATH")
     if not self.workspace.is_listed(self.repo):
-      errors.append("NOT LISTED")
+      # Check if it just has the wrong name.
+      if self.is_wrong_name():
+        errors.append("WRONG_NAME")
+      else:
+        errors.append("NOT LISTED")
 
     if errors:
       return gordion.utils.bold_red(
@@ -74,10 +77,6 @@ class RepositoryFolder(Folder):
     # If we reach here, it isn't a duplicate, but it can still have a duplicate.
     if self.workspace.has_duplicate(self.repo):
       errors.append("HAS DUPLICATE")
-
-    # Check if the repos has the wrong name.
-    if self.is_wrong_name():
-      errors.append("WRONG NAME")
 
     # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
     # color the repo, but we can display it in the workspace.

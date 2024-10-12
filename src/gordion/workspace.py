@@ -148,7 +148,7 @@ class Workspace:
     if not self.is_dependency(target.path):
       return True
 
-    for key, repo in self.working(name=None, url=None).items():
+    for _, repo in self.working(name=None, url=None).items():
       tree = gordion.Tree(repo)
       if tree.is_listed(target):
         return True
