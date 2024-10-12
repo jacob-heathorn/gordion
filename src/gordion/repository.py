@@ -12,6 +12,7 @@ class Repository:
 
   """
 
+  # TODO comment headers for these various creation functions
   def __init__(self, path: str) -> None:
     self.path = path
     self.name = os.path.basename(self.path)
@@ -23,6 +24,7 @@ class Repository:
     _, self.default_branch_name = cache.ensure_mirror(self.url)
     self.fetched = False
 
+  # TODO rename it ensure?
   @staticmethod
   def get(path, url: Optional[str]):
     workspace = gordion.Workspace()
