@@ -156,11 +156,11 @@ def registry(cls):
   registry_ = {}
   LIFETIME_METHODS = False
 
-  class WrappedClass(cls):
+  class RegistryWrapper(cls):
     @classmethod
     def register(cls, key, *args, **kwargs):
       if key not in registry_:
-        registry_[key] = super(WrappedClass, cls).__new__(cls)
+        registry_[key] = super(RegistryWrapper, cls).__new__(cls)
         cls.__init__(registry_[key], *args, **kwargs)
         if LIFETIME_METHODS:
           cls.on_create(registry_[key])
@@ -185,7 +185,7 @@ def registry(cls):
     def registry(cls):
       return registry_
 
-  return WrappedClass
+  return RegistryWrapper
 
 
 def override(interface_class):
