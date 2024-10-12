@@ -154,10 +154,13 @@ class Workspace:
         return True
     return False
 
-  def delete_duplicate_repositories(self) -> bool:
+  def trim_repositories(self) -> bool:
+    """
+    Deletes duplicates and unlisted repositories.
+    """
     paths = []
     for _, repo in self.repos().items():
-      if self.is_duplicate(repo):
+      if self.is_duplicate(repo) or not self.is_listed(repo):
         paths.append(repo.path)
     for path in paths:
       gordion.Repository.safe_delete(path)

@@ -35,7 +35,7 @@ class Tree:
 
     # TODO move outside of tree so don't need root, so dont need parent?
     if self is root:
-      self.workspace.delete_duplicate_repositories()
+      self.workspace.trim_repositories()
 
   def _update_children(self, branch_name: str, force: bool):
     """
