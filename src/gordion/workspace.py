@@ -13,7 +13,9 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
-    self.repos: Dict[str, gordion.Repository] = {}
+
+  def repos(self) -> Dict[str, gordion.Repository]:
+    return gordion.Repository.get_registry()
 
   def setup(self, subpath):
     """
@@ -105,9 +107,6 @@ class Workspace:
     else:
       return get_correctly_named_or_none(working, name)
 
-  # def does_repository_exist(self, path: str) -> bool:
-  #   return bool(self.repos.get(path, None))
-
   def discover_repositories(self):
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
@@ -119,7 +118,7 @@ class Workspace:
         full_dirpath = os.path.join(dirpath, dirname)
 
         if gordion.Repository._exists(full_dirpath):
-          self.repos[full_dirpath] = gordion.Repository(full_dirpath)
+          gordion.Repository.register(key=full_dirpath, path=full_dirpath)
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)
@@ -130,7 +129,7 @@ class Workspace:
 
     # Then add it back, if it exists:
     if gordion.Repository._exists(path):
-      self.repos[path] = gordion.Repository(path)
+      gordion.Repository.register(path)
 
   def delete_empty_parent_folders(self, path):
     """

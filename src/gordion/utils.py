@@ -149,6 +149,31 @@ def singleton(cls):
   return get_instance
 
 
+def registry(cls):
+  """
+  A decorator that adds registry functionality to a class.
+  """
+  registry = {}
+
+  class WrappedClass(cls):
+    @classmethod
+    def register(cls, key, *args, **kwargs):
+      if key not in registry:
+        registry[key] = super(WrappedClass, cls).__new__(cls)
+        cls.__init__(registry[key], *args, **kwargs)
+      return registry[key]
+
+    @classmethod
+    def get_instance(cls, key):
+      return registry.get(key)
+
+    @classmethod
+    def get_registry(cls):
+      return registry
+
+  return WrappedClass
+
+
 def override(interface_class):
   def overrider(method):
     assert (method.__name__ in dir(interface_class)), \

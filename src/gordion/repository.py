@@ -6,6 +6,7 @@ from typing import Optional
 import shutil
 
 
+@gordion.utils.registry
 class Repository:
   """
   Encapsulates a git repository in the gordion context.
@@ -25,6 +26,7 @@ class Repository:
     self.fetched = False
 
   # TODO rename it ensure?
+
   @staticmethod
   def get(path, url: Optional[str]):
     workspace = gordion.Workspace()
