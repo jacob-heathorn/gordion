@@ -81,16 +81,9 @@ class RepositoryFolder(Folder):
       errors.append("DUPLICATE:URL")
       name_header = gordion.utils.bold_red(self.name)
 
-    # if self.workspace.is_duplicate(self.repo):
-    #   errors.append("DUPLICATE")
-    # if not self.is_correct_path():
-    #   errors.append("WRONG PATH")
-    # if not self.workspace.is_listed(self.repo):
-    #   # Check if it just has the wrong name.
-    #   if self.is_wrong_name():
-    #     errors.append("WRONG_NAME")
-    #   else:
-    #     errors.append("NOT LISTED")
+    # A dependency repo can have the wrong path.
+    if not self.is_correct_path():
+      errors.append("WRONG PATH")
 
     # Special situations when the repo is not listed by root.
     if not self.is_listed_by_root:
