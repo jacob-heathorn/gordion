@@ -21,6 +21,9 @@ class RepositoryFolder(Folder):
     # self.is_wrong_url = False
     # self.is_listed_by_root = False
     self.not_listed = False
+    self.listed_by_workspace_but_not_root = False
+    self.has_duplicate_name = False
+    self.has_duplicate_url = False
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -64,7 +67,19 @@ class RepositoryFolder(Folder):
     if self.not_listed:
       errors.append("NOT LISTED")
 
-    # Check if it is listed.
+    # Repository name.
+    name_header = gordion.utils.bold_green(self.name)
+
+    # Check for duplicates
+    if self.has_duplicate_name and self.has_duplicate_url:
+      errors.append("DUPLICATE")
+      name_header = gordion.utils.bold_red(self.name)
+    elif self.has_duplicate_name:
+      errors.append("DUPLICATE:NAME")
+      name_header = gordion.utils.bold_red(self.name)
+    elif self.has_duplicate_url:
+      errors.append("DUPLICATE:URL")
+      name_header = gordion.utils.bold_red(self.name)
 
     # if self.workspace.is_duplicate(self.repo):
     #   errors.append("DUPLICATE")
@@ -77,40 +92,38 @@ class RepositoryFolder(Folder):
     #   else:
     #     errors.append("NOT LISTED")
 
-    if errors:
-      return gordion.utils.bold_red(
-          self.name) + gordion.utils.red(f" ({', '.join(errors)})")
+    if self.not_listed:
+      name_header = gordion.utils.bold_red(self.name)
+      return name_header + gordion.utils.red(f" ({', '.join(errors)})")
 
-    # # If we reach here, it isn't a duplicate, but it can still have a duplicate.
-    # if self.workspace.has_duplicate(self.repo):
-    #   errors.append("HAS DUPLICATE")
+    # If we are only displaying because it is duplicate, then display the repository only, not
+    # branch:tag.
+    if self.listed_by_workspace_but_not_root:
+      if self.has_duplicate_name or self.has_duplicate_url:
+        return name_header + gordion.utils.red(f" ({', '.join(errors)})")
 
-    # # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
-    # # color the repo, but we can display it in the workspace.
-    # if not self.root.is_listed(self.repo):
-    #   errors_header = ""
-    #   if errors:
-    #     errors_header = gordion.utils.red(f"({', '.join(errors)})")
-    #   return f"{self.name} " + errors_header
+        # # If we reach here, it isn't a duplicate, but it can still have a duplicate.
+        # if self.workspace.has_duplicate(self.repo):
+        #   errors.append("HAS DUPLICATE")
 
-    # Repository name.
-    name_header = gordion.utils.bold_green(self.name)
+        # # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
+        # # color the repo, but we can display it in the workspace.
+        # if not self.root.is_listed(self.repo):
+        #   errors_header = ""
+        #   if errors:
+        #     errors_header = gordion.utils.red(f"({', '.join(errors)})")
+        #   return f"{self.name} " + errors_header
 
-    # # Check for wrong and/or conflicted name.
-    # if self.wrong_name:
-    #   errors.append("WRONG NAME")
-    #   name_header = gordion.utils.bold_red(self.name)
+        # if self.is_name_conflicted():
+        #   errors.append("CONFLICTED NAME")
+        #   name_header = gordion.utils.bold_red(self.name)
 
-    # if self.is_name_conflicted():
-    #   errors.append("CONFLICTED NAME")
-    #   name_header = gordion.utils.bold_red(self.name)
+        # # Check for conflicting URL.
+        # if self.is_url_conflicted():
+        #   name_header = gordion.utils.bold_red(self.name)
+        #   errors.append("CONFLICTED URL")
 
-    # # Check for conflicting URL.
-    # if self.is_url_conflicted():
-    #   name_header = gordion.utils.bold_red(self.name)
-    #   errors.append("CONFLICTED URL")
-
-    # Branch header.
+        # Branch header.
     branch_header = self._get_branch_name()
     branch_header = self._color_branch(branch_header)
     branch_suggestion = self._get_branch_suggestion()

@@ -96,14 +96,25 @@ def terminal_status(root: gordion.Tree) -> str:
     folder = RepositoryFolder(repo, root)
     folders.append(folder)
 
-    # Check if the folder is listed by mainline.
+    # Check if the folder is listed by mainline or the workspace.
     if root.is_listed(repo):
       folder.is_listed_by_root = True
     else:
       if workspace.is_listed(repo):
         folder.mute = True
+        folder.listed_by_workspace_but_not_root = True
       else:
         folder.not_listed = True
+
+    # Check for duplicate named repositories.
+    for _, other in workspace.repos().items():
+      if other.path != repo.path:
+        if other.name == repo.name:
+          folder.has_duplicate_name = True
+          folder.mute = False
+        if gordion.utils.compare_urls(other.url, repo.url):
+          folder.has_duplicate_url = True
+          folder.mute = False
 
   # Add not found repository folders
   root_listings = root.listings(name=None, url=None)
