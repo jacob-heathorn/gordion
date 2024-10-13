@@ -127,52 +127,13 @@ class Workspace:
     """
     paths = []
     for _, repo in self.repos().items():
-      if self.is_duplicate(repo) or not self.is_listed(repo):
-        paths.append(repo.path)
+      if self.is_dependency(repo.path):
+        if not self.is_listed(repo):
+          paths.append(repo.path)
+        else:
+          expected_path = os.path.join(self.dependencies_path, repo.name)
+          if repo.path != expected_path:
+            paths.append(repo.path)
+
     for path in paths:
       gordion.Repository.safe_delete(path)
-
-  def is_duplicate(self, target: gordion.Repository) -> bool:
-    """
-    A repository is marked duplicate if one of ...
-      a) It is not listed, and there is another repo with the same URL.
-      b) It is listed, and it is a dependency among duplicate listed dependencies.
-      c) If it is a dependency and one or more working exist.
-      d) If it is a working among duplicate working.
-    """
-    working = self.working(name=None, url=target.url)
-    dependencies = self.dependencies(name=None, url=target.url)
-    all = working.copy()
-    all.update(dependencies)
-
-    # If it is not listed, and there is another repo with this URL.
-    if not self.is_listed(target):
-      if len(all) > 1:
-        return True
-
-    # If it is listed...
-    else:
-      # If it is a dependency among duplicate listed dependencies.
-      if len(working) == 0:
-        assert self.is_dependency(target.path)
-        num_listed_dependencies = 0
-        for _, dependency in dependencies.items():
-          if self.is_listed(dependency):
-            num_listed_dependencies += 1
-        return num_listed_dependencies > 1
-      else:
-        # If it is a dependency and one or more working exist.
-        if self.is_dependency(target.path):
-          return True
-
-        # If it is a working among duplicate working.
-        else:
-          if len(working) > 1:
-            return True
-
-  def has_duplicate(self, target: gordion.Repository) -> bool:
-    all = self.working(name=None, url=target.url)
-    all.update(self.dependencies(name=None, url=target.url))
-    if len(all) > 1:
-      return True
-    return False

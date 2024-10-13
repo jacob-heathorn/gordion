@@ -33,10 +33,9 @@ class Tree:
     self.repo.yeditor.reload()
     self._update_children(branch_name, force)
 
-    # TODO trim
-    # # TODO move outside of tree so don't need root, so dont need parent?
-    # if self is root:
-    #   self.workspace.trim_repositories()
+    # TODO move outside of tree so don't need root, so dont need parent?
+    if self is root:
+      self.workspace.trim_repositories()
 
   def _update_children(self, branch_name: str, force: bool):
     """
