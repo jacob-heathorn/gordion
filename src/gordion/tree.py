@@ -66,7 +66,7 @@ class Tree:
             expected_path = os.path.join(self.workspace.dependencies_path, child_repo.name)
 
             # If it has the wrong url..
-            if gordion.utils.compare_urls(child_repo.url, child_url):
+            if not gordion.utils.compare_urls(child_repo.url, child_url):
               gordion.Repository.safe_delete(child_repo.path)
               child_repo = gordion.Repository.clone(expected_path, child_url)
 
@@ -76,7 +76,7 @@ class Tree:
 
           # More than one dependency. This is an edge case. Delete them and re-clone is easiest.
           else:
-            for dependency in dependencies:
+            for _, dependency in dependencies.items():
               gordion.Repository.safe_delete(dependency.path)
             child_path = os.path.join(self.workspace.dependencies_path, child_repo.name)
             child_repo = gordion.Repository.clone(child_path, child_url)
@@ -91,7 +91,7 @@ class Tree:
                 child_path, child_repo.url, child_url)
 
           # If there are dependencies, delete them.
-          for dependency in dependencies:
+          for _, dependency in dependencies.items():
             gordion.Repository.safe_delete(dependency.path)
 
         # There is more than one working repo with this name...
