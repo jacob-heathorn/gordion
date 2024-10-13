@@ -54,6 +54,12 @@ class RepositoryFolder(Folder):
         return True
     return False
 
+  def decorated_name(self):
+    if self.repo.path == self.root.repo.path:
+      return f"{self.name}*"
+    else:
+      return self.name
+
   @gordion.utils.override(Folder)
   def _get_display_name(self) -> str:
     """
@@ -66,18 +72,18 @@ class RepositoryFolder(Folder):
       errors.append("NOT LISTED")
 
     # Repository name.
-    name_header = gordion.utils.bold_green(self.name)
+    name_header = gordion.utils.bold_green(self.decorated_name())
 
     # Check for duplicates
     if self.has_duplicate_name and self.has_duplicate_url:
       errors.append("DUPLICATE")
-      name_header = gordion.utils.bold_red(self.name)
+      name_header = gordion.utils.bold_red(self.decorated_name())
     elif self.has_duplicate_name:
       errors.append("DUPLICATE:NAME")
-      name_header = gordion.utils.bold_red(self.name)
+      name_header = gordion.utils.bold_red(self.decorated_name())
     elif self.has_duplicate_url:
       errors.append("DUPLICATE:URL")
-      name_header = gordion.utils.bold_red(self.name)
+      name_header = gordion.utils.bold_red(self.decorated_name())
 
     # A dependency repo can have the wrong path.
     if not self.is_correct_path():
@@ -92,7 +98,7 @@ class RepositoryFolder(Folder):
 
       # If it is not listed at all.
       else:
-        name_header = gordion.utils.bold_red(self.name)
+        name_header = gordion.utils.bold_red(self.decorated_name())
         return name_header + gordion.utils.red(f" ({', '.join(errors)})")
 
     # Check if it is name conflicated
