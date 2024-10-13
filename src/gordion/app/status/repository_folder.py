@@ -20,8 +20,8 @@ class RepositoryFolder(Folder):
     # self.has_duplicate = False
     # self.is_wrong_url = False
     # self.is_listed_by_root = False
-    self.not_listed = False
-    self.listed_by_workspace_but_not_root = False
+    self.is_listed_by_root = False
+    self.is_listed_by_workspace = False
     self.has_duplicate_name = False
     self.has_duplicate_url = False
 
@@ -39,22 +39,22 @@ class RepositoryFolder(Folder):
 
     return unique_tags
 
-  def is_name_conflicted(self):
-    """
-    Name is conflicted if two or more listings of the same url have different names.
-    """
-    listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
-    unique_names = set()
-    for listing in listings:
-      unique_names.add(listing.name)
-    return len(unique_names) > 1
+  # def is_name_conflicted(self):
+  #   """
+  #   Name is conflicted if two or more listings of the same url have different names.
+  #   """
+  #   listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
+  #   unique_names = set()
+  #   for listing in listings:
+  #     unique_names.add(listing.name)
+  #   return len(unique_names) > 1
 
-  def is_url_conflicted(self):
-    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
-    for listing in listings:
-      if not gordion.utils.compare_urls(listing.url, self.repo.url):
-        return True
-    return False
+  # def is_url_conflicted(self):
+  #   listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
+  #   for listing in listings:
+  #     if not gordion.utils.compare_urls(listing.url, self.repo.url):
+  #       return True        folder.listed_by_workspace_but_not_root = True
+  #   return False
 
   @gordion.utils.override(Folder)
   def _get_display_name(self) -> str:
@@ -64,7 +64,7 @@ class RepositoryFolder(Folder):
 
     # Aggregate existence errors and return if they have occured
     errors = []
-    if self.not_listed:
+    if not self.is_listed_by_root and not self.is_listed_by_workspace:
       errors.append("NOT LISTED")
 
     # Repository name.
@@ -92,14 +92,16 @@ class RepositoryFolder(Folder):
     #   else:
     #     errors.append("NOT LISTED")
 
-    if self.not_listed:
-      name_header = gordion.utils.bold_red(self.name)
-      return name_header + gordion.utils.red(f" ({', '.join(errors)})")
+    # Special situations when the repo is not listed by root.
+    if not self.is_listed_by_root:
+      # If we only unmuted to show that it is a duplicate...
+      if self.is_listed_by_workspace:
+        if self.has_duplicate_name or self.has_duplicate_url:
+          return name_header + gordion.utils.red(f" ({', '.join(errors)})")
 
-    # If we are only displaying because it is duplicate, then display the repository only, not
-    # branch:tag.
-    if self.listed_by_workspace_but_not_root:
-      if self.has_duplicate_name or self.has_duplicate_url:
+      # If it is not listed at all.
+      else:
+        name_header = gordion.utils.bold_red(self.name)
         return name_header + gordion.utils.red(f" ({', '.join(errors)})")
 
         # # If we reach here, it isn't a duplicate, but it can still have a duplicate.

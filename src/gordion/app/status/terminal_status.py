@@ -102,9 +102,7 @@ def terminal_status(root: gordion.Tree) -> str:
     else:
       if workspace.is_listed(repo):
         folder.mute = True
-        folder.listed_by_workspace_but_not_root = True
-      else:
-        folder.not_listed = True
+        folder.is_listed_by_workspace = True
 
     # Check for duplicate named repositories.
     for _, other in workspace.repos().items():
