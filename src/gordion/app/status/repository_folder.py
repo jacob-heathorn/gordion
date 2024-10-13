@@ -16,10 +16,6 @@ class RepositoryFolder(Folder):
     self.root: gordion.Tree = root
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
-    # self.wrong_name = False
-    # self.has_duplicate = False
-    # self.is_wrong_url = False
-    # self.is_listed_by_root = False
     self.is_listed_by_root = False
     self.is_listed_by_workspace = False
     self.has_duplicate_name = False
@@ -39,22 +35,24 @@ class RepositoryFolder(Folder):
 
     return unique_tags
 
-  # def is_name_conflicted(self):
-  #   """
-  #   Name is conflicted if two or more listings of the same url have different names.
-  #   """
-  #   listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
-  #   unique_names = set()
-  #   for listing in listings:
-  #     unique_names.add(listing.name)
-  #   return len(unique_names) > 1
+  # TODO move outside for speed?
 
-  # def is_url_conflicted(self):
-  #   listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
-  #   for listing in listings:
-  #     if not gordion.utils.compare_urls(listing.url, self.repo.url):
-  #       return True        folder.listed_by_workspace_but_not_root = True
-  #   return False
+  def is_name_conflicted(self):
+    """
+    Name is conflicted if two or more listings of the same url have different names.
+    """
+    listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
+    unique_names = set()
+    for listing in listings:
+      unique_names.add(listing.name)
+    return len(unique_names) > 1
+
+  def is_url_conflicted(self):
+    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
+    for listing in listings:
+      if not gordion.utils.compare_urls(listing.url, self.repo.url):
+        return True
+    return False
 
   @gordion.utils.override(Folder)
   def _get_display_name(self) -> str:
@@ -97,28 +95,15 @@ class RepositoryFolder(Folder):
         name_header = gordion.utils.bold_red(self.name)
         return name_header + gordion.utils.red(f" ({', '.join(errors)})")
 
-        # # If we reach here, it isn't a duplicate, but it can still have a duplicate.
-        # if self.workspace.has_duplicate(self.repo):
-        #   errors.append("HAS DUPLICATE")
+    # Check if it is name conflicated
+    if self.is_name_conflicted():
+      errors.append("NAME CONFLICTED")
 
-        # # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
-        # # color the repo, but we can display it in the workspace.
-        # if not self.root.is_listed(self.repo):
-        #   errors_header = ""
-        #   if errors:
-        #     errors_header = gordion.utils.red(f"({', '.join(errors)})")
-        #   return f"{self.name} " + errors_header
+    # Check if it is url conflicated
+    if self.is_url_conflicted():
+      errors.append("URL CONFLICTED")
 
-        # if self.is_name_conflicted():
-        #   errors.append("CONFLICTED NAME")
-        #   name_header = gordion.utils.bold_red(self.name)
-
-        # # Check for conflicting URL.
-        # if self.is_url_conflicted():
-        #   name_header = gordion.utils.bold_red(self.name)
-        #   errors.append("CONFLICTED URL")
-
-        # Branch header.
+    # Branch header.
     branch_header = self._get_branch_name()
     branch_header = self._color_branch(branch_header)
     branch_suggestion = self._get_branch_suggestion()
