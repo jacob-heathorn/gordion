@@ -219,7 +219,7 @@ class Tree:
     return listings
 
   def is_listed(self, repo: gordion.Repository):
-    listings = self.listings(name=repo.name, url=repo.url)
+    listings = self.listings(name=repo.name, url=None)
     return len(listings) > 0
 
   @staticmethod

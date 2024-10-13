@@ -93,7 +93,17 @@ def terminal_status(root: gordion.Tree) -> str:
   # extend_folders_from_mainline(folders, root, root)
 
   for _, repo in workspace.repos().items():
-    folders.append(RepositoryFolder(repo, root))
+    folder = RepositoryFolder(repo, root)
+    folders.append(folder)
+
+    # Check if the folder is listed by mainline.
+    if root.is_listed(repo):
+      folder.is_listed_by_root = True
+    else:
+      if workspace.is_listed(repo):
+        folder.mute = True
+      else:
+        folder.not_listed = True
 
   # Add not found repository folders
   root_listings = root.listings(name=None, url=None)

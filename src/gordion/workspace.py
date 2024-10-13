@@ -109,8 +109,7 @@ class Workspace:
 
   def is_listed(self, target: gordion.Repository) -> bool:
     """
-    Checks that the repository is listed by name and url by at least one of the working
-    repositories.
+    Checks that the repository is listed by name by least one of the working repositories.
     """
     # Working repositories don't need to be listed
     if not self.is_dependency(target.path):

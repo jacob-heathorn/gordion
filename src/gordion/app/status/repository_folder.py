@@ -16,9 +16,11 @@ class RepositoryFolder(Folder):
     self.root: gordion.Tree = root
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
-    self.wrong_name = False
-    self.has_duplicate = False
-    self.is_wrong_url = False
+    # self.wrong_name = False
+    # self.has_duplicate = False
+    # self.is_wrong_url = False
+    # self.is_listed_by_root = False
+    self.not_listed = False
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -59,6 +61,8 @@ class RepositoryFolder(Folder):
 
     # Aggregate existence errors and return if they have occured
     errors = []
+    if self.not_listed:
+      errors.append("NOT LISTED")
 
     # Check if it is listed.
 
@@ -73,9 +77,9 @@ class RepositoryFolder(Folder):
     #   else:
     #     errors.append("NOT LISTED")
 
-    # if errors:
-    #   return gordion.utils.bold_red(
-    #       self.name) + gordion.utils.red(f" ({', '.join(errors)})")
+    if errors:
+      return gordion.utils.bold_red(
+          self.name) + gordion.utils.red(f" ({', '.join(errors)})")
 
     # # If we reach here, it isn't a duplicate, but it can still have a duplicate.
     # if self.workspace.has_duplicate(self.repo):
@@ -92,19 +96,19 @@ class RepositoryFolder(Folder):
     # Repository name.
     name_header = gordion.utils.bold_green(self.name)
 
-    # Check for wrong and/or conflicted name.
-    if self.wrong_name:
-      errors.append("WRONG NAME")
-      name_header = gordion.utils.bold_red(self.name)
+    # # Check for wrong and/or conflicted name.
+    # if self.wrong_name:
+    #   errors.append("WRONG NAME")
+    #   name_header = gordion.utils.bold_red(self.name)
 
-    if self.is_name_conflicted():
-      errors.append("CONFLICTED NAME")
-      name_header = gordion.utils.bold_red(self.name)
+    # if self.is_name_conflicted():
+    #   errors.append("CONFLICTED NAME")
+    #   name_header = gordion.utils.bold_red(self.name)
 
-    # Check for conflicting URL.
-    if self.is_url_conflicted():
-      name_header = gordion.utils.bold_red(self.name)
-      errors.append("CONFLICTED URL")
+    # # Check for conflicting URL.
+    # if self.is_url_conflicted():
+    #   name_header = gordion.utils.bold_red(self.name)
+    #   errors.append("CONFLICTED URL")
 
     # Branch header.
     branch_header = self._get_branch_name()
