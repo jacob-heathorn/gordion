@@ -61,53 +61,19 @@ class Workspace:
     return {key: value for key, value in self.repos().items() if self.is_dependency(
         key) and (not name or name == value.name) and (not url or url == value.url)}
 
-  def get_repository(self, name: str, url: str) -> Optional[gordion.Repository]:
+  def get_repository(self, name: str) -> Optional[gordion.Repository]:
     """
-    Provides a deterministic way to select a tree by name and url from a workspace that could
-    have duplicates or misnamed repositories.
+    Returns the repository with <name> or None if none or more than one repositories with this name
+    exist.
     """
 
-    # Define a helper function
-    def get_correctly_named_or_none(
-            repos: Dict[str, gordion.Repository], name: str) -> Optional[gordion.Repository]:
-      correctly_named = []
-      for _, repo in repos.items():
-        if repo.name == name:
-          correctly_named.append(repo)
-      if len(correctly_named) == 1:
-        return correctly_named[0]
-      else:
-        # Cannot decide which working is the correct repo, return None.
-        return None
+    all = self.working(name=name, url=None)
+    all.update(self.dependencies(name=name, url=None))
 
-    # First handle situation where there are no working repositories with this url.
-    working = self.working(name=None, url=url)
-    if len(working) == 0:
-      dependencies = self.dependencies(name=None, url=url)
-      if len(dependencies) == 0:
-        return None
-
-      # If there is exactly one dependency repository with this url, we select it even if it has the
-      # wrong name. Although status will tell you it has the wrong name.
-      elif len(dependencies) == 1:
-        return next(iter(dependencies.values()))
-
-      # If there is more than one dependency repository, but only one has the correct name, we
-      # select it. NOTE: it might be at the wrong path in the /dependencies folder.
-      else:
-        return get_correctly_named_or_none(dependencies, name)
-
-    # If there is exactly one working repository with this url, we select it even if it has the
-    # wrong name. Although status will tell you it has the wrong name.
-    elif len(working) == 1:
-      return next(iter(working.values()))
-
-    # If there is more than one working repository. But only one has the
-    # correct name, select that one.
+    if len(all) == 1:
+      return next(iter(all.values()))
     else:
-      for _, work in working.items():
-        print(f"{work.path}")
-      return get_correctly_named_or_none(working, name)
+      return None
 
   def discover_repositories(self):
     """

@@ -26,16 +26,17 @@ class UpdateTargetPathExistsError(UpdateError):
 class UpdateMultipleRepositoriesAlreadyExistsError(UpdateError):
   def __init__(self, target_path, other_repos):
     reason = f"Multiple repositories with url<{other_repos[0].url}> already exist:"
-    for other_repo in other_repos:
+    for _, other_repo in other_repos.items():
       reason += f"\n * {other_repo.path}"
     suggestion = "\nDelete duplicate repositories"
     super().__init__(target_path, reason, suggestion)
 
 
-class UpdateWorkingRepositoryWrongNameError(UpdateError):
-  def __init__(self, path, correct_name):
-    reason = f"The working repository name<{os.path.basename(path)}> is incorrect"
-    suggestion = f"Manually rename it to <{correct_name}>"
+class UpdateWorkingRepositoryWrongUrlError(UpdateError):
+  def __init__(self, path, current_url, correct_url):
+    reason = (f"The working repository name<{os.path.basename(path)}> has the wrong "
+              f"url<{current_url}>")
+    suggestion = f"Manually delete it and re-clone it with <{correct_url}>"
     super().__init__(path, reason, suggestion)
 
 

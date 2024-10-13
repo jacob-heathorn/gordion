@@ -37,10 +37,10 @@ class Repository:
       else:
         gordion.Repository.safe_delete(path)
 
-    return gordion.Repository._clone(path, url)
+    return gordion.Repository.clone(path, url)
 
   @staticmethod
-  def _clone(path, url):
+  def clone(path, url):
     """
     Clones the repository and returns it.
     """

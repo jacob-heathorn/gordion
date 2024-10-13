@@ -33,9 +33,10 @@ class Tree:
     self.repo.yeditor.reload()
     self._update_children(branch_name, force)
 
-    # TODO move outside of tree so don't need root, so dont need parent?
-    if self is root:
-      self.workspace.trim_repositories()
+    # TODO trim
+    # # TODO move outside of tree so don't need root, so dont need parent?
+    # if self is root:
+    #   self.workspace.trim_repositories()
 
   def _update_children(self, branch_name: str, force: bool):
     """
@@ -50,48 +51,58 @@ class Tree:
       for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
         child_url = child_info['url']
         child_tag = child_info['tag']
-        child_path = ''
+        child_repo: Optional[gordion.Repository] = None
 
-        # First try to get repo if it exists and is selectable among duplicates.
-        child_repo = self.workspace.get_repository(child_name, child_url)
-
-        # If we found one, it might still need to be moved.
-        if child_repo:
-          # If it is a dependency, we might need to move it to the right location in .dependencies/
-          if self.workspace.is_dependency(child_repo.path):
+        working = self.workspace.working(name=child_name, url=None)
+        dependencies = self.workspace.dependencies(name=child_name, url=None)
+        if len(working) == 0:
+          if len(dependencies) == 0:
             child_path = os.path.join(self.workspace.dependencies_path, child_name)
-            if child_repo.path != child_path:
-              child_repo = gordion.Repository.safe_move(child_repo.path, child_path)
+            child_repo = gordion.Repository.clone(child_path, child_url)
 
-          # If it is a working repository, we might need to rename it. This should just error,
-          # because we never automatically move things in the working area.
+          # Only one dependency repo with this name...
+          elif len(dependencies) == 1:
+            child_repo = next(iter(dependencies.values()))
+            expected_path = os.path.join(self.workspace.dependencies_path, child_repo.name)
+
+            # If it has the wrong url..
+            if gordion.utils.compare_urls(child_repo.url, child_url):
+              gordion.Repository.safe_delete(child_repo.path)
+              child_repo = gordion.Repository.clone(expected_path, child_url)
+
+            # If it has the wrong path...
+            if child_repo.path != expected_path:
+              child_repo = gordion.Repository.safe_move(child_repo.path, expected_path)
+
+          # More than one dependency. This is an edge case. Delete them and re-clone is easiest.
           else:
-            child_path = os.path.join(os.path.dirname(child_repo.path), child_name)
-            if child_repo.path != child_path:
-              raise gordion.UpdateWorkingRepositoryWrongNameError(child_repo.path, child_name)
+            for dependency in dependencies:
+              gordion.Repository.safe_delete(dependency.path)
+            child_path = os.path.join(self.workspace.dependencies_path, child_repo.name)
+            child_repo = gordion.Repository.clone(child_path, child_url)
 
-        # If we didn't find one, check if one can be created.
-        else:
-          working = self.workspace.working(name=None, url=child_url)
-          dependencies = self.workspace.dependencies(name=None, url=child_url)
+        # There is exactly one working repo with this name...
+        elif len(working) == 1:
+          child_repo = next(iter(dependencies.values()))
 
-          # We can delete dependencies becuase none of them were selectable.
-          for _, dependency in dependencies.items():
+          # If it has the wrong url..
+          if gordion.utils.compare_urls(child_repo.url, child_url):
+            raise gordion.UpdateWorkingRepositoryWrongUrlError(
+                child_path, child_repo.url, child_url)
+
+          # If there are dependencies, delete them.
+          for dependency in dependencies:
             gordion.Repository.safe_delete(dependency.path)
 
-          # There might have been more than one working repository.
-          if len(working) > 1:
-            raise gordion.UpdateMultipleRepositoriesAlreadyExistsError(child_path, working)
+        # There is more than one working repo with this name...
+        else:
+          raise gordion.UpdateMultipleRepositoriesAlreadyExistsError(child_path, working)
 
-          # Otherwise we just set the child path for cloning.
-          else:
-            assert len(working) == 0
-            child_path = os.path.join(self.workspace.dependencies_path, child_name)
+        assert child_repo
 
         # # Check the repository path before creating it.
         # root._check_different_repo_same_path(child_path, child_url)
         # root._check_same_repo_different_path(child_path, child_url)
-        child_repo = gordion.Repository.ensure(path=child_path, url=child_url)
         child = Tree(child_repo, self)
         child.update(child_tag, branch_name, force)
         self.children[child_name] = child
@@ -162,6 +173,7 @@ class Tree:
     url: str
     tag: str
 
+  # TODO reconsider recursing argument
   def listings(self, name: Optional[str], url: Optional[str],
                recursing: bool = False) -> List[Listing]:
     """
@@ -187,14 +199,15 @@ class Tree:
         # Add this listing.
         listings.append(gordion.Tree.Listing(child_name, child_url, child_tag))
 
-        # Recurse if possible. Try to get the child_repo, and it actually might not be named
-        # correctly.
-        child_repo = self.workspace.get_repository(child_name, child_url)
+        # Get the child repository from the workspace by name if possible. We can recurse if it has
+        # the correct url and tag.
+        child_repo = self.workspace.get_repository(child_name)
         if child_repo:
-          child_listed_commit = child_repo._verify_tag(child_tag)
-          if child_repo.handle.head.commit == child_listed_commit:
-            tree = gordion.Tree(child_repo)
-            listings.extend(tree.listings(name=name, url=url, recursing=True))
+          if gordion.utils.compare_urls(child_repo.url, child_url):
+            child_listed_commit = child_repo._verify_tag(child_tag)
+            if child_repo.handle.head.commit == child_listed_commit:
+              tree = gordion.Tree(child_repo)
+              listings.extend(tree.listings(name=name, url=url, recursing=True))
 
     # Filter by name and url once at the top level.
     if not recursing:

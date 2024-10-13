@@ -18,6 +18,7 @@ class RepositoryFolder(Folder):
     self.workspace = gordion.Workspace()
     self.wrong_name = False
     self.has_duplicate = False
+    self.is_wrong_url = False
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -56,8 +57,11 @@ class RepositoryFolder(Folder):
     Returns the repository folder name, with branch:commit and warnings in descriptive colors.
     """
 
-    # # Aggregate existence errors and return if they have occured
+    # Aggregate existence errors and return if they have occured
     errors = []
+
+    # Check if it is listed.
+
     # if self.workspace.is_duplicate(self.repo):
     #   errors.append("DUPLICATE")
     # if not self.is_correct_path():
