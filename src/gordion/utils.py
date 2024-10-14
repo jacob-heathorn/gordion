@@ -220,6 +220,14 @@ def yellow(str):
   return '\033[93m' + str + "\033[0m"
 
 
+def hyperlink(link, text):
+  return f"\033]8;;{link}\033\\{text}\033]8;;\033\\"
+
+
+def filelink(link, text):
+  return f"\033]8;;file://{link}\033\\{text}\033]8;;\033\\"
+
+
 def replace_i(text, old, new, occurrence_i):
   """
   Replaces 'old' with 'new' at the 'occurrence_i' instance index in 'text'.
