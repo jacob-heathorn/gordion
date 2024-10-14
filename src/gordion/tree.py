@@ -207,10 +207,18 @@ class Tree:
         child_repo = self.workspace.get_repository(child_name)
         if child_repo:
           if gordion.utils.compare_urls(child_repo.url, child_url):
-            child_listed_commit = child_repo._verify_tag(child_tag)
-            if child_repo.handle.head.commit == child_listed_commit:
-              tree = gordion.Tree(child_repo)
-              listings.extend(tree.listings(name=name, url=url, recursing=True))
+            # Try to verify the tag, but don't error, it just means we cannot recurse if it fails.
+            child_listed_commit = None
+            try:
+              child_listed_commit = child_repo._verify_tag(child_tag)
+            except Exception:
+              pass  # TODO print?
+
+            # If we have the child commit and it the head of the repo, we can recurse.
+            if child_listed_commit:
+              if child_repo.handle.head.commit == child_listed_commit:
+                tree = gordion.Tree(child_repo)
+                listings.extend(tree.listings(name=name, url=url, recursing=True))
 
     # Filter by name and url once at the top level.
     if not recursing:
