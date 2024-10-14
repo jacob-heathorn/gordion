@@ -22,12 +22,10 @@ class Tree:
     """
     Updates this repository and it's children.
     """
-    # Check for duplicate tag
+    # Check for duplicate tag first. We have to do this here because the repo needs to veriy and
+    # compare commits.
     root = self._root()
-    # commit: git.Commit = self._verify_tag(tag)
-    # TODO restore.
-    # root._check_same_repo_different_tag(self, commit)
-
+    root._check_same_repo_different_tag(self.repo)
     self.repo.update(tag, branch_name, force)
 
     self.repo.yeditor.reload()
@@ -167,12 +165,13 @@ class Tree:
       if not gordion.utils.compare_urls(listing.url, url):
         raise gordion.UpdateSameNameDifferentUrlError(name, listings)
 
-  def _check_same_repo_different_tag(self, target, target_commit: git.Commit):
+  def _check_same_repo_different_tag(self, target: gordion.Repository):
     """
     Recursively checks the target repository & tag for duplicate listings with different tags in
     this tree.
     """
 
+    # Filter for an exact match to the name and url.
     listings = self.listings(target.name, target.url)
 
     # Raise an error if any two listings don't match tags.

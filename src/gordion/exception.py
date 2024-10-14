@@ -95,8 +95,8 @@ class UpdateSameRepoDifferentTagError(UpdateError):
   def __init__(self, target_path, listings):
     reason = "Gordion repository tag mismatch!"
     for listing in listings:
-      reason += f"\n{listing.listed_path}:{listing.tag}"
-    suggestion = ("\nThe tags need to match. I guess that's kinda the whole point of this thing")
+      reason += f"\n{listing.file} : {listing.name} : {listing.tag}"
+    suggestion = ("\nThe tags need to identify the same commit pleaaaaase")
     super().__init__(target_path, reason, suggestion)
 
 
