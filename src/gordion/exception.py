@@ -72,22 +72,12 @@ class UpdateRepoIsDirtyError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
-class UpdateDifferentRepoSamePathError(UpdateError):
+class UpdateDifferentNameSameUrlError(UpdateError):
   def __init__(self, target_path, listings):
-    reason = f"Different repositories are attempted to be cloned at the same path<{target_path}>!"
+    reason = "Multiple unique listings have the same URL!"
     for listing in listings:
-      reason += f"\nRepository<{listing.url}>"
-    suggestion = "\nYou need to make sure repositories have unique paths in the gordion.yaml files"
-    super().__init__(target_path, reason, suggestion)
-
-
-class UpdateSameRepoDifferentPathError(UpdateError):
-  def __init__(self, target_path, listings):
-    reason = "The same repository is attempted to be cloned at different paths!"
-    for listing in listings:
-      reason += f"\nRepository<{listing.url}> at path<{listing.path}>"
-    suggestion = ("\nMake sure all listings of the same repository have the same "
-                  "local path in the gordion.yaml file")
+      reason += f"\n{listing.file} : {listing.name} : {listing.url}"
+    suggestion = ("\nMake sure all different listings have unique URLs, jeez")
     super().__init__(target_path, reason, suggestion)
 
 

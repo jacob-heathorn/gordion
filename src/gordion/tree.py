@@ -50,8 +50,9 @@ class Tree:
         child_tag = child_info['tag']
         child_repo: Optional[gordion.Repository] = None
 
-        # First verify we don't have a duplicate listing name with this child.
+        # First verify we don't have a duplicates before working with this child.
         root._check_same_name_different_url(child_name, child_url)
+        root._check_different_name_same_url(child_name, child_url)
 
         working = self.workspace.working(name=child_name, url=None)
         dependencies = self.workspace.dependencies(name=child_name, url=None)
@@ -140,22 +141,21 @@ class Tree:
       if not gordion.utils.compare_urls(listing.url, target_url):
         raise gordion.UpdateDifferentRepoSamePathError(target_path, listings)
 
-  def _check_same_repo_different_path(self, target_path, target_url):
+  def _check_different_name_same_url(self, name, url):
     """
-    Recursively checks the repository path against another repository and it's children.
+    Recursively checks for different listings that have the same repo.
     """
     # Collect all child listings that are the same repository (same effective url).
-    listings = self.listings(target_path=None, target_url=target_url)
+    listings = self.listings(name=None, url=url)
 
-    # Check each listing to see if there are any that are a different path.
+    # Check each listing to see if there are any that are a different name.
     for listing in listings:
-      if listing.path != target_path:
-        raise gordion.UpdateSameRepoDifferentPathError(target_path, listings)
+      if listing.name != name:
+        raise gordion.UpdateDifferentNameSameUrlError(name, listings)
 
   def _check_same_name_different_url(self, name: str, url: str):
     """
-    Recursively checks the target repository for duplicate listings with different urls in
-    this tree.
+    Recursively checks for duplicate listings with different urls in this tree.
     """
 
     listings = self.listings(name, url=None)
