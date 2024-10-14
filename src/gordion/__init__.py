@@ -13,6 +13,6 @@ from .exception import BadRepositoryNamePathMismach, UpdateDifferentRepoSamePath
 from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes
 from .exception import UpdateTargetPathExistsError, UpdateMultipleRepositoriesAlreadyExistsError
-from .exception import UpdateWorkingRepositoryWrongUrlError
+from .exception import UpdateWorkingRepositoryWrongUrlError, UpdateSameNameDifferentUrlError
 from .yeditor import YamlEditor
 from .workspace import Workspace

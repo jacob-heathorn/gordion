@@ -41,7 +41,7 @@ class Tree:
     """
     Updates the children repository listed in this repositorie's yaml.
     """
-    # root = self._root()
+    root = self._root()
     self.children = {}
 
     # Open the gordion yaml file for this repository if it exists.
@@ -51,6 +51,9 @@ class Tree:
         child_url = child_info['url']
         child_tag = child_info['tag']
         child_repo: Optional[gordion.Repository] = None
+
+        # First verify we don't have a duplicate listing name with this child.
+        root._check_same_name_different_url(child_name, child_url)
 
         working = self.workspace.working(name=child_name, url=None)
         dependencies = self.workspace.dependencies(name=child_name, url=None)
@@ -151,13 +154,26 @@ class Tree:
       if listing.path != target_path:
         raise gordion.UpdateSameRepoDifferentPathError(target_path, listings)
 
+  def _check_same_name_different_url(self, name: str, url: str):
+    """
+    Recursively checks the target repository for duplicate listings with different urls in
+    this tree.
+    """
+
+    listings = self.listings(name, url=None)
+
+    # Raise an error if any listing doesn't match the target url.
+    for listing in listings:
+      if not gordion.utils.compare_urls(listing.url, url):
+        raise gordion.UpdateSameNameDifferentUrlError(name, listings)
+
   def _check_same_repo_different_tag(self, target, target_commit: git.Commit):
     """
     Recursively checks the target repository & tag for duplicate listings with different tags in
     this tree.
     """
 
-    listings = self.listings(target.path, target.url)
+    listings = self.listings(target.name, target.url)
 
     # Raise an error if any two listings don't match tags.
     listing_0_commit = target._verify_tag(listings[0].tag)
@@ -166,11 +182,12 @@ class Tree:
       if listing_n_commit != listing_0_commit:
         raise gordion.UpdateSameRepoDifferentTagError(target.path, listings)
 
-  @dataclass
+  @ dataclass
   class Listing:
     name: str
     url: str
     tag: str
+    file: Optional[str]
 
   # TODO reconsider recursing argument
   def listings(self, name: Optional[str], url: Optional[str],
@@ -187,7 +204,8 @@ class Tree:
           gordion.Tree.Listing(
               self.repo.name,
               self.repo.url,
-              self.repo.handle.head.commit.hexsha))
+              self.repo.handle.head.commit.hexsha,
+              None))
 
     # Get all listings in the tree.
     if self.repo.yeditor.exists():
@@ -196,7 +214,12 @@ class Tree:
         child_tag = child_info['tag']
 
         # Add this listing.
-        listings.append(gordion.Tree.Listing(child_name, child_url, child_tag))
+        listings.append(
+            gordion.Tree.Listing(
+                child_name,
+                child_url,
+                child_tag,
+                self.repo.yeditor.fullfile))
 
         # Get the child repository from the workspace by name if possible. We can recurse if it has
         # the correct url and tag.
@@ -221,7 +244,7 @@ class Tree:
     listings = self.listings(name=repo.name, url=None)
     return len(listings) > 0
 
-  @staticmethod
+  @ staticmethod
   def find(path: str) -> str:
     """
     Returns the gordion repository Tree object containing this path.

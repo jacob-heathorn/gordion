@@ -28,7 +28,8 @@ class RepositoryFolder(Folder):
     return True
 
   def unique_listed_tags(self):
-    listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
+    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
+    listings = [listing for listing in listings if self.repo.url == listing.url]
     unique_tags = set()
     for listing in listings:
       unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
