@@ -51,8 +51,10 @@ def terminal_status(root: gordion.Tree) -> str:
     else:
       not_found_listings.append(listing)
 
+  # TODO DUPLICATES Find any repository that has a duplicate by name or url. Add to the header. If
+  # there is a repo folder for it, mark it duplicate accordingly.
+
   # TODO NOT_FOUND HEADER
-  # TODO DUPLICATES
   # TODO: LISTED URL INCOHERENCES
   # TODO: LISTED TAG INCOHERENCES
 
