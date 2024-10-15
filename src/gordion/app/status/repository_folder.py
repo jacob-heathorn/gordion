@@ -16,8 +16,6 @@ class RepositoryFolder(Folder):
     self.root: gordion.Tree = root
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
-    self.is_listed_by_root = False
-    self.is_listed_by_workspace = False
     self.has_duplicate_name = False
     self.has_duplicate_url = False
 
@@ -67,10 +65,8 @@ class RepositoryFolder(Folder):
     Returns the repository folder name, with branch:commit and warnings in descriptive colors.
     """
 
-    # Aggregate existence errors and return if they have occured
+    # Aggregate errors
     errors = []
-    if not self.is_listed_by_root and not self.is_listed_by_workspace:
-      errors.append("NOT LISTED")
 
     # Repository name.
     name_header = gordion.utils.bold_green(self.decorated_name())
@@ -89,18 +85,6 @@ class RepositoryFolder(Folder):
     # A dependency repo can have the wrong path.
     if not self.is_correct_path():
       errors.append("WRONG PATH")
-
-    # Special situations when the repo is not listed by root.
-    if not self.is_listed_by_root:
-      # If we only unmuted to show that it is a duplicate...
-      if self.is_listed_by_workspace:
-        if self.has_duplicate_name or self.has_duplicate_url:
-          return name_header + gordion.utils.red(f" ({', '.join(errors)})")
-
-      # If it is not listed at all.
-      else:
-        name_header = gordion.utils.bold_red(self.decorated_name())
-        return name_header + gordion.utils.red(f" ({', '.join(errors)})")
 
     # Check if it is name conflicated
     if self.is_name_conflicted():
