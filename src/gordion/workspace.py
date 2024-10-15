@@ -1,7 +1,7 @@
 import os
 import gordion
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import Optional, Dict
 import shutil
 
 
@@ -13,8 +13,9 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
-    self.working: List[gordion.Repository] = []
-    self.dependencies: List[gordion.Repository] = []
+
+  def repos(self) -> Dict[str, gordion.Repository]:
+    return gordion.Repository.registry()
 
   def setup(self, subpath):
     """
@@ -22,7 +23,7 @@ class Workspace:
     """
     self.path = self.find_root(subpath)
     self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
-    self.working, self.dependencies = self.discover_repositories()
+    self.discover_repositories()
 
   def find_root(self, path: str) -> str:
     """
@@ -52,101 +53,43 @@ class Workspace:
       return True
     return False
 
-  def get_repositories(self, name: Optional[str], url: Optional[str]
-                       ) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
-    working = []
-    dependencies = []
-    for repo in self.working:
-      if not name or name == repo.name:
-        if not url or gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
-          working.append(repo)
-    for repo in self.dependencies:
-      if not name or name == repo.name:
-        if not url or gordion.utils.compare_urls(repo.handle.remotes.origin.url, url):
-          dependencies.append(repo)
-    return working, dependencies
+  def working(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Repository]:
+    return {key: value for key, value in self.repos().items() if not self.is_dependency(
+        key) and (not name or name == value.name) and (not url or url == value.url)}
 
-  def get_repository(self, name: str, url: str) -> Optional[gordion.Repository]:
+  def dependencies(self, name: Optional[str], url: Optional[str]) -> Dict[str, gordion.Repository]:
+    return {key: value for key, value in self.repos().items() if self.is_dependency(
+        key) and (not name or name == value.name) and (not url or url == value.url)}
+
+  def get_repository(self, name: str) -> Optional[gordion.Repository]:
     """
-    Provides a deterministic way to select a repository by name and url from a workspace that could
-    have duplicates or misnamed repositories.
+    Returns the repository with <name> or None if none or more than one repositories with this name
+    exist.
     """
 
-    # First filter url.
-    working, dependencies = self.get_repositories(name=None, url=url)
+    all = self.working(name=name, url=None)
+    all.update(self.dependencies(name=name, url=None))
 
-    def get_correctly_named_or_none(repos, name):
-      correctly_named = []
-      for repo in repos:
-        if repo.name == name:
-          correctly_named.append(repo)
-      if len(correctly_named) == 1:
-        return correctly_named[0]
-      else:
-        # Cannot decide which working is the correct repo, return None.
-        return None
-
-    # First handle situation where there are no working repositories with this url.
-    if len(working) == 0:
-      if len(dependencies) == 0:
-        return None
-
-      # If there is exactly one dependency repository with this url, we select it even if it has the
-      # wrong name. Although status will tell you it has the wrong name.
-      elif len(dependencies) == 1:
-        return dependencies[0]
-
-      # If there is more than one dependency repository, but only one has the correct name, we
-      # select it. NOTE: it might be at the wrong path in the /dependencies folder.
-      else:
-        return get_correctly_named_or_none(dependencies, name)
-
-    # If there is exactly one working repository with this url, we select it even if it has the
-    # wrong name. Although status will tell you it has the wrong name.
-    elif working == 1:
-      return working[0]
-
-    # If there is more than one working repository. But only one has the
-    # correct name, select that one.
+    if len(all) == 1:
+      return next(iter(all.values()))
     else:
-      return get_correctly_named_or_none(working, name)
+      return None
 
-  def discover_repositories(self) -> Tuple[List[gordion.Repository], List[gordion.Repository]]:
+  def discover_repositories(self):
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
-    working: List[gordion.Repository] = []
-    dependencies: List[gordion.Repository] = []
 
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       # Create a copy of dirnames for iteration to avoid modifying the list while iterating
       for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
         full_dirpath = os.path.join(dirpath, dirname)
 
-        if gordion.Repository._exists(full_dirpath):
-          if self.is_dependency(full_dirpath):
-            dependencies.append(gordion.Repository(full_dirpath))
-          else:
-            working.append(gordion.Repository(full_dirpath))
+        if gordion.Repository.exists(full_dirpath):
+          gordion.Repository.register(key=full_dirpath, path=full_dirpath)
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)
-
-    working = sorted(working, key=lambda repo: repo.path)
-    dependencies = sorted(dependencies, key=lambda repo: repo.path)
-    return working, dependencies
-
-  def update_repository_cache(self, path: str):
-    # First remove any repository at this path if it exists.
-    self.working = [repo for repo in self.working if repo.path != path]
-    self.dependencies = [repo for repo in self.working if repo.path != path]
-
-    # Then add it back, if it exists:
-    if gordion.Repository._exists(path):
-      if self.is_dependency(path):
-        self.dependencies.append(gordion.Repository(path))
-      else:
-        self.working.append(gordion.Repository(path))
 
   def delete_empty_parent_folders(self, path):
     """
@@ -166,57 +109,31 @@ class Workspace:
 
   def is_listed(self, target: gordion.Repository) -> bool:
     """
-    Checks that the repository is listed by name and url by at least one of the working
-    repositories.
+    Checks that the repository is listed by name by least one of the working repositories.
     """
     # Working repositories don't need to be listed
     if not self.is_dependency(target.path):
       return True
 
-    for repo in self.working:
-      if gordion.Repository.is_gordion(repo.path):
-        tree = gordion.Tree(repo.path)
-        if tree.is_listed(target):
-          return True
+    for _, repo in self.working(name=None, url=None).items():
+      tree = gordion.Tree(repo)
+      if tree.is_listed(target):
+        return True
     return False
 
-    # def trim_repos(self, keep_repos: List[str], force: bool = False):
-    #   """
-    #   Removes repositories that are not listed in the keep_repos argument.
-    #   """
-    #   assert self.path
+  def trim_repositories(self) -> bool:
+    """
+    Deletes duplicates and unlisted repositories.
+    """
+    paths = []
+    for _, repo in self.repos().items():
+      if self.is_dependency(repo.path):
+        if not self.is_listed(repo):
+          paths.append(repo.path)
+        else:
+          expected_path = os.path.join(self.dependencies_path, repo.name)
+          if repo.path != expected_path:
+            paths.append(repo.path)
 
-    #   # Delete git repositories.
-    #   for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-    #     for dirname in dirnames:
-    #       full_dirpath = os.path.join(dirpath, dirname)
-    #       if (os.path.exists(full_dirpath) and not gordion.utils.is_related_path(full_dirpath,
-    #                                                                              keep_repos)):
-    #         if gordion.Repository._exists(full_dirpath):
-    #           gordion.Repository.safe_delete(full_dirpath, force)
-
-    #   # Delete everything else that is not related to the gordion paths.
-    #   for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-    #     for dirname in dirnames:
-    #       full_dirpath = os.path.join(dirpath, dirname)
-    #       if (os.path.exists(full_dirpath) and not gordion.utils.is_related_path(full_dirpath,
-    #                                                                              keep_repos)):
-    #         print(f"Deleting directory: {full_dirpath}")
-    #         assert not gordion.Repository._exists(full_dirpath)  # Removed above.
-    #         shutil.rmtree(full_dirpath)
-
-    # def list_repos(self):
-    #   repos = []
-
-    #   for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-    #     # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-    #     for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-    #       full_dirpath = os.path.join(dirpath, dirname)
-
-    #       if gordion.Repository._exists(full_dirpath):
-    #         repos.append(gordion.Repository(full_dirpath))
-    #         # Remove the current directory's name from dirnames so os.walk will skip its
-    #         # subdirectories
-    #         dirnames.remove(dirname)
-
-    #   return sorted(repos, key=lambda repo: repo.path)
+    for path in paths:
+      gordion.Repository.safe_delete(path)

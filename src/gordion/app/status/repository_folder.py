@@ -16,51 +16,10 @@ class RepositoryFolder(Folder):
     self.root: gordion.Tree = root
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
-
-  def is_duplicate(self) -> bool:
-    """
-    A repository is marked duplicate if one of ...
-      a) It is not listed, and there is another repo with the same URL.
-      b) It is listed, and it is a dependency among duplicate listed dependencies.
-      c) If it is a dependency and one or more working exist.
-      d) If it is a working among duplicate working.
-    """
-    workspace = gordion.Workspace()
-    working, dependencies = workspace.get_repositories(name=None, url=self.repo.url)
-
-    # If it is not listed, and there is another repo with this URL.
-    if not self.workspace.is_listed(self.repo):
-      if len(working + dependencies) > 1:
-        return True
-
-    # If it is listed...
-    else:
-      # If it is a dependency among duplicate listed dependencies.
-      if len(working) == 0:
-        assert workspace.is_dependency(self.repo.path)
-        num_listed_dependencies = 0
-        for dependency in dependencies:
-          if self.workspace.is_listed(dependency):
-            num_listed_dependencies += 1
-        return num_listed_dependencies > 1
-      else:
-        # If it is a dependency and one or more working exist.
-        if workspace.is_dependency(self.repo.path):
-          return True
-
-        # If it is a working among duplicate working.
-        else:
-          if len(working) > 1:
-            return True
-
-  def has_duplicate(self) -> bool:
-    working, dependencies = self.workspace.get_repositories(name=None, url=self.repo.url)
-    all = working + dependencies
-    if len(all) > 1:
-      return True
-    return False
-
-  # # For each repository in the .dependencies/. Decide if it is listed or not by a working repo, and
+    self.is_listed_by_root = False
+    self.is_listed_by_workspace = False
+    self.has_duplicate_name = False
+    self.has_duplicate_url = False
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -69,19 +28,25 @@ class RepositoryFolder(Folder):
     return True
 
   def unique_listed_tags(self):
-    listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
+    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
+    listings = [listing for listing in listings if self.repo.url == listing.url]
     unique_tags = set()
     for listing in listings:
       unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
 
     return unique_tags
 
+  # TODO move outside for speed?
+
   def is_name_conflicted(self):
+    """
+    Name is conflicted if two or more listings of the same url have different names.
+    """
     listings = [listing for listing in self.root_listings if self.repo.url == listing.url]
+    unique_names = set()
     for listing in listings:
-      if listing.name != self.repo.name:
-        return True
-    return False
+      unique_names.add(listing.name)
+    return len(unique_names) > 1
 
   def is_url_conflicted(self):
     listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
@@ -89,6 +54,12 @@ class RepositoryFolder(Folder):
       if not gordion.utils.compare_urls(listing.url, self.repo.url):
         return True
     return False
+
+  def decorated_name(self):
+    if self.repo.path == self.root.repo.path:
+      return f"{self.name}*"
+    else:
+      return self.name
 
   @gordion.utils.override(Folder)
   def _get_display_name(self) -> str:
@@ -98,41 +69,46 @@ class RepositoryFolder(Folder):
 
     # Aggregate existence errors and return if they have occured
     errors = []
-    if self.is_duplicate():
-      errors.append("DUPLICATE")
-    if not self.is_correct_path():
-      errors.append("WRONG PATH")
-    if not self.workspace.is_listed(self.repo):
+    if not self.is_listed_by_root and not self.is_listed_by_workspace:
       errors.append("NOT LISTED")
 
-    if errors:
-      return gordion.utils.bold_red(
-          self.name) + gordion.utils.red(f" ({', '.join(errors)})")
-
-    # If we reach here, it isn't a duplicate, but it can still have a duplicate.
-    if self.has_duplicate():
-      errors.append("HAS DUPLICATE")
-
-    # It might not be listed, but we wanted to show it anyway. Probably it has a duplicate. Lets not
-    # color the repo, but we can display it in the workspace.
-    if not self.root.is_listed(self.repo):
-      errors_header = ""
-      if errors:
-        errors_header = gordion.utils.red(f"({', '.join(errors)})")
-      return f"{self.name} " + errors_header
-
     # Repository name.
-    name_header = gordion.utils.bold_green(self.name)
+    name_header = gordion.utils.bold_green(self.decorated_name())
 
-    # Check for conflicted name.
+    # Check for duplicates
+    if self.has_duplicate_name and self.has_duplicate_url:
+      errors.append("DUPLICATE")
+      name_header = gordion.utils.bold_red(self.decorated_name())
+    elif self.has_duplicate_name:
+      errors.append("DUPLICATE:NAME")
+      name_header = gordion.utils.bold_red(self.decorated_name())
+    elif self.has_duplicate_url:
+      errors.append("DUPLICATE:URL")
+      name_header = gordion.utils.bold_red(self.decorated_name())
+
+    # A dependency repo can have the wrong path.
+    if not self.is_correct_path():
+      errors.append("WRONG PATH")
+
+    # Special situations when the repo is not listed by root.
+    if not self.is_listed_by_root:
+      # If we only unmuted to show that it is a duplicate...
+      if self.is_listed_by_workspace:
+        if self.has_duplicate_name or self.has_duplicate_url:
+          return name_header + gordion.utils.red(f" ({', '.join(errors)})")
+
+      # If it is not listed at all.
+      else:
+        name_header = gordion.utils.bold_red(self.decorated_name())
+        return name_header + gordion.utils.red(f" ({', '.join(errors)})")
+
+    # Check if it is name conflicated
     if self.is_name_conflicted():
-      errors.append("CONFLICTED NAME")
-      name_header = gordion.utils.bold_red(self.name)
+      errors.append("NAME CONFLICTED")
 
-    # Check for conflicting URL.
+    # Check if it is url conflicated
     if self.is_url_conflicted():
-      name_header = gordion.utils.bold_red(self.name)
-      errors.append("CONFLICTED URL")
+      errors.append("URL CONFLICTED")
 
     # Branch header.
     branch_header = self._get_branch_name()
@@ -219,19 +195,19 @@ class RepositoryFolder(Folder):
     # Case2: Default branch is checked out.
     elif self._is_default_branch():
       if self._does_root_branch_have_commit():
-        branch_suggestion = self.root.handle.active_branch.name
+        branch_suggestion = self.root.repo.handle.active_branch.name
 
     # Case3: Other branch is checked out.
     elif self._is_other_branch():
       if self._does_root_branch_have_commit():
-        branch_suggestion = self.root.handle.active_branch.name
+        branch_suggestion = self.root.repo.handle.active_branch.name
       elif self._does_default_branch_have_commit():
         branch_suggestion = self.repo.default_branch_name
 
     # Case4: DETATCHED
     elif self.repo.handle.head.is_detached:
       if self._does_root_branch_have_commit():
-        branch_suggestion = self.root.handle.active_branch.name
+        branch_suggestion = self.root.repo.handle.active_branch.name
       elif self._does_default_branch_have_commit():
         branch_suggestion = self.repo.default_branch_name
 
@@ -243,8 +219,8 @@ class RepositoryFolder(Folder):
     return False
 
   def _does_root_branch_have_commit(self):
-    if not self.root.handle.head.is_detached:
-      root_branch_name = self.root.handle.active_branch.name
+    if not self.root.repo.handle.head.is_detached:
+      root_branch_name = self.root.repo.handle.active_branch.name
       return self.repo._does_local_branch_have_commit(root_branch_name,
                                                       self.repo.handle.head.commit)
 
@@ -304,8 +280,8 @@ class RepositoryFolder(Folder):
 
   def _is_root_branch(self) -> bool:
     if not self.repo.handle.head.is_detached:
-      if not self.root.handle.head.is_detached:
-        return self.repo.handle.active_branch.name == self.root.handle.active_branch.name
+      if not self.root.repo.handle.head.is_detached:
+        return self.repo.handle.active_branch.name == self.root.repo.handle.active_branch.name
 
     return False
 

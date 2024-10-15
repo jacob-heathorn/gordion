@@ -130,12 +130,62 @@ def singleton(cls):
   Decorator to turn a class into a Singleton
   """
   instances = {}
+  import functools
 
+  @functools.wraps(cls)  # This helps in preserving the original class's metadata
   def get_instance(*args, **kwargs):
     if cls not in instances:
       instances[cls] = cls(*args, **kwargs)
     return instances[cls]
+
+  # Copy static methods and other attributes to the get_instance function
+  for attr in dir(cls):
+    if not hasattr(get_instance, attr):
+      try:
+        setattr(get_instance, attr, getattr(cls, attr))
+      except TypeError:
+        pass  # Skip setting attributes that cause TypeError
+
   return get_instance
+
+
+def registry(cls):
+  """
+  A decorator that adds registry functionality to a class.
+  """
+  registry_ = {}
+  LIFETIME_METHODS = False
+
+  class RegistryWrapper(cls):
+    @classmethod
+    def register(cls, key, *args, **kwargs):
+      if key not in registry_:
+        registry_[key] = super(RegistryWrapper, cls).__new__(cls)
+        cls.__init__(registry_[key], *args, **kwargs)
+        if LIFETIME_METHODS:
+          cls.on_create(registry_[key])
+      return registry_[key]
+
+    @classmethod
+    def unregister(cls, key):
+      if key in registry_:
+        instance = registry_.pop(key)
+        if LIFETIME_METHODS:
+          cls.on_destroy(instance)
+
+    @classmethod
+    def on_create(cls, instance):
+      print(f"Instance created: {instance.name}")
+
+    @classmethod
+    def on_destroy(cls, instance):
+      print(f"Instance destroyed: {instance.name}")
+
+    @classmethod
+    def registry(cls):
+      return registry_
+
+  return RegistryWrapper
 
 
 def override(interface_class):
@@ -168,6 +218,14 @@ def bold_blue(str):
 
 def yellow(str):
   return '\033[93m' + str + "\033[0m"
+
+
+def hyperlink(link, text):
+  return f"\033]8;;{link}\033\\{text}\033]8;;\033\\"
+
+
+def filelink(link, text):
+  return f"\033]8;;file://{link}\033\\{text}\033]8;;\033\\"
 
 
 def replace_i(text, old, new, occurrence_i):

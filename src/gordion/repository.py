@@ -2,66 +2,81 @@ import os
 import subprocess
 import git
 import gordion
-from abc import abstractmethod
+from typing import Optional
 import shutil
 
 
+@gordion.utils.registry
 class Repository:
   """
   Encapsulates a git repository in the gordion context.
 
   """
 
-  def __init__(self, path: str, url: str = '') -> None:
+  # TODO comment headers for these various creation functions
+  def __init__(self, path: str) -> None:
     self.path = path
     self.name = os.path.basename(self.path)
-    self.url = Repository._derive_url(path, url)
-    self.default_branch_name = ''
+    assert gordion.Repository.exists(path)
+    self.handle: git.Repo = git.Repo(path)
+    self.url = self.handle.remotes.origin.url
+    self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
+    cache = gordion.Cache()
+    _, self.default_branch_name = cache.ensure_mirror(self.url)
     self.fetched = False
-    self.handle: git.Repo
-    self._ensure()
+
+  @staticmethod
+  def ensure(path: str, url: str):
+    """
+    Ensures the repository exists at <path> with <url> and clones it with <url> if not.
+    """
+    repo = gordion.Repository.registry().get(path, None)
+    if repo:
+      if gordion.utils.compare_urls(url, repo.url):
+        return repo
+      else:
+        gordion.Repository.safe_delete(path)
+
+    return gordion.Repository.clone(path, url)
+
+  @staticmethod
+  def clone(path, url):
+    """
+    Clones the repository and returns it.
+    """
+    assert not gordion.Repository.exists(path)
+
+    # Make sure the target path doesn't already exist as a non-repository.
+    if os.path.exists(path):
+      raise gordion.UpdateTargetPathExistsError(path)
+
+    # At this point the mirror should exist regardless of whether the repository exists. so ensure
+    # it first.
+    cache = gordion.Cache()
+    mirror_path, default_branch_name = cache.ensure_mirror(url)
+
+    # Clone it.
+    args = ['git', 'clone', '--reference', mirror_path, url, path]
+    subprocess.check_call(args, stderr=subprocess.STDOUT)
+
+    # Now create and return the repo.
+    return gordion.Repository.register(key=path, path=path)
 
   @staticmethod
   def _derive_url(path: str, url: str):
     # Derive url if necessary.
     if not url:
-      assert gordion.Repository._exists(path)
+      assert gordion.Repository.exists(path)
       repo = git.Repo(path)
       url = repo.remotes.origin.url
     else:
-      if gordion.Repository._exists(path):
+      if gordion.Repository.exists(path):
         repo = git.Repo(path)
         # If a repository with the wrong URL already exists at the child path, remove it.
         if not gordion.utils.compare_urls(url, repo.remotes.origin.url):
           gordion.Repository.safe_delete(path)
 
     return url
-
-  @abstractmethod
-  def _relpath(self):
-    pass
-
-  def _ensure(self):
-    """
-    Clones the repository if necessary and creates the underlying git repository handle.
-    """
-
-    # Clone if necessary. At this point the mirror should exist regardless of whether the repository
-    # exists. so ensure it first.
-    cache = gordion.Cache()
-    mirror_path, self.default_branch_name = cache.ensure_mirror(self.url)
-    if not Repository._exists(self.path):
-      # Make sure the target path doesn't already exist as a non-repository.
-      if os.path.exists(self.path):
-        raise gordion.UpdateTargetPathExistsError(self.path)
-
-      # Clone it.
-      args = ['git', 'clone', '--reference', mirror_path, self.url, self.path]
-      subprocess.check_call(args, stderr=subprocess.STDOUT)
-      gordion.Workspace().update_repository_cache(self.path)
-
-    # Reload objects.
-    self.handle = git.Repo(self.path)
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
@@ -152,7 +167,7 @@ class Repository:
           self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
         # Good to go move the local branch HEAD to the target commit.
-        print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
+        print(f"{self.path}: checking out {local_branch.name}:{commit.hexsha}")
         local_branch.checkout()
         self.handle.head.reset(commit=commit, index=True, working_tree=True)
         return True
@@ -181,7 +196,7 @@ class Repository:
           self._verify_local_commits_not_ahead(local_branch, tracking_branch)
 
         # Good to go move the local branch HEAD to the target commit.
-        print(f"{self._relpath()}: checking out {local_branch.name}:{commit.hexsha}")
+        print(f"{self.path}: checking out {local_branch.name}:{commit.hexsha}")
         local_branch.checkout()
         self.handle.head.reset(commit=commit, index=True, working_tree=True)
         return True
@@ -302,7 +317,7 @@ class Repository:
       return commit in local_branch.commit.iter_parents()
 
   @staticmethod
-  def _exists(path: str) -> bool:
+  def exists(path: str) -> bool:
     try:
         # Initialize the Repo object
       repo = git.Repo(path)
@@ -317,7 +332,7 @@ class Repository:
     """
     Returns true if the repository at <path> has a gordion.yaml file.
     """
-    if gordion.Repository._exists(path):
+    if gordion.Repository.exists(path):
       yeditor = gordion.YamlEditor(os.path.join(path, 'gordion.yaml'))
       if yeditor.exists():
         return True
@@ -345,20 +360,19 @@ class Repository:
   @staticmethod
   def safe_move(source, destination):
     # If there is already a different repository at the destination, safe delete it.
-    if gordion.Repository._exists(destination):
+    if gordion.Repository.exists(destination):
       gordion.Repository.safe_delete(destination)
     # If there is already something else there, error:
     elif os.path.exists(destination):
       raise gordion.UpdateTargetPathExistsError(destination)
 
     # Move it
+    print(f"Moving repository: {source} -> {destination}")
     shutil.move(source, destination)
+    gordion.Repository.unregister(key=source)
+    gordion.Repository.register(key=destination, path=destination)
 
-    workspace = gordion.Workspace()
-    workspace.update_repository_cache(source)
-    workspace.update_repository_cache(destination)
-    workspace.delete_empty_parent_folders(source)
-    return gordion.Repository(destination)
+    return gordion.Repository.registry().get(destination)
 
   @staticmethod
   def safe_delete(path, force: bool = False):
@@ -366,21 +380,21 @@ class Repository:
     Deletes the repository as long as information will not be lost. Generates an error if the
     repository has unsaved branches/commits or if it has stashes.
     """
-    assert gordion.Repository._exists(path)
-    repo = git.Repo(path)
+    assert gordion.Repository.exists(path)
+    repo = gordion.Repository.registry().get(path)
 
     # Check if repository has local changes.
-    if repo.is_dirty(untracked_files=True):
+    if repo.handle.is_dirty(untracked_files=True):
       if not force:
         raise gordion.UnsafeRemoveDirty(path)
 
     # Check if any information would be lost from local branches if we delete this repository.
-    for local_branch in repo.branches:  # type: ignore[attr-defined]
+    for local_branch in repo.handle.branches:  # type: ignore[attr-defined]
       # If there is a tracking branch, ensure the local branch is not ahead of it.
       tracking_branch = local_branch.tracking_branch()
       if tracking_branch:
-        merge_base = repo.merge_base(local_branch, tracking_branch)
-        commits_ahead = list(repo.iter_commits(
+        merge_base = repo.handle.merge_base(local_branch, tracking_branch)
+        commits_ahead = list(repo.handle.iter_commits(
             f'{merge_base[0].hexsha}..{local_branch.commit.hexsha}'))
 
         if commits_ahead:
@@ -392,13 +406,12 @@ class Repository:
         raise gordion.UnsafeRemoveLocalBranchNoTrackingBranch(path, local_branch.name)
 
     # Error if the repository has stashes that will be lost by the deletion.
-    stashes = repo.git.stash('list')
+    stashes = repo.handle.git.stash('list')
     if stashes:
       raise gordion.UnsafeRemoveStashes(path, stashes)
 
     # If we reach here, it's safe to delete the repository
     print(f"Deleting repository: {path}")
     shutil.rmtree(path)
-    workspace = gordion.Workspace()
-    workspace.update_repository_cache(path)
-    workspace.delete_empty_parent_folders(path)
+    gordion.Repository.unregister(path)
+    gordion.Workspace().delete_empty_parent_folders(path)

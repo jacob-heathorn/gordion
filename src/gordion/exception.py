@@ -1,9 +1,10 @@
 import os
+import gordion
 
 
 class UpdateError(Exception):
   def __init__(self, target_path, reason, suggestion):
-    self.message = (f"Cannot update repository<{os.path.basename(target_path)}>.\n"
+    self.message = (f"Cannot update repository<{target_path}>. "
                     f"{reason}. {suggestion}.")
     super().__init__(self.message)
 
@@ -26,16 +27,17 @@ class UpdateTargetPathExistsError(UpdateError):
 class UpdateMultipleRepositoriesAlreadyExistsError(UpdateError):
   def __init__(self, target_path, other_repos):
     reason = f"Multiple repositories with url<{other_repos[0].url}> already exist:"
-    for other_repo in other_repos:
+    for _, other_repo in other_repos.items():
       reason += f"\n * {other_repo.path}"
     suggestion = "\nDelete duplicate repositories"
     super().__init__(target_path, reason, suggestion)
 
 
-class UpdateWorkingRepositoryWrongNameError(UpdateError):
-  def __init__(self, path, correct_name):
-    reason = f"The working repository name{os.path.basename(path)} is incorrect"
-    suggestion = f"Manually rename it to {correct_name}"
+class UpdateWorkingRepositoryWrongUrlError(UpdateError):
+  def __init__(self, path, current_url, correct_url):
+    reason = (f"The working repository name<{os.path.basename(path)}> has the wrong "
+              f"url<{current_url}>")
+    suggestion = f"Manually delete it and re-clone it with <{correct_url}>"
     super().__init__(path, reason, suggestion)
 
 
@@ -71,31 +73,37 @@ class UpdateRepoIsDirtyError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
-class UpdateDifferentRepoSamePathError(UpdateError):
-  def __init__(self, target_path, listings):
-    reason = f"Different repositories are attempted to be cloned at the same path<{target_path}>!"
-    for listing in listings:
-      reason += f"\nRepository<{listing.url}>"
-    suggestion = "\nYou need to make sure repositories have unique paths in the gordion.yaml files"
-    super().__init__(target_path, reason, suggestion)
+def append_reason_with_listings(reason: str, listings) -> str:
+  for listing in listings:
+    if listing.file:
+      reason += f"\n{gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
+    else:
+      reason += f"\n{listing.name}* : "
+    reason += f"{gordion.utils.hyperlink(listing.url, listing.url)}"
+  return reason
 
 
-class UpdateSameRepoDifferentPathError(UpdateError):
+class UpdateDifferentNameSameUrlError(UpdateError):
   def __init__(self, target_path, listings):
-    reason = "The same repository is attempted to be cloned at different paths!"
-    for listing in listings:
-      reason += f"\nRepository<{listing.url}> at path<{listing.path}>"
-    suggestion = ("\nMake sure all listings of the same repository have the same "
-                  "local path in the gordion.yaml file")
+    reason = "Multiple unique listings have the same URL!"
+    reason = append_reason_with_listings(reason, listings)
+    suggestion = ("\nMake sure all different listings have unique URLs, jeez")
     super().__init__(target_path, reason, suggestion)
 
 
 class UpdateSameRepoDifferentTagError(UpdateError):
   def __init__(self, target_path, listings):
     reason = "Gordion repository tag mismatch!"
-    for listing in listings:
-      reason += f"\n{listing.listed_path}:{listing.tag}"
-    suggestion = ("\nThe tags need to match. I guess that's kinda the whole point of this thing")
+    reason = append_reason_with_listings(reason, listings)
+    suggestion = ("\nThe tags need to identify the same commit pleaaaaase")
+    super().__init__(target_path, reason, suggestion)
+
+
+class UpdateSameNameDifferentUrlError(UpdateError):
+  def __init__(self, target_path, listings):
+    reason = "Gordion repository url mismatch!"
+    reason = append_reason_with_listings(reason, listings)
+    suggestion = ("\nThe urls need to point to the same repository ehh")
     super().__init__(target_path, reason, suggestion)
 
 

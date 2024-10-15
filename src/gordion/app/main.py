@@ -6,10 +6,13 @@ import os
 import cProfile
 import pstats
 
+PROFILE = False
+
 
 def main(argv=None):
-  profiler = cProfile.Profile()
-  profiler.enable()
+  if PROFILE:
+    profiler = cProfile.Profile()
+    profiler.enable()
 
   parser = argparse.ArgumentParser(description="Process some applications.")
   parser.add_argument('-u', '--update', action='store_true', help='Update the gordion tree')
@@ -26,9 +29,9 @@ def main(argv=None):
     if args.update:
       root = gordion.Tree.find(os.getcwd())
       branch = None
-      if not root.handle.head.is_detached:
-        branch = root.handle.active_branch.name
-      root.update(root.handle.head.commit.hexsha, branch)
+      if not root.repo.handle.head.is_detached:
+        branch = root.repo.handle.active_branch.name
+      root.update(root.repo.handle.head.commit.hexsha, branch)
 
     # Print the workspace path.
     if args.workspace:
@@ -42,6 +45,7 @@ def main(argv=None):
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)
 
-  profiler.disable()
-  stats = pstats.Stats(profiler).sort_stats('cumulative')
-  stats.print_stats()
+  if PROFILE:
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumulative')
+    stats.print_stats()

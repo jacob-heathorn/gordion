@@ -14,11 +14,11 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 def test_exists():
   # A file inside a repository is not an existing repository
   path = os.path.join(SCRIPT_DIR)
-  assert not gordion.Repository._exists(path)
+  assert not gordion.Repository.exists(path)
 
   # Verify this repository root is a git repository path.
   path = os.path.join(SCRIPT_DIR, '..')
-  assert gordion.Repository._exists(path)
+  assert gordion.Repository.exists(path)
 
 
 @pytest.fixture
