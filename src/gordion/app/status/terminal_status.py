@@ -1,7 +1,6 @@
 import os
 from .folder import Folder
 from .repository_folder import RepositoryFolder
-from .not_found_repository_folder import NotFoundRepositoryFolder
 import gordion
 from typing import List, Optional
 
@@ -18,14 +17,6 @@ def find_folder_by_path(folders, path) -> Optional[Folder]:
     if folder.path == path:
       return folder
   return None
-
-
-# def trace_add(tree: gordion.Tree, folders):
-#   # Get all listings in the tree.
-#     if self.repo.yeditor.exists():
-#       for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
-#         child_url = child_info['url']
-#         child_tag = child_info['tag']
 
 
 def terminal_status(root: gordion.Tree) -> str:
@@ -63,7 +54,7 @@ def terminal_status(root: gordion.Tree) -> str:
           if not any(duplicate.path == repo.path for duplicate in duplicates):
             duplicates.append(repo)
 
-          folder = find_folder_by_path(repo.path)
+          folder = find_folder_by_path(folders, repo.path)
           if folder:
             folder.has_duplicate = True
 
@@ -79,30 +70,19 @@ def terminal_status(root: gordion.Tree) -> str:
   # Duplicates header.
   error_header = ""
   if len(duplicates) > 0:
-    error_header += gordion.utils.bold_red("Duplicates:\n")
+    error_header += gordion.utils.bold_red("\nDuplicates:\n")
     for duplicate in duplicates:
       error_header += gordion.utils.red(f"* {duplicate.path} ({duplicate.url})\n")
-    error_header += "\n"
 
-  # NOT FOUND. List all repositories that were not found, only if they are really not on disk. It
-  # could be that they were not found becuase of duplicates, so inore duplicates here.
-  not_found_to_show = []
-  for listing in not_found_listings:
-    # TODO bug here. Not showing repo c
-    for duplicate in duplicates:
-      if not duplicate.name == listing.name:
-        not_found_to_show.append(listing)
-        break
-
-  if len(not_found_to_show) > 0:
-    error_header += gordion.utils.bold_red("Not Found:\n")
-    # TODO share duplicate code?
-    for listing in not_found_to_show:
+  # NOT FOUND. List all repositories that were not found by the root trace.
+  if len(not_found_listings) > 0:
+    error_header += gordion.utils.bold_red("\nNot Found:\n")
+    for listing in not_found_listings:
       assert (listing.file)
       error_header += gordion.utils.bold_red(f"* {listing.name}\n")
-    error_header += "\n"
-    # TODO: LISTED URL INCOHERENCES
-    # TODO: LISTED TAG INCOHERENCES
+
+  # TODO: LISTED URL INCOHERENCES
+  # TODO: LISTED TAG INCOHERENCES
 
     # for _, repo in workspace.repos().items():
     #   folder = RepositoryFolder(repo, root)
@@ -161,5 +141,8 @@ def terminal_status(root: gordion.Tree) -> str:
   # 3) Set the heirarchy of folders.
   for folder in folders[1:]:
     set_parent(folder, folders)
+
+  if error_header:
+    error_header += "\n"
 
   return error_header + folders[0].terminal_status()
