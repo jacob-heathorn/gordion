@@ -34,12 +34,15 @@ def terminal_status(root: gordion.Tree) -> str:
   not_found_listings = []
 
   # Trace the mainline tree.
-  for listing in root.listings(name=None, url=None):
+  root_listings = root.listings(name=None, url=None)
+  for listing in root_listings:
     repo = workspace.get_repository(name=listing.name)
     if repo:
       if gordion.utils.compare_urls(listing.url, repo.url):
         if not any(folder.path == repo.path for folder in folders):
           folders.append(RepositoryFolder(repo, root))
+      else:
+        not_found_listings.append(listing)
     else:
       not_found_listings.append(listing)
 
@@ -78,11 +81,32 @@ def terminal_status(root: gordion.Tree) -> str:
   if len(not_found_listings) > 0:
     error_header += gordion.utils.bold_red("\nNot Found:\n")
     for listing in not_found_listings:
-      assert (listing.file)
-      error_header += gordion.utils.bold_red(f"* {listing.name}\n")
+      listing_str = f"* {gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
+      listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}\n"
+      error_header += gordion.utils.red(listing_str)
 
-  # TODO: LISTED URL INCOHERENCES
-  # TODO: LISTED TAG INCOHERENCES
+  # LISTED URL INCOHERENCES.
+  all_conflicted = []
+  for listing in root_listings:
+    url_conflicted = [other for other in root_listings if other.name ==
+                      listing.name and other.url != listing.url]
+    name_conflicted = [other for other in root_listings if other.name !=
+                       listing.name and other.url == listing.url]
+    all_conflicted.extend(url_conflicted)
+    all_conflicted.extend(name_conflicted)
+
+  if len(all_conflicted):
+    error_header += gordion.utils.bold_red("\nURL Incoherences:\n")
+    for listing in all_conflicted:
+      listing_str = "* "
+      if listing.file:
+        listing_str += f"{gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
+      else:
+        listing_str += f"{listing.name}* : "
+      listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}\n"
+      error_header += gordion.utils.red(listing_str)
+
+    # TODO: LISTED TAG INCOHERENCES
 
     # for _, repo in workspace.repos().items():
     #   folder = RepositoryFolder(repo, root)

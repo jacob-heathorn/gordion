@@ -79,7 +79,7 @@ class Tree:
           else:
             for _, dependency in dependencies.items():
               gordion.Repository.safe_delete(dependency.path)
-            child_path = os.path.join(self.workspace.dependencies_path, child_repo.name)
+            child_path = os.path.join(self.workspace.dependencies_path, child_name)
             child_repo = gordion.Repository.clone(child_path, child_url)
 
         # There is exactly one working repo with this name...
