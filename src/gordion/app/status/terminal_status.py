@@ -33,6 +33,8 @@ def terminal_status(root: gordion.Tree) -> str:
   Returns a status string indicating the status of each repository in the tree, which looks cute in
   a terminal.
   """
+  status = ""
+
   # Add workspace and root repository folders.
   workspace = gordion.Workspace()
   folders = [Folder(workspace.path)]
@@ -51,48 +53,77 @@ def terminal_status(root: gordion.Tree) -> str:
     else:
       not_found_listings.append(listing)
 
-  # TODO DUPLICATES Find any repository that has a duplicate by name or url. Add to the header. If
-  # there is a repo folder for it, mark it duplicate accordingly.
+  # Duplicates:
+  #
+  # Find any repository that has a duplicate by name or url. Add to the header. If there is a repo
+  # folder for it, mark it duplicate accordingly.
+  duplicates: List[gordion.Repository] = []
+  for _, repo in workspace.repos().items():
+    for _, other in workspace.repos().items():
+      if other.path != repo.path:
+        # Check for duplicate name
+        if other.name == repo.name:
+          if not any(duplicate.path == repo.path for duplicate in duplicates):
+            duplicates.append(repo)
+
+          folder = find_folder_by_path(repo.path)
+          if folder:
+            folder.has_duplicate = True
+
+        # Check for duplicate URL
+        if gordion.utils.compare_urls(other.url, repo.url):
+          if not any(duplicate.path == repo.path for duplicate in duplicates):
+            duplicates.append(repo)
+
+          folder = find_folder_by_path(folders, repo.path)
+          if folder:
+            folder.has_duplicate = True
+
+  # Print Duplicates header.
+  if len(duplicates) > 0:
+    status += gordion.utils.bold_red("Duplicates:\n")
+    for duplicate in duplicates:
+      status += gordion.utils.red(f"* {duplicate.path} ({duplicate.url})\n")
 
   # TODO NOT_FOUND HEADER
   # TODO: LISTED URL INCOHERENCES
   # TODO: LISTED TAG INCOHERENCES
 
-      # for _, repo in workspace.repos().items():
-      #   folder = RepositoryFolder(repo, root)
-      #   folders.append(folder)
+    # for _, repo in workspace.repos().items():
+    #   folder = RepositoryFolder(repo, root)
+    #   folders.append(folder)
 
-      #   # Check if the folder is listed by mainline or the workspace.
-      #   if root.is_listed(repo):
-      #     folder.is_listed_by_root = True
-      #   else:
-      #     if workspace.is_listed(repo):
-      #       folder.mute = True
-      #       folder.is_listed_by_workspace = True
+    #   # Check if the folder is listed by mainline or the workspace.
+    #   if root.is_listed(repo):
+    #     folder.is_listed_by_root = True
+    #   else:
+    #     if workspace.is_listed(repo):
+    #       folder.mute = True
+    #       folder.is_listed_by_workspace = True
 
-      #   # Check for duplicate named repositories.
-      #   for _, other in workspace.repos().items():
-      #     if other.path != repo.path:
-      #       if other.name == repo.name:
-      #         folder.has_duplicate_name = True
-      #         folder.mute = False
-      #       if gordion.utils.compare_urls(other.url, repo.url):
-      #         folder.has_duplicate_url = True
-      #         folder.mute = False
+    #   # Check for duplicate named repositories.
+    #   for _, other in workspace.repos().items():
+    #     if other.path != repo.path:
+    #       if other.name == repo.name:
+    #         folder.has_duplicate_name = True
+    #         folder.mute = False
+    #       if gordion.utils.compare_urls(other.url, repo.url):
+    #         folder.has_duplicate_url = True
+    #         folder.mute = False
 
-      # # Add not found repository folders
-      # root_listings = root.listings(name=None, url=None)
-      # for listing in root_listings:
-      #   all = workspace.working(name=listing.name, url=None)
-      #   all.update(workspace.dependencies(name=listing.name, url=None))
-      #   if len(all) == 0:
-      #     path = os.path.join(workspace.dependencies_path, listing.name)
-      #     if not any(folder.path == path for folder in folders):
-      #       # TODO handle situation where non-repo file or folder already exists here. In-fact anywhere
-      #       # in dependencies.
-      #       folders.append(NotFoundRepositoryFolder(path))
+    # # Add not found repository folders
+    # root_listings = root.listings(name=None, url=None)
+    # for listing in root_listings:
+    #   all = workspace.working(name=listing.name, url=None)
+    #   all.update(workspace.dependencies(name=listing.name, url=None))
+    #   if len(all) == 0:
+    #     path = os.path.join(workspace.dependencies_path, listing.name)
+    #     if not any(folder.path == path for folder in folders):
+    #       # TODO handle situation where non-repo file or folder already exists here. In-fact anywhere
+    #       # in dependencies.
+    #       folders.append(NotFoundRepositoryFolder(path))
 
-      # Add intermediary folders.
+    # Add intermediary folders.
   intermediary_folders: List[Folder] = []
   workspace_folder = folders[0]
   for folder in folders[1:]:
@@ -116,4 +147,5 @@ def terminal_status(root: gordion.Tree) -> str:
   for folder in folders[1:]:
     set_parent(folder, folders)
 
-  return folders[0].terminal_status()
+  status += folders[0].terminal_status()
+  return status

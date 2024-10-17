@@ -16,8 +16,7 @@ class RepositoryFolder(Folder):
     self.root: gordion.Tree = root
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
-    self.has_duplicate_name = False
-    self.has_duplicate_url = False
+    self.has_duplicate = False
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -72,14 +71,8 @@ class RepositoryFolder(Folder):
     name_header = gordion.utils.bold_green(self.decorated_name())
 
     # Check for duplicates
-    if self.has_duplicate_name and self.has_duplicate_url:
-      errors.append("DUPLICATE")
-      name_header = gordion.utils.bold_red(self.decorated_name())
-    elif self.has_duplicate_name:
-      errors.append("DUPLICATE:NAME")
-      name_header = gordion.utils.bold_red(self.decorated_name())
-    elif self.has_duplicate_url:
-      errors.append("DUPLICATE:URL")
+    if self.has_duplicate:
+      errors.append("HAS DUPLICATE")
       name_header = gordion.utils.bold_red(self.decorated_name())
 
     # A dependency repo can have the wrong path.
