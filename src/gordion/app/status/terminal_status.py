@@ -85,7 +85,7 @@ def terminal_status(root: gordion.Tree) -> str:
       listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}\n"
       error_header += gordion.utils.red(listing_str)
 
-  # LISTED URL INCOHERENCES.
+  # URL INCOHERENCES.
   all_conflicted = []
   for listing in root_listings:
     url_conflicted = [other for other in root_listings if other.name ==
@@ -106,7 +106,7 @@ def terminal_status(root: gordion.Tree) -> str:
       listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}\n"
       error_header += gordion.utils.red(listing_str)
 
-    # TODO: LISTED TAG INCOHERENCES
+  # TODO TAG INCOHERENCES
 
     # for _, repo in workspace.repos().items():
     #   folder = RepositoryFolder(repo, root)
