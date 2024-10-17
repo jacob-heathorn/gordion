@@ -33,7 +33,6 @@ def terminal_status(root: gordion.Tree) -> str:
   Returns a status string indicating the status of each repository in the tree, which looks cute in
   a terminal.
   """
-  status = ""
 
   # Add workspace and root repository folders.
   workspace = gordion.Workspace()
@@ -53,10 +52,8 @@ def terminal_status(root: gordion.Tree) -> str:
     else:
       not_found_listings.append(listing)
 
-  # Duplicates:
-  #
-  # Find any repository that has a duplicate by name or url. Add to the header. If there is a repo
-  # folder for it, mark it duplicate accordingly.
+  # DUPLICATES. Find any repository that has a duplicate by name or url. Add to the header. If there
+  # is a repo folder for it, mark it duplicate accordingly.
   duplicates: List[gordion.Repository] = []
   for _, repo in workspace.repos().items():
     for _, other in workspace.repos().items():
@@ -79,15 +76,33 @@ def terminal_status(root: gordion.Tree) -> str:
           if folder:
             folder.has_duplicate = True
 
-  # Print Duplicates header.
+  # Duplicates header.
+  error_header = ""
   if len(duplicates) > 0:
-    status += gordion.utils.bold_red("Duplicates:\n")
+    error_header += gordion.utils.bold_red("Duplicates:\n")
     for duplicate in duplicates:
-      status += gordion.utils.red(f"* {duplicate.path} ({duplicate.url})\n")
+      error_header += gordion.utils.red(f"* {duplicate.path} ({duplicate.url})\n")
+    error_header += "\n"
 
-  # TODO NOT_FOUND HEADER
-  # TODO: LISTED URL INCOHERENCES
-  # TODO: LISTED TAG INCOHERENCES
+  # NOT FOUND. List all repositories that were not found, only if they are really not on disk. It
+  # could be that they were not found becuase of duplicates, so inore duplicates here.
+  not_found_to_show = []
+  for listing in not_found_listings:
+    # TODO bug here. Not showing repo c
+    for duplicate in duplicates:
+      if not duplicate.name == listing.name:
+        not_found_to_show.append(listing)
+        break
+
+  if len(not_found_to_show) > 0:
+    error_header += gordion.utils.bold_red("Not Found:\n")
+    # TODO share duplicate code?
+    for listing in not_found_to_show:
+      assert (listing.file)
+      error_header += gordion.utils.bold_red(f"* {listing.name}\n")
+    error_header += "\n"
+    # TODO: LISTED URL INCOHERENCES
+    # TODO: LISTED TAG INCOHERENCES
 
     # for _, repo in workspace.repos().items():
     #   folder = RepositoryFolder(repo, root)
@@ -147,5 +162,4 @@ def terminal_status(root: gordion.Tree) -> str:
   for folder in folders[1:]:
     set_parent(folder, folders)
 
-  status += folders[0].terminal_status()
-  return status
+  return error_header + folders[0].terminal_status()
