@@ -17,6 +17,8 @@ class RepositoryFolder(Folder):
     self.root_listings = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
     self.has_duplicate = False
+    self.incoherent_tag = False
+    self.correct_tag = False
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -98,21 +100,21 @@ class RepositoryFolder(Folder):
     # Tag header.
     #
     # If any of the tags are incorrect, the commit is incorrect.
-    unique_tags = self.unique_listed_tags()
-    correct_tag = True
-    conflicted_tag = False
-    for tag in unique_tags:
-      if tag != self.repo.handle.head.commit.hexsha:
-        correct_tag = False
-    if len(unique_tags) > 1:
-      conflicted_tag = True
+    # unique_tags = self.unique_listed_tags()
+    # correct_tag = True
+    # conflicted_tag = False
+    # for tag in unique_tags:
+    #   if tag != self.repo.handle.head.commit.hexsha:
+    #     correct_tag = False
+    # if len(unique_tags) > 1:
+    #   conflicted_tag = True
 
     tag_header = ""
-    if conflicted_tag:
-      errors.append("CONFLICTED TAG")
+    if self.incoherent_tag:
+      errors.append("TAG INCOHERENCE")
       tag_header = gordion.utils.red(f":{self.repo.handle.head.commit.hexsha[:7]}")
     else:
-      if correct_tag:
+      if self.correct_tag:
         tag_header = gordion.utils.green(f":{self.repo.handle.head.commit.hexsha[:7]}")
       else:
         tag_header = gordion.utils.red(f":{self.repo.handle.head.commit.hexsha[:7]}")

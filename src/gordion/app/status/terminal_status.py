@@ -2,7 +2,7 @@ import os
 from .folder import Folder
 from .repository_folder import RepositoryFolder
 import gordion
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 
 def set_parent(folder, folders):
@@ -32,6 +32,7 @@ def terminal_status(root: gordion.Tree) -> str:
   # extend_folders_from_mainline(folders, root, root)
 
   not_found_listings = []
+  tag_incoherent_listings_tuples: List[Tuple[gordion.Tree.Listing, Optional[str]]] = []
 
   # Trace the mainline tree.
   root_listings = root.listings(name=None, url=None)
@@ -40,7 +41,40 @@ def terminal_status(root: gordion.Tree) -> str:
     if repo:
       if gordion.utils.compare_urls(listing.url, repo.url):
         if not any(folder.path == repo.path for folder in folders):
-          folders.append(RepositoryFolder(repo, root))
+          folder = RepositoryFolder(repo, root)
+          folders.append(folder)
+
+          ####
+
+          folder_listings = [listing for listing in root_listings if repo.name == listing.name]
+          folder_listings = [
+              listing for listing in folder_listings if gordion.utils.compare_urls(
+                  repo.url, listing.url)]
+
+          folder_good_tag_listings = []
+          folder_bad_tag_listings = []
+          unique_good_tags = set()
+          for folder_listing in folder_listings:
+            try:
+              commit = repo._verify_tag(folder_listing.tag)
+              folder_good_tag_listings.append(folder_listing)
+              unique_good_tags.add(commit.hexsha)
+            except Exception:
+              folder_bad_tag_listings.append(listing)
+
+          if len(unique_good_tags) > 1 or len(folder_bad_tag_listings) > 0:
+            folder.incoherent_tag = True
+            for al in folder_good_tag_listings:
+              at = (al, repo._verify_tag(al.tag).hexsha)
+              tag_incoherent_listings_tuples.append(at)
+            for al in folder_bad_tag_listings:
+              tag_incoherent_listings_tuples.append((al, None))
+          else:
+            tag = list(unique_good_tags)[0]
+            if tag == repo.handle.head.commit.hexsha:
+              folder.correct_tag = True
+
+          ####
       else:
         not_found_listings.append(listing)
     else:
@@ -106,43 +140,24 @@ def terminal_status(root: gordion.Tree) -> str:
       listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}\n"
       error_header += gordion.utils.red(listing_str)
 
-  # TODO TAG INCOHERENCES
+  # TAG INCOHERENCES
+  if len(tag_incoherent_listings_tuples) > 0:
+    error_header += gordion.utils.bold_red("\nTag Incoherences:\n")
+    for tuple in tag_incoherent_listings_tuples:
+      listing = tuple[0]
+      resolved_tag = tuple[1]
+      listing_str = "* "
+      if listing.file:
+        listing_str += f"{gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
+      else:
+        listing_str += f"{listing.name}* : "
+      if resolved_tag:
+        listing_str += f"{listing.tag} ({resolved_tag})\n"
+      else:
+        listing_str += f"{listing.tag} (BAD TAG)\n"
+      error_header += gordion.utils.red(listing_str)
 
-    # for _, repo in workspace.repos().items():
-    #   folder = RepositoryFolder(repo, root)
-    #   folders.append(folder)
-
-    #   # Check if the folder is listed by mainline or the workspace.
-    #   if root.is_listed(repo):
-    #     folder.is_listed_by_root = True
-    #   else:
-    #     if workspace.is_listed(repo):
-    #       folder.mute = True
-    #       folder.is_listed_by_workspace = True
-
-    #   # Check for duplicate named repositories.
-    #   for _, other in workspace.repos().items():
-    #     if other.path != repo.path:
-    #       if other.name == repo.name:
-    #         folder.has_duplicate_name = True
-    #         folder.mute = False
-    #       if gordion.utils.compare_urls(other.url, repo.url):
-    #         folder.has_duplicate_url = True
-    #         folder.mute = False
-
-    # # Add not found repository folders
-    # root_listings = root.listings(name=None, url=None)
-    # for listing in root_listings:
-    #   all = workspace.working(name=listing.name, url=None)
-    #   all.update(workspace.dependencies(name=listing.name, url=None))
-    #   if len(all) == 0:
-    #     path = os.path.join(workspace.dependencies_path, listing.name)
-    #     if not any(folder.path == path for folder in folders):
-    #       # TODO handle situation where non-repo file or folder already exists here. In-fact anywhere
-    #       # in dependencies.
-    #       folders.append(NotFoundRepositoryFolder(path))
-
-    # Add intermediary folders.
+  # Add intermediary folders.
   intermediary_folders: List[Folder] = []
   workspace_folder = folders[0]
   for folder in folders[1:]:
