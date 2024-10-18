@@ -148,11 +148,16 @@ def terminal_status(root: gordion.Tree) -> str:
       resolved_tag = tuple[1]
       listing_str = "* "
       if listing.file:
-        listing_str += f"{gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
+        partial_path = os.path.join(
+            os.path.basename(
+                os.path.dirname(
+                    listing.file)), os.path.basename(
+                listing.file))
+        listing_str += f"{gordion.utils.filelink(listing.file, partial_path)} : {listing.name} : "
       else:
         listing_str += f"{listing.name}* : "
       if resolved_tag:
-        listing_str += f"{listing.tag} ({resolved_tag})\n"
+        listing_str += f"{resolved_tag}\n"
       else:
         listing_str += f"{listing.tag} (BAD TAG)\n"
       error_header += gordion.utils.red(listing_str)
