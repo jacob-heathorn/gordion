@@ -26,17 +26,9 @@ class RepositoryFolder(Folder):
         return False
     return True
 
-  def unique_listed_tags(self):
-    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
-    listings = [listing for listing in listings if self.repo.url == listing.url]
-    unique_tags = set()
-    for listing in listings:
-      unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
-
-    return unique_tags
-
   # TODO move outside for speed?
 
+  # TODO remove?
   def is_name_conflicted(self):
     """
     Name is conflicted if two or more listings of the same url have different names.
@@ -96,18 +88,6 @@ class RepositoryFolder(Folder):
     branch_warnings = self._get_branch_warnings(branch_suggestion)
     if branch_warnings:
       branch_header += gordion.utils.yellow(f"({', '.join(branch_warnings)})")
-
-    # Tag header.
-    #
-    # If any of the tags are incorrect, the commit is incorrect.
-    # unique_tags = self.unique_listed_tags()
-    # correct_tag = True
-    # conflicted_tag = False
-    # for tag in unique_tags:
-    #   if tag != self.repo.handle.head.commit.hexsha:
-    #     correct_tag = False
-    # if len(unique_tags) > 1:
-    #   conflicted_tag = True
 
     tag_header = ""
     if self.incoherent_tag:
