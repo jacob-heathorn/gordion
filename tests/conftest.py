@@ -15,22 +15,6 @@ workspace.setup(REPOS_DIR)
 
 
 @pytest.fixture(scope="session")
-def tree_a():
-  """
-  Creates the gordion.Tree interface for gordion_demo_a only once for the lifetime of this session.
-  This is important so the "fetch_once" doesn't fetch every test case, which saves time.
-  """
-  path = os.path.join(REPOS_DIR, 'gordion_demo_a')
-  url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
-
-  # Create the gordion.Tree interface.
-  repo = gordion.Repository.ensure(path, url)
-  tree = gordion.Tree(repo)
-
-  yield tree
-
-
-@pytest.fixture(scope="session")
 def repository_a():
   """
   Creates the gordion.Repository interface for gordion_demo_a only once for the lifetime of this

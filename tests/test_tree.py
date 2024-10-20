@@ -16,7 +16,7 @@ from tests.conftest import recursive_git_blast
 
 
 @pytest.fixture
-def demo_a(tree_a):
+def tree_a(repository_a):
   """
   This puts the gordion.Tree session object back into a well-known state for each test case.
   """
@@ -27,6 +27,7 @@ def demo_a(tree_a):
   branch_name = 'develop'
 
   # Set the target branch/commit.
+  tree_a = gordion.Tree(repository_a)
   tree_a.update(tag, branch_name, force=True)
 
   yield tree_a
@@ -38,12 +39,12 @@ def demo_a(tree_a):
   tree_a.update(tag, branch_name, force=True)
 
 
-def test_same_repo_different_tag(demo_a):
+def test_same_repo_different_tag(tree_a):
   """
   Verifies update will error if two of the same repository reference have different tags.
   """
 
-  repo_a = demo_a.repo
+  repo_a = tree_a.repo
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
   repo_d = gordion.Workspace().get_repository('gordion_demo_d')
 
@@ -63,10 +64,10 @@ def test_same_repo_different_tag(demo_a):
 
   # Now update, it should raise error, tag mismatch.
   with pytest.raises(gordion.UpdateSameRepoDifferentTagError) as context:
-    demo_a.update(repo_a.handle.head.commit.hexsha, "develop")
+    tree_a.update(repo_a.handle.head.commit.hexsha, "develop")
 
   # Verify the exception.
-  listings = demo_a.listings(name=repo_d.name, url=repo_d.url)
+  listings = tree_a.listings(name=repo_d.name, url=repo_d.url)
   expected = gordion.UpdateSameRepoDifferentTagError(repo_d.path, listings)
   assert str(context.value) == str(expected)
 
