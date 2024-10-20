@@ -13,8 +13,11 @@ class Repository:
 
   """
 
-  # TODO comment headers for these various creation functions
   def __init__(self, path: str) -> None:
+    """
+    The constructor is only meant to be called for a repository that already exists on path. If one
+    needs to or might need to be created, use the ensure() method.
+    """
     self.path = path
     self.name = os.path.basename(self.path)
     assert gordion.Repository.exists(path)
@@ -26,7 +29,7 @@ class Repository:
     self.fetched = False
 
   @staticmethod
-  def ensure(path: str, url: str):
+  def ensure(path: str, url: str) -> 'gordion.Repository':
     """
     Ensures the repository exists at <path> with <url> and clones it with <url> if not.
     """
@@ -40,7 +43,7 @@ class Repository:
     return gordion.Repository.clone(path, url)
 
   @staticmethod
-  def clone(path, url):
+  def clone(path, url) -> 'gordion.Repository':
     """
     Clones the repository and returns it.
     """

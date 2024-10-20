@@ -7,6 +7,10 @@ assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+# Initialize workspace.
+workspace = gordion.Workspace()
+workspace.setup(os.getcwd())
+
 
 @pytest.fixture(scope="session")
 def tree_a():
@@ -18,9 +22,10 @@ def tree_a():
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
   # Create the gordion.Tree interface.
-  repo = gordion.Tree(path, url)
+  repo = gordion.Repository.ensure(path, url)
+  tree = gordion.Tree(repo)
 
-  yield repo
+  yield tree
 
 
 @pytest.fixture(scope="session")
@@ -33,7 +38,7 @@ def repository_a():
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
   # Create the gordion.Repository interface.
-  repo = gordion.Repository(path, url)
+  repo = gordion.Repository.ensure(path, url)
 
   yield repo
 
