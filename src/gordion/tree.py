@@ -84,12 +84,12 @@ class Tree:
 
         # There is exactly one working repo with this name...
         elif len(working) == 1:
-          child_repo = next(iter(dependencies.values()))
+          child_repo = next(iter(working.values()))
 
           # If it has the wrong url..
-          if gordion.utils.compare_urls(child_repo.url, child_url):
+          if not gordion.utils.compare_urls(child_repo.url, child_url):
             raise gordion.UpdateWorkingRepositoryWrongUrlError(
-                child_path, child_repo.url, child_url)
+                child_repo.path, child_repo.url, child_url)
 
           # If there are dependencies, delete them.
           for _, dependency in dependencies.items():

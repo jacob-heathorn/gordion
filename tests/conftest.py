@@ -8,8 +8,10 @@ REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize workspace.
+if not os.path.exists(REPOS_DIR):
+  os.mkdir(REPOS_DIR)
 workspace = gordion.Workspace()
-workspace.setup(os.getcwd())
+workspace.setup(REPOS_DIR)
 
 
 @pytest.fixture(scope="session")
