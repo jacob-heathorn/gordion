@@ -280,6 +280,7 @@ class Repository:
     else:
       return commit in remote_branch.commit.iter_parents()
 
+  # TODO remove underscore
   def _verify_tag(self, tag: str) -> git.Commit:
     """
     Verifies and returns the commit object for the specified tag if it exists, otherwise throws an
@@ -299,6 +300,13 @@ class Repository:
       return commit
 
     return commit
+
+  def verify_tag_nothrow(self, tag: str) -> Optional[git.Commit]:
+    try:
+      commit = self._verify_tag(tag)
+      return commit
+    except BaseException:
+      return None
 
   def _does_local_branch_have_commit(self, branch_name: str, commit: git.Commit) -> bool:
     """
