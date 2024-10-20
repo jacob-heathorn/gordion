@@ -25,12 +25,12 @@ class Workspace:
     self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
     self.discover_repositories()
 
-  def find_root(self, path: str) -> str:
+  def find_root(self, subpath: str) -> str:
     """
     Finds the workspace given a path inside it.
     """
     # Convert string path to Path object if necessary
-    path = Path(path) if not isinstance(path, Path) else path
+    path = Path(subpath) if not isinstance(subpath, Path) else subpath
 
     # Iterate through parts of the path from root to the last element
     parts = path.parts
@@ -45,8 +45,13 @@ class Workspace:
           if gordion.Repository.is_gordion(str(child)):
             return os.path.normpath(current_path)
 
-    # Return the original path parent.
-    return os.path.normpath(path.parent)
+    # If the given path is a repositry, return it's parent.
+    repo_root = gordion.utils.get_repository_root(path.absolute)
+    if repo_root:
+      return os.path.normpath(Path(repo_root.path).parent)
+
+    # Otherwise return the argument itself, which initiallizes a new workspace here.
+    return os.path.normpath(path)
 
   def is_dependency(self, path: str) -> bool:
     if os.path.commonprefix([self.dependencies_path, path]) == self.dependencies_path:
