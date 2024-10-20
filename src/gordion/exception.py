@@ -72,8 +72,10 @@ class UpdateRepoIsDirtyError(UpdateError):
     suggestion = "Save or restore the uncommitted changes"
     super().__init__(target_path, reason, suggestion)
 
+# TODO share these codes better.
 
-def append_reason_with_listings(reason: str, listings) -> str:
+
+def append_reason_with_urled_listings(reason: str, listings) -> str:
   for listing in listings:
     if listing.file:
       reason += f"\n{gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
@@ -83,10 +85,28 @@ def append_reason_with_listings(reason: str, listings) -> str:
   return reason
 
 
+def append_reason_with_tagged_listings(reason: str, listings) -> str:
+  for listing in listings:
+    if listing.file:
+      reason += f"\n{gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
+    else:
+      reason += f"\n{listing.name}* : "
+    repo = gordion.Workspace().get_repository(listing.name)
+    if repo:
+      commit = repo.verify_tag_nothrow(listing.tag)
+      if commit:
+        reason += f"{commit.hexsha}"
+      else:
+        reason += f"{listing.tag} (BAD TAG)"
+    else:
+      reason += f"{listing.tag}"
+  return reason
+
+
 class UpdateDifferentNameSameUrlError(UpdateError):
   def __init__(self, target_path, listings):
     reason = "Multiple unique listings have the same URL!"
-    reason = append_reason_with_listings(reason, listings)
+    reason = append_reason_with_urled_listings(reason, listings)
     suggestion = ("\nMake sure all different listings have unique URLs, jeez")
     super().__init__(target_path, reason, suggestion)
 
@@ -94,7 +114,7 @@ class UpdateDifferentNameSameUrlError(UpdateError):
 class UpdateSameRepoDifferentTagError(UpdateError):
   def __init__(self, target_path, listings):
     reason = "Gordion repository tag mismatch!"
-    reason = append_reason_with_listings(reason, listings)
+    reason = append_reason_with_tagged_listings(reason, listings)
     suggestion = ("\nThe tags need to identify the same commit pleaaaaase")
     super().__init__(target_path, reason, suggestion)
 
@@ -102,7 +122,7 @@ class UpdateSameRepoDifferentTagError(UpdateError):
 class UpdateSameNameDifferentUrlError(UpdateError):
   def __init__(self, target_path, listings):
     reason = "Gordion repository url mismatch!"
-    reason = append_reason_with_listings(reason, listings)
+    reason = append_reason_with_urled_listings(reason, listings)
     suggestion = ("\nThe urls need to point to the same repository ehh")
     super().__init__(target_path, reason, suggestion)
 

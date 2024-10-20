@@ -43,47 +43,31 @@ def test_same_repo_different_tag(demo_a):
   Verifies update will error if two of the same repository reference have different tags.
   """
 
+  repo_a = demo_a.repo
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+
   # Add a commit to repository D.
-  demo_d = demo_a.children['gordion_demo_b'].children['gordion_demo_d']
-  demo_d.repo.handle.git.commit(
+  repo_d.handle.git.commit(
       '-m',
       "Empty commit for test_same_demo_different_tag",
       allow_empty=True)
 
   # Make B point to D's new commit but not C.
-  demo_b = demo_a.children['gordion_demo_b']
-  demo_b.repo.yeditor.write_repository_tag('gordion_demo_d', demo_d.repo.handle.head.commit.hexsha)
-  demo_b.repo.handle.git.add(os.path.join(demo_b.repo.path, 'gordion.yaml'))
-  demo_b.repo.handle.git.commit('-m', "Point to latest D")
-  demo_a.repo.yeditor.write_repository_tag('gordion_demo_b', demo_b.repo.handle.head.commit.hexsha)
-  demo_a.repo.handle.git.add(os.path.join(demo_a.repo.path, 'gordion.yaml'))
-  demo_a.repo.handle.git.commit('-m', "Point to latest B")
-
-  # Save some information before the update.
-  b_ref_d = demo_b.children['gordion_demo_d']
-  b_ref_d_commit = b_ref_d.repo._verify_tag(
-      demo_b.repo.yeditor.read_repository_tag('gordion_demo_d'))
-  demo_c = demo_a.children['gordion_demo_c']
-  c_ref_d = demo_c.children['gordion_demo_d']
-  c_ref_d_commit = c_ref_d.repo._verify_tag(
-      demo_c.repo.yeditor.read_repository_tag('gordion_demo_d'))
+  repo_b.yeditor.write_repository_tag('gordion_demo_d', repo_d.handle.head.commit.hexsha)
+  repo_b.handle.git.add(os.path.join(repo_b.path, 'gordion.yaml'))
+  repo_b.handle.git.commit('-m', "Point to latest D")
+  repo_a.yeditor.write_repository_tag('gordion_demo_b', repo_b.handle.head.commit.hexsha)
+  repo_a.handle.git.add(os.path.join(repo_a.path, 'gordion.yaml'))
+  repo_a.handle.git.commit('-m', "Point to latest B")
 
   # Now update, it should raise error, tag mismatch.
   with pytest.raises(gordion.UpdateSameRepoDifferentTagError) as context:
-    demo_a.update(demo_a.repo.handle.head.commit.hexsha, "develop")
+    demo_a.update(repo_a.handle.head.commit.hexsha, "develop")
 
   # Verify the exception.
-  listings = []
-  listings.append(gordion.Tree.Listing(name=b_ref_d.repo.name, url=b_ref_d.repo.url,
-                                       tag=b_ref_d_commit.hexsha, file=demo_b.repo.yeditor.fullfile))
-  listings.append(gordion.Tree.Listing(name=c_ref_d.repo.name, url=c_ref_d.repo.url,
-                                       tag=c_ref_d_commit.hexsha, file=demo_c.repo.yeditor.fullfile))
-  expected = gordion.UpdateSameRepoDifferentTagError(b_ref_d.repo.path, listings)
-  print("\n\n")
-  print(str(expected))
-  print("\n\n")
-  print(str(context.value))
-  print("\n\n")
+  listings = demo_a.listings(name=repo_d.name, url=repo_d.url)
+  expected = gordion.UpdateSameRepoDifferentTagError(repo_d.path, listings)
   assert str(context.value) == str(expected)
 
 
