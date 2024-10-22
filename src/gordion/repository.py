@@ -18,7 +18,7 @@ class Repository:
     The constructor is only meant to be called for a repository that already exists on path. If one
     needs to or might need to be created, use the ensure() method.
     """
-    self.path = path
+    self.path = os.path.normpath(path)
     self.name = os.path.basename(self.path)
     assert gordion.Repository.exists(path)
     self.handle: git.Repo = git.Repo(path)

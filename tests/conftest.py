@@ -11,7 +11,7 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 if not os.path.exists(REPOS_DIR):
   os.mkdir(REPOS_DIR)
 workspace = gordion.Workspace()
-workspace.setup(REPOS_DIR)
+workspace.setup(subpath=REPOS_DIR, force=True)
 
 
 @pytest.fixture(scope="session")
