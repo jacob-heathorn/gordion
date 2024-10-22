@@ -48,14 +48,11 @@ class Workspace:
             return os.path.normpath(current_path)
 
     # If the given path is a repository, return it's parent.
-    print("here1")
     repo_root = gordion.utils.get_repository_root(subpath)
     if repo_root:
-      print(f"here2: {repo_root}")
       return os.path.normpath(os.path.dirname(repo_root))
 
     # Otherwise return the argument itself, which initiallizes a new workspace here.
-    print("here3")
     return os.path.normpath(subpath)
 
   def is_dependency(self, path: str) -> bool:
