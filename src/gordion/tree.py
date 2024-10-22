@@ -22,9 +22,13 @@ class Tree:
     """
     Updates this repository and it's children.
     """
+    # First check/fix dangling .dependencies folders
+    root = self._root()
+    if self is root:
+      self.workspace.unify_dependencies()
+
     # Check for duplicate tag first. We have to do this here because the repo needs to veriy and
     # compare commits.
-    root = self._root()
     root._check_same_repo_different_tag(self.repo)
     self.repo.update(tag, branch_name, force)
 

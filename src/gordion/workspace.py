@@ -144,3 +144,41 @@ class Workspace:
 
     for path in paths:
       gordion.Repository.safe_delete(path)
+
+  def unify_dependencies(self):
+    """
+    Looks for a .dependencies folder that is below the root, and unifies with the folder at the
+    root.
+    """
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+        full_dirpath = os.path.join(dirpath, dirname)
+        if dirname == ".dependencies" and full_dirpath != self.dependencies_path:
+          # Found a dangling .dependencies folder, merge it.
+          print(f"Merging dangling .dependencies: {full_dirpath} ...")
+          self._safe_merge_dangling_dependencies(full_dirpath)
+
+          # Remove the current directory's name from dirnames so os.walk will skip its
+          # subdirectories
+          dirnames.remove(dirname)
+
+  def _safe_merge_dangling_dependencies(self, other_dependencies_path):
+    for dirpath, dirnames, _ in os.walk(other_dependencies_path, topdown=True):
+      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+        full_dirpath = os.path.join(dirpath, dirname)
+        # Move repositories
+        if gordion.Repository.exists(full_dirpath):
+          destination = os.path.join(self.dependencies_path, dirname)
+          gordion.Repository.safe_move(full_dirpath, destination)
+
+          # Remove the current directory's name from dirnames so os.walk will skip its
+          # subdirectories
+          dirnames.remove(dirname)
+
+    if os.listdir(other_dependencies_path):
+      raise gordion.DanglingDependenciesNotEmpty(other_dependencies_path)
+    else:
+      print(f"Deleting empty folder: {other_dependencies_path}")
+      shutil.rmtree(other_dependencies_path)

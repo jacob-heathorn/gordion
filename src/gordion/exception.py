@@ -194,3 +194,12 @@ class DanglingCommitError(UpdateError):
     reason = (f"Commit<{target_tag}> is dangling (does not belong to a branch)")
     suggestion = ("Update the commit tag in the parent gordion.yaml")
     super().__init__(target_path, reason, suggestion)
+
+
+class DanglingDependenciesNotEmpty(UpdateError):
+  def __init__(self, dangling_dependencies_path):
+    self.message = (
+        f"Directory<{dangling_dependencies_path}> is not empty after moving it's repositories. "
+        f"Manually delete it."
+    )
+    super().__init__(self.message)
