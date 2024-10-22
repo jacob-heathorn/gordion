@@ -73,3 +73,11 @@ def test_path_multiple_gordion_lineage(repository_a, tmp1):
 
   # Verify.
   assert gordion.Workspace.find_root(path) == os.path.dirname(repository_a.path)
+
+
+def test_get_repository(repository_a):
+  """
+  You can get a repository by name in a workspace.
+  """
+  ref = gordion.Workspace().get_repository(repository_a.name)
+  assert ref.path == repository_a.path
