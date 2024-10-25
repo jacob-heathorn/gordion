@@ -137,3 +137,23 @@ def test_trim_repositories_not_listed(repository_a, mock_dependencies):
   assert gordion.Repository.exists(not_listed_path)
   gordion.Workspace().trim_repositories()
   assert not gordion.Repository.exists(not_listed_path)
+
+
+def test_unify_dependencies(repository_a, mock_dependencies, tmp1):
+  """
+  If the workspace root moves, there could be a dangling .dependencies folder left at the old
+  workspace root. If it is inside the new workspace root, it will be merged.
+  """
+  # Clone demo_b inside a dangling dependencies folder.
+  dangling_dependencies = os.path.join(tmp1, '.dependencies')
+  repo_b_path = os.path.join(dangling_dependencies, 'gordion_demo_b')
+  gordion.Repository.clone(repo_b_path, 'https://github.com/jacob-heathorn/gordion_demo_b.git')
+
+  # Verify paths before and after unify().
+  moved_path = os.path.join(mock_dependencies, 'gordion_demo_b')
+  assert gordion.Repository.exists(repo_b_path)
+  assert not gordion.Repository.exists(moved_path)
+  gordion.Workspace().unify_dependencies()
+  assert not gordion.Repository.exists(repo_b_path)
+  assert gordion.Repository.exists(moved_path)
+  assert not os.path.exists(dangling_dependencies)
