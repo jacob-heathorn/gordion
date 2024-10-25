@@ -25,7 +25,8 @@ def tmp1():
 
   yield tmp1
 
-  shutil.rmtree(tmp1)
+  shutil.rmtree(tmp1, ignore_errors=True)
+  gordion.Workspace().discover_repositories()
 
 
 @pytest.fixture
@@ -33,12 +34,13 @@ def mock_dependencies():
   """
   Creates a .dependencies folder in the REPOS_DIR and then deletes it.
   """
-  dependencies = os.path.join(REPOS_DIR, '.dependencies')
-  os.mkdir(dependencies)
+  mock_dependencies = os.path.join(REPOS_DIR, '.dependencies')
+  os.mkdir(mock_dependencies)
 
-  yield dependencies
+  yield mock_dependencies
 
-  # shutil.rmtree(dependencies)
+  shutil.rmtree(mock_dependencies, ignore_errors=True)
+  gordion.Workspace().discover_repositories()
 
 
 # =================================================================================================

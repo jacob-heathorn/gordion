@@ -86,6 +86,7 @@ class Workspace:
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
+    gordion.Repository.reset_registry()
 
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       # Create a copy of dirnames for iteration to avoid modifying the list while iterating

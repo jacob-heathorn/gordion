@@ -185,6 +185,11 @@ def registry(cls):
     def registry(cls):
       return registry_
 
+    @classmethod
+    def reset_registry(cls):
+      nonlocal registry_
+      registry_ = {}
+
   return RegistryWrapper
 
 
