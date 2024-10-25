@@ -132,15 +132,23 @@ class Workspace:
     """
     Deletes duplicates and unlisted repositories.
     """
-    paths = []
+    paths = set()
     for _, repo in self.repos().items():
       if self.is_dependency(repo.path):
+        # If it is not listed, remove it.
         if not self.is_listed(repo):
-          paths.append(repo.path)
-        else:
-          expected_path = os.path.join(self.dependencies_path, repo.name)
-          if repo.path != expected_path:
-            paths.append(repo.path)
+          paths.add(repo.path)
+
+        # If it is a duplicate of a working.
+        for _, other in self.repos().items():
+          if not self.is_dependency(other.path):
+            if other.path != repo.path and gordion.utils.compare_urls(other.url, repo.url):
+              paths.add(repo.path)
+
+        # If it is not at the expected path remove it.
+        expected_path = os.path.join(self.dependencies_path, repo.name)
+        if repo.path != expected_path:
+          paths.add(repo.path)
 
     for path in paths:
       gordion.Repository.safe_delete(path)

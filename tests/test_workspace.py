@@ -12,6 +12,38 @@ import shutil
 # affect the workspace location when running gordion commands from within the test demos
 # environment.
 
+# =================================================================================================
+# Fixtures
+
+@pytest.fixture
+def tmp1():
+  """
+  Creates a tmp1 folder in the REPOS_DIR and then deletes it.
+  """
+  tmp1 = os.path.join(REPOS_DIR, 'tmp1')
+  os.mkdir(tmp1)
+
+  yield tmp1
+
+  shutil.rmtree(tmp1)
+
+
+@pytest.fixture
+def mock_dependencies():
+  """
+  Creates a .dependencies folder in the REPOS_DIR and then deletes it.
+  """
+  dependencies = os.path.join(REPOS_DIR, '.dependencies')
+  os.mkdir(dependencies)
+
+  yield dependencies
+
+  # shutil.rmtree(dependencies)
+
+
+# =================================================================================================
+# Tests
+
 
 def test_path_default(repository_a):
   """
@@ -42,19 +74,6 @@ def test_path_no_gordion_repository():
   assert gordion.Workspace.find_root(path) == path
 
 
-@pytest.fixture
-def tmp1():
-  """
-  Creates a tmp1 folder in the REPOS_DIR and then deletes it.
-  """
-  tmp1 = os.path.join(REPOS_DIR, 'tmp1')
-  os.mkdir(tmp1)
-
-  yield tmp1
-
-  shutil.rmtree(tmp1)
-
-
 def test_path_lineage_arbitrary_folder(tmp1):
   """
   Verifies the path if you are inside a folder in a workspace with a gordion repostiory.
@@ -81,3 +100,38 @@ def test_get_repository(repository_a):
   """
   ref = gordion.Workspace().get_repository(repository_a.name)
   assert ref.path == repository_a.path
+
+
+def test_trim_repositories_duplicate(repository_a, mock_dependencies):
+  """
+  If a dependency is a duplicate of a working, it is trimmed.
+  """
+  duplicate_path = os.path.join(mock_dependencies, repository_a.name)
+  shutil.copytree(repository_a.path, duplicate_path)
+  gordion.Repository.register(key=duplicate_path, path=duplicate_path)
+  assert gordion.Repository.exists(duplicate_path)
+  gordion.Workspace().trim_repositories()
+  print(duplicate_path)
+  assert not gordion.Repository.exists(duplicate_path)
+
+
+def test_trim_repositories_wrong_path(repository_a, mock_dependencies):
+  """
+  If a dependency is in the wrong location it is trimmed.
+  """
+  repo_b_path = os.path.join(mock_dependencies, 'gordion_demo_wrong_name')
+  gordion.Repository.clone(repo_b_path, 'https://github.com/jacob-heathorn/gordion_demo_b.git')
+  assert gordion.Repository.exists(repo_b_path)
+  gordion.Workspace().trim_repositories()
+  assert not gordion.Repository.exists(repo_b_path)
+
+
+def test_trim_repositories_not_listed(repository_a, mock_dependencies):
+  """
+  If a dependency is in the wrong location it is trimmed.
+  """
+  not_listed_path = os.path.join(mock_dependencies, 'forge')
+  gordion.Repository.clone(not_listed_path, 'https://github.com/jacob-heathorn/forge.git')
+  assert gordion.Repository.exists(not_listed_path)
+  gordion.Workspace().trim_repositories()
+  assert not gordion.Repository.exists(not_listed_path)
