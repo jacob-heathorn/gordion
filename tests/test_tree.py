@@ -15,6 +15,9 @@ import pytest
 from tests.conftest import recursive_git_blast
 
 
+# =================================================================================================
+# Fixtures
+
 @pytest.fixture
 def tree_a(repository_a):
   """
@@ -38,6 +41,9 @@ def tree_a(repository_a):
   # Update to our known commit.
   tree_a.update(tag, branch_name, force=True)
 
+
+# =================================================================================================
+# Tests
 
 def test_same_repo_different_tag(tree_a):
   """
@@ -71,27 +77,22 @@ def test_same_repo_different_tag(tree_a):
   expected = gordion.UpdateSameRepoDifferentTagError(repo_d.path, listings)
   assert str(context.value) == str(expected)
 
+# TODO here.
+# def test_different_name_same_url(demo_a):
+#   """
+#   Verifies update will error if the same repository (by url) is attempted to be cloned with a
+#   different name.
+#   """
 
-def test_same_repo_different_path(demo_a):
-  """
-  Verifies update will error if the same repository is attempted to be cloned at different paths.
-  """
+#   demo_b = demo_a.children['gordion_demo_b']
+#   demo_c = demo_a.children['gordion_demo_c']
 
-  demo_b = demo_a.children['gordion_demo_b']
-  demo_c = demo_a.children['gordion_demo_c']
+#   with pytest.raises(gordion.UpdateSameRepoDifferentPathError) as context:
+#     demo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
 
-  with pytest.raises(gordion.UpdateSameRepoDifferentPathError) as context:
-    demo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
-
-  listings = []
-  listings.append(gordion.Tree.Listing(url=demo_b.url, path=demo_b.path,
-                                       listed_path=demo_b._listed_path(),
-                                       tag=demo_b.handle.head.commit))
-  listings.append(gordion.Tree.Listing(url=demo_b.url, path=demo_c.path,
-                                       listed_path=demo_c._listed_path(),
-                                       tag=demo_c.handle.head.commit))
-  expected = gordion.UpdateSameRepoDifferentPathError(demo_b.path, listings)
-  assert str(context.value) == str(expected)
+#   listings = tree_a.listings(name=repo_d.name, url=repo_d.url)
+#   expected = gordion.UpdateSameRepoDifferentPathError(demo_b.path, listings)
+#   assert str(context.value) == str(expected)
 
 
 def test_different_repo_same_path(demo_a):

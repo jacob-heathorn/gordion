@@ -46,7 +46,6 @@ def mock_dependencies():
 # =================================================================================================
 # Tests
 
-
 def test_path_default(repository_a):
   """
   The default workspace from a gordion repository is the parent directory.
