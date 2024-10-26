@@ -80,7 +80,7 @@ def test_same_repo_different_tag(tree_a):
 
 def test_different_name_same_url(tree_a):
   """
-  Verifies update will error if the same repository (by url) is listed with a different name.
+  Verifies update will error if a repository with a different name is listed with the same url.
   """
 
   with pytest.raises(gordion.UpdateDifferentNameSameUrlError) as context:
@@ -92,24 +92,16 @@ def test_different_name_same_url(tree_a):
   assert str(context.value) == str(expected)
 
 
-def test_different_repo_same_path(demo_a):
+def test_same_name_different_url(tree_a):
   """
-  Verifies that an error is generated if a different repository is attempted to be cloned to the
-  same gordion path.
+  Verifies update will error if a repository with the same name is listed with a different url.
   """
 
-  with pytest.raises(gordion.UpdateDifferentRepoSamePathError) as context:
-    demo_a.update('92d294df03a6bbf7ef43b60a0255adca08671328', "test_different_repo_same_path")
+  with pytest.raises(gordion.UpdateSameNameDifferentUrlError) as context:
+    tree_a.update('e052034df520cb2c07026a62df1cd0d4d236e7c1', "test_same_name_different_url")
 
-  target_path = os.path.join(demo_a.path, 'gordion', 'gordion_demo_b')
-
-  listings = []
-  listings.append(gordion.Tree.Listing(url='https://github.com/jacob-heathorn/gordion_demo_b.git',
-                                       path='', listed_path='', tag=''))
-  listings.append(gordion.Tree.Listing(url='https://github.com/jacob-heathorn/gordion_demo_d.git',
-                                       path='', listed_path='', tag=''))
-
-  expected = gordion.UpdateDifferentRepoSamePathError(target_path, listings)
+  listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
+  expected = gordion.UpdateSameNameDifferentUrlError('gordion_demo_d', listings)
   assert str(context.value) == str(expected)
 
 
