@@ -14,7 +14,7 @@ class RepositoryFolder(Folder):
     super().__init__(repo.path)
     self.repo = repo
     self.root: gordion.Tree = root
-    self.root_listings = self.root.listings(name=None, url=None)
+    self.root_listings, _ = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
     self.has_duplicate = False
     self.incoherent_tag = False

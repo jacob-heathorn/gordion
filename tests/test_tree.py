@@ -73,26 +73,23 @@ def test_same_repo_different_tag(tree_a):
     tree_a.update(repo_a.handle.head.commit.hexsha, "develop")
 
   # Verify the exception.
-  listings = tree_a.listings(name=repo_d.name, url=repo_d.url)
+  listings, _ = tree_a.listings(name=repo_d.name, url=repo_d.url)
   expected = gordion.UpdateSameRepoDifferentTagError(repo_d.path, listings)
   assert str(context.value) == str(expected)
 
-# TODO here.
-# def test_different_name_same_url(demo_a):
-#   """
-#   Verifies update will error if the same repository (by url) is attempted to be cloned with a
-#   different name.
-#   """
 
-#   demo_b = demo_a.children['gordion_demo_b']
-#   demo_c = demo_a.children['gordion_demo_c']
+def test_different_name_same_url(tree_a):
+  """
+  Verifies update will error if the same repository (by url) is listed with a different name.
+  """
 
-#   with pytest.raises(gordion.UpdateSameRepoDifferentPathError) as context:
-#     demo_a.update("8659bcd4e68ac3e0c0e2f55e6bd03296007a0a47", "test_duplicate_repo_path_mismatch")
+  with pytest.raises(gordion.UpdateDifferentNameSameUrlError) as context:
+    tree_a.update("aef5ce0b9c580675178e45f230df3c826f3a7e87", "test_different_name_same_url")
 
-#   listings = tree_a.listings(name=repo_d.name, url=repo_d.url)
-#   expected = gordion.UpdateSameRepoDifferentPathError(demo_b.path, listings)
-#   assert str(context.value) == str(expected)
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+  listings, _ = tree_a.listings(name=None, url=repo_d.url)
+  expected = gordion.UpdateDifferentNameSameUrlError('gordion_demo_d_different_name', listings)
+  assert str(context.value) == str(expected)
 
 
 def test_different_repo_same_path(demo_a):

@@ -59,7 +59,7 @@ def terminal_status(root: gordion.Tree) -> str:
   all_tag_incoherent_listings: List[gordion.Tree.Listing] = []
 
   # Trace the mainline tree.
-  root_listings = root.listings(name=None, url=None)
+  root_listings, _ = root.listings(name=None, url=None)
   for listing in root_listings:
     repo = workspace.get_repository(name=listing.name)
     if repo:

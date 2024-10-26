@@ -1,7 +1,7 @@
 import os
 import gordion
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 import shutil
 
 
@@ -115,19 +115,24 @@ class Workspace:
       else:
         break
 
-  def is_listed(self, target: gordion.Repository) -> bool:
+  def is_listed(self, target: gordion.Repository) -> Tuple[bool, bool]:
     """
     Checks that the repository is listed by name by least one of the working repositories.
     """
+    complete = True
+    is_listed = False
+
     # Working repositories don't need to be listed
     if not self.is_dependency(target.path):
       return True
 
     for _, repo in self.working(name=None, url=None).items():
       tree = gordion.Tree(repo)
-      if tree.is_listed(target):
-        return True
-    return False
+      is_listed_here, complete = tree.is_listed(target)
+      if is_listed_here:
+        is_listed = True
+
+    return is_listed, complete
 
   def trim_repositories(self) -> bool:
     """
@@ -137,7 +142,8 @@ class Workspace:
     for _, repo in self.repos().items():
       if self.is_dependency(repo.path):
         # If it is not listed, remove it.
-        if not self.is_listed(repo):
+        is_listed, complete = self.is_listed(repo)
+        if not is_listed and complete:
           paths.add(repo.path)
 
         # If it is a duplicate of a working.

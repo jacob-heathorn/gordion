@@ -1,7 +1,7 @@
 import gordion
 import os
 import git
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
 
@@ -63,7 +63,17 @@ class Tree:
         if len(working) == 0:
           if len(dependencies) == 0:
             child_path = os.path.join(self.workspace.dependencies_path, child_name)
-            child_repo = gordion.Repository.clone(child_path, child_url)
+
+            # If there is exactly one dependency already with this url, different name, move it.
+            deps_by_url = self.workspace.dependencies(name=None, url=child_url)
+            if len(deps_by_url) == 1:
+              dep = next(iter(deps_by_url.values()))
+              child_repo = gordion.Repository.safe_move(dep.path, child_path)
+            # Otherwise delete and reclone.
+            else:
+              for _, dep in deps_by_url.items():
+                gordion.Repository.safe_delete(dep.path)
+              child_repo = gordion.Repository.clone(child_path, child_url)
 
           # Only one dependency repo with this name...
           elif len(dependencies) == 1:
@@ -103,6 +113,9 @@ class Tree:
         else:
           raise gordion.UpdateMultipleRepositoriesAlreadyExistsError(child_path, working)
 
+        # Delete dependencies that have the same url, different name.
+        dependencies = self.workspace.dependencies(name=child_name, url=None)
+
         assert child_repo
         child = Tree(child_repo, self)
         child.update(child_tag, branch_name, force)
@@ -132,7 +145,7 @@ class Tree:
     Recursively checks for different listings that have the same repo.
     """
     # Collect all child listings that are the same repository (same effective url).
-    listings = self.listings(name=None, url=url)
+    listings, _ = self.listings(name=None, url=url)
 
     # Check each listing to see if there are any that are a different name.
     for listing in listings:
@@ -144,7 +157,7 @@ class Tree:
     Recursively checks for duplicate listings with different urls in this tree.
     """
 
-    listings = self.listings(name, url=None)
+    listings, _ = self.listings(name, url=None)
 
     # Raise an error if any listing doesn't match the target url.
     for listing in listings:
@@ -158,7 +171,7 @@ class Tree:
     """
 
     # Filter for an exact match to the name and url.
-    listings = self.listings(target.name, target.url)
+    listings, _ = self.listings(target.name, target.url)
 
     # Raise an error if any two listings don't match tags.
     listing_0_commit = target._verify_tag(listings[0].tag)
@@ -176,12 +189,13 @@ class Tree:
 
   # TODO reconsider recursing argument
   def listings(self, name: Optional[str], url: Optional[str],
-               recursing: bool = False) -> List[Listing]:
+               recursing: bool = False) -> Tuple[List[Listing], bool]:
     """
     Generates a list of Listings in the recursable Tree, including the self. A listing holds
     information as-listed in the gordion.yaml file, unless it is the root which doesn't have a
     parent gordion.yaml file.
     """
+    complete = True
     # Add self if not recursing.
     listings = []
     if not recursing:
@@ -222,7 +236,14 @@ class Tree:
             if child_listed_commit:
               if child_repo.handle.head.commit == child_listed_commit:
                 tree = gordion.Tree(child_repo)
-                listings.extend(tree.listings(name=name, url=url, recursing=True))
+                child_listings, complete = tree.listings(name=name, url=url, recursing=True)
+                listings.extend(child_listings)
+              else:
+                complete = False
+            else:
+              complete = False
+        else:
+          complete = False
 
     # Filter by name and url once at the top level.
     if not recursing:
@@ -231,11 +252,12 @@ class Tree:
       if url:
         listings = [listing for listing in listings if gordion.utils.compare_urls(listing.url, url)]
 
-    return listings
+    return listings, complete
 
-  def is_listed(self, repo: gordion.Repository):
-    listings = self.listings(name=repo.name, url=None)
-    return len(listings) > 0
+  def is_listed(self, repo: gordion.Repository) -> Tuple[bool, bool]:
+    listings, complete = self.listings(name=repo.name, url=None)
+    is_listed = len(listings) > 0
+    return is_listed, complete
 
   @ staticmethod
   def find(path: str) -> str:
