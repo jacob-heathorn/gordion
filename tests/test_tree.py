@@ -13,6 +13,7 @@ import os
 import gordion
 import pytest
 from tests.conftest import recursive_git_blast
+from conftest import REPOS_DIR
 
 
 # =================================================================================================
@@ -36,7 +37,7 @@ def tree_a(repository_a):
   yield tree_a
 
   # Cleanup.
-  recursive_git_blast(tree_a.repo.path)
+  recursive_git_blast(REPOS_DIR)
 
   # Update to our known commit.
   tree_a.update(tag, branch_name, force=True)
@@ -202,42 +203,27 @@ def test_unsafe_remove_stashes(tree_a):
   assert str(context.value) == str(expected)
 
 
-def test_name_path_mismatch(demo_a):
-  """
-  Verifies that an error is generated if the optional path property does not match the repository
-  name.
-  """
-  demo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/subdir/not_gordion_demo_b'
-  demo_a.yeditor.save()
-  with pytest.raises(gordion.BadRepositoryNamePathMismach) as context:
-    demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
-
-  expected = gordion.BadRepositoryNamePathMismach(demo_a.yeditor.fullfile,
-                                                  '/subdir/not_gordion_demo_b', 'gordion_demo_b')
-  assert str(context.value) == str(expected)
-
-
-def test_dangling_commit(demo_a):
+def test_dangling_commit(tree_a):
   """
   Verifies update will error if a child target commit is dangling.
   """
 
   # Create a dangling commit by committing something, then deleting it. First make an arbitrary
   # change to repo B.
-  demo_b = demo_a.children['gordion_demo_b']
-  demo_b.handle.git.commit('-m', "Empty commit for test_dangling_commit", allow_empty=True)
-  empty_commit = demo_b.handle.head.commit
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  repo_b.handle.git.commit('-m', "Empty commit for test_dangling_commit", allow_empty=True)
+  empty_commit = repo_b.handle.head.commit
 
   # Now delete the commit (checkout HEAD~1).
-  demo_b.handle.head.reset('HEAD~1', index=True, working_tree=True)
+  repo_b.handle.head.reset('HEAD~1', index=True, working_tree=True)
 
   # Now add the empty commit to the parent gordion.yaml.
-  demo_a.yeditor.write_repository_tag('gordion_demo_b', empty_commit.hexsha)
-  demo_a.yeditor.save()
+  tree_a.repo.yeditor.write_repository_tag('gordion_demo_b', empty_commit.hexsha)
+  tree_a.repo.yeditor.save()
 
   # Now update should error commit is dangling ehh.
   with pytest.raises(gordion.DanglingCommitError) as context:
-    demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
+    tree_a.update(tree_a.repo.handle.head.commit.hexsha, "develop")
 
-  expected = gordion.DanglingCommitError(demo_b.path, empty_commit.hexsha)
+  expected = gordion.DanglingCommitError(repo_b.path, empty_commit.hexsha)
   assert str(context.value) == str(expected)

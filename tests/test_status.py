@@ -5,6 +5,7 @@ from gordion.utils import green, bold_green, bold_blue, red, bold_red, yellow
 from gordion.utils import replace_i
 import pytest
 from tests.conftest import recursive_git_blast
+from conftest import REPOS_DIR
 
 
 @pytest.fixture
@@ -24,7 +25,7 @@ def demo_a(tree_a):
   yield tree_a
 
   # Cleanup.
-  recursive_git_blast(tree_a.path)
+  recursive_git_blast(REPOS_DIR)
 
   # Update to our known commit.
   tree_a.update(tag, branch_name, force=True)
@@ -34,7 +35,7 @@ def demo_a(tree_a):
 # Nominal status test
 
 NOMINAL_STATUS = \
-  f"""{bold_green('gordion_demo_a')} {green('test_status')}:{green('4d95f11')}
+    f"""{bold_green('gordion_demo_a')} {green('test_status')}:{green('4d95f11')}
 └──{bold_blue('gordion')}
     ├──{bold_green('gordion_demo_d')} {green('develop')}:{green('c516fff')}
     ├──{bold_blue('level_1')}
@@ -64,8 +65,8 @@ def test_dangling_repository(demo_a):
   expected = NOMINAL_STATUS.replace(f"{green('test_status')}:{green('4d95f11')}",
                                     f"{green('test_dangling_repository')}:{green('4b8e62f')}")
   expected = \
-    expected.replace(f"{bold_green('gordion_demo_c')} {green('develop')}:{green('1a8f7fe')}",
-                     f"{bold_red('gordion_demo_c')} develop:1a8f7fe")
+      expected.replace(f"{bold_green('gordion_demo_c')} {green('develop')}:{green('1a8f7fe')}",
+                       f"{bold_red('gordion_demo_c')} develop:1a8f7fe")
 
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
   assert expected == gordion.app.status.terminal_status(root)
@@ -176,8 +177,8 @@ def test_child_branch_is_root_branch(demo_a):
   demo_b = demo_a.children['gordion_demo_b']
   demo_b.handle.git.checkout('-b', 'root_branch')
   expected = \
-    NOMINAL_STATUS.replace(green('test_status'),
-                           green('root_branch') + yellow('(untracked)'))
+      NOMINAL_STATUS.replace(green('test_status'),
+                             green('root_branch') + yellow('(untracked)'))
   expected = replace_i(expected,
                        green('develop'),
                        green('root_branch') + yellow('(untracked)'), 1)
@@ -196,8 +197,8 @@ def test_child_default_root_available(demo_a):
   demo_b.handle.git.checkout('-b', 'root_branch')
   demo_b.handle.branches['develop'].checkout()
   expected = \
-    NOMINAL_STATUS.replace(green('test_status'),
-                           green('root_branch') + yellow('(untracked)'))
+      NOMINAL_STATUS.replace(green('test_status'),
+                             green('root_branch') + yellow('(untracked)'))
   expected = replace_i(expected,
                        green('develop'),
                        yellow('develop') + yellow('(root_branch?)'), 1)
@@ -215,8 +216,8 @@ def test_child_different_root_available(demo_a):
   demo_b.handle.git.checkout('-b', 'root_branch')
   demo_b.handle.git.checkout('-b', 'different_branch')
   expected = \
-    NOMINAL_STATUS.replace(green('test_status'),
-                           green('root_branch') + yellow('(untracked)'))
+      NOMINAL_STATUS.replace(green('test_status'),
+                             green('root_branch') + yellow('(untracked)'))
   expected = replace_i(expected,
                        green('develop'),
                        yellow('different_branch') + yellow('(root_branch?, untracked)'), 1)

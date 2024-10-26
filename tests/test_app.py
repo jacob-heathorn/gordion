@@ -2,6 +2,7 @@ import os
 import gordion
 import pytest
 from tests.conftest import recursive_git_blast
+from conftest import REPOS_DIR
 
 
 @pytest.fixture
@@ -21,7 +22,7 @@ def demo_a(tree_a):
   yield tree_a
 
   # Cleanup.
-  recursive_git_blast(tree_a.path)
+  recursive_git_blast(REPOS_DIR)
 
   # Update to our known commit.
   tree_a.update(tag, branch_name, force=True)
@@ -57,5 +58,5 @@ def test_gordion_root(demo_a):
       gordion.app.root.gordion_root(os.getcwd())
 
     expected = gordion.DanglingGordionRepositoryError(
-      os.path.join(demo_a.path, 'gordion', 'gordion_demo_c'), demo_a.path)
+        os.path.join(demo_a.path, 'gordion', 'gordion_demo_c'), demo_a.path)
     assert str(context.value) == str(expected)
