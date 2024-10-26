@@ -126,79 +126,79 @@ def test_unsafe_remove_dirty(tree_a):
   assert str(context.value) == str(expected)
 
 
-def test_unsafe_remove_local_branch_no_tracking_branch(demo_a):
+def test_unsafe_remove_local_branch_no_tracking_branch(tree_a):
   """
   Verifies that an error is generated if the update attempts to delete a repository that has local
   branches without a remote tracking branch.
   """
 
   # Checkout a new local branch on repo B.
-  demo_b = demo_a.children['gordion_demo_b']
-  new_branch = demo_b.handle.create_head("new_branch")
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  new_branch = repo_b.handle.create_head("new_branch")
   new_branch.checkout()
 
   # Remove repo B from Repo A's yaml file.
-  del demo_a.yeditor.yaml_data['repositories']['gordion_demo_b']
-  demo_a.yeditor.save()
+  del tree_a.repo.yeditor.yaml_data['repositories']['gordion_demo_b']
+  tree_a.repo.yeditor.save()
 
   # Verify update errors because we are deleting the repository and the local branch does not have a
   # tracking branch.
   with pytest.raises(gordion.UnsafeRemoveLocalBranchNoTrackingBranch) as context:
-    demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
-  expected = gordion.UnsafeRemoveLocalBranchNoTrackingBranch(demo_b.path, "new_branch")
+    tree_a.update(tree_a.repo.handle.head.commit.hexsha, "develop")
+  expected = gordion.UnsafeRemoveLocalBranchNoTrackingBranch(repo_b.path, "new_branch")
   assert str(context.value) == str(expected)
 
 
-def test_unsafe_remove_local_branch_ahead(demo_a):
+def test_unsafe_remove_local_branch_ahead(tree_a):
   """
   Verifies that an error is generated if the update attempts to delete a repository that has local
   branches that are ahead of their remote tracking branches.
   """
 
   # Remove repo B from Repo A's yaml file.
-  del demo_a.yeditor.yaml_data['repositories']['gordion_demo_b']
-  demo_a.yeditor.save()
+  del tree_a.repo.yeditor.yaml_data['repositories']['gordion_demo_b']
+  tree_a.repo.yeditor.save()
 
   # Now checkout a branch on Repo B that has a remote tracking branch.
-  demo_b = demo_a.children['gordion_demo_b']
-  demo_b.handle.git.checkout('-b', 'test_unsafe_remove_local_branch_unsaved',
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  repo_b.handle.git.checkout('-b', 'test_unsafe_remove_local_branch_unsaved',
                              'origin/test_unsafe_remove_local_branch_unsaved')
-  demo_b.handle.git.commit('-m', "Empty commit for test_unsafe_remove_local_branch_unsaved",
+  repo_b.handle.git.commit('-m', "Empty commit for test_unsafe_remove_local_branch_unsaved",
                            allow_empty=True)
 
   # Verify update errors because we are deleting the repository and the local branch has an unsaved
   # commit.
   with pytest.raises(gordion.UnsafeRemoveLocalBranchAhead) as context:
-    demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
-  expected = gordion.UnsafeRemoveLocalBranchAhead(demo_b.path,
+    tree_a.update(tree_a.repo.handle.head.commit.hexsha, "develop")
+  expected = gordion.UnsafeRemoveLocalBranchAhead(repo_b.path,
                                                   "test_unsafe_remove_local_branch_unsaved",
                                                   "origin/test_unsafe_remove_local_branch_unsaved",
                                                   1)
   assert str(context.value) == str(expected)
 
 
-def test_unsafe_remove_stashes(demo_a):
+def test_unsafe_remove_stashes(tree_a):
   """
   Verifies that an error is generated if the update attempts to delete a repository that has
   stashes.
   """
 
   # Remove repo B from Repo A's yaml file.
-  del demo_a.yeditor.yaml_data['repositories']['gordion_demo_b']
-  demo_a.yeditor.save()
+  del tree_a.repo.yeditor.yaml_data['repositories']['gordion_demo_b']
+  tree_a.repo.yeditor.save()
 
   # Create a stash on repo B.
-  demo_b = demo_a.children['gordion_demo_b']
-  file_path = os.path.join(demo_b.path, 'README.md')
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  file_path = os.path.join(repo_b.path, 'README.md')
   with open(file_path, 'w') as file:
     file.write('test_unsafe_remove_stashes wrote this.\n')
-  demo_b.handle.git.stash("save")
+  repo_b.handle.git.stash("save")
 
   # Verify update errors because we are deleting the repository while it has stashes.
-  stashes = demo_b.handle.git.stash("list")
+  stashes = repo_b.handle.git.stash("list")
   with pytest.raises(gordion.UnsafeRemoveStashes) as context:
-    demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
-  expected = gordion.UnsafeRemoveStashes(demo_b.path, stashes)
+    tree_a.update(tree_a.repo.handle.head.commit.hexsha, "develop")
+  expected = gordion.UnsafeRemoveStashes(repo_b.path, stashes)
   assert str(context.value) == str(expected)
 
 
