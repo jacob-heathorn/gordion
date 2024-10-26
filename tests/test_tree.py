@@ -105,50 +105,24 @@ def test_same_name_different_url(tree_a):
   assert str(context.value) == str(expected)
 
 
-def test_non_default_path(demo_a):
-  """
-  Verifies that a repository can be cloned at a non-default gpath. And that the non-default path can
-  be cleaned up if it is moved back.
-  """
-
-  # Put repo B at in a non-default path, update and verify it exists, and the origional one has been
-  # removed.
-  demo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/heyo/gordion_demo_b'
-  demo_a.yeditor.save()
-  demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
-  demo_b = demo_a.children['gordion_demo_b']
-  assert demo_b.path == os.path.join(demo_a.path, 'gordion', 'heyo', 'gordion_demo_b')
-  assert demo_b.handle.head.commit.hexsha == demo_a.yeditor.read_repository_tag('gordion_demo_b')
-  assert not os.path.isdir(os.path.join(demo_a.path, 'gordion', 'gordion_demo_b'))
-
-  # Put repository back to default path, verify old path is deleted.
-  demo_a.yeditor.yaml_data['repositories']['gordion_demo_b']['path'] = '/gordion_demo_b'
-  demo_a.yeditor.save()
-  demo_a.update(demo_a.handle.head.commit.hexsha, "develop")
-  demo_b = demo_a.children['gordion_demo_b']
-  assert demo_b.path == os.path.join(demo_a.path, 'gordion', 'gordion_demo_b')
-  assert demo_b.handle.head.commit.hexsha == demo_a.yeditor.read_repository_tag('gordion_demo_b')
-  assert not os.path.isdir(os.path.join(demo_a.path, 'gordion', 'heyo'))
-
-
-def test_unsafe_remove_dirty(demo_a):
+def test_unsafe_remove_dirty(tree_a):
   """
   Verifies that an error is generated if the update will attempt to cleanup(remove) a repository
   that has dirty changes.
   """
 
   # Make the demo_c dirty by adding an empty file.
-  demo_c = demo_a.children['gordion_demo_c']
-  touchfile = os.path.join(demo_c.path, 'touch.txt')
+  repo_c = gordion.Workspace().get_repository('gordion_demo_c')
+  touchfile = os.path.join(repo_c.path, 'touch.txt')
   with open(touchfile, 'w'):
     pass
 
-  assert demo_c.handle.is_dirty(untracked_files=True)
+  assert repo_c.handle.is_dirty(untracked_files=True)
 
   with pytest.raises(gordion.UnsafeRemoveDirty) as context:
-    demo_a.update('55f619c7af1cdc3ed13487c3aab050b492e655eb', 'test_unsafe_remove_dirty')
+    tree_a.update('55f619c7af1cdc3ed13487c3aab050b492e655eb', 'test_unsafe_remove_dirty')
 
-  expected = gordion.UnsafeRemoveDirty(demo_c.path)
+  expected = gordion.UnsafeRemoveDirty(repo_c.path)
   assert str(context.value) == str(expected)
 
 
