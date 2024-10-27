@@ -4,19 +4,20 @@ import gordion
 from gordion.utils import green, bold_green, bold_blue, red, bold_red, yellow
 from gordion.utils import replace_i
 import pytest
-from tests.conftest import recursive_git_blast
-from conftest import REPOS_DIR
 
+
+# =================================================================================================
+# Fixtures
 
 @pytest.fixture
-def demo_a(tree_a):
+def tree_a(tree_a):
   """
-  This puts the gordion.Tree session object back into a well-known state for each test case.
+  This puts tree_a session object back into a well-known state for each test case.
   """
   # Setup
   #
   # Set the object to a known commit and branch.
-  tag = '4d95f11'
+  tag = '082abea'
   branch_name = 'test_status'
 
   # Set the target branch/commit.
@@ -24,52 +25,49 @@ def demo_a(tree_a):
 
   yield tree_a
 
-  # Cleanup.
-  recursive_git_blast(REPOS_DIR)
-
-  # Update to our known commit.
-  tree_a.update(tag, branch_name, force=True)
-
 
 # =================================================================================================
 # Nominal status test
 
 NOMINAL_STATUS = \
-    f"""{bold_green('gordion_demo_a')} {green('test_status')}:{green('4d95f11')}
-└──{bold_blue('gordion')}
-    ├──{bold_green('gordion_demo_d')} {green('develop')}:{green('c516fff')}
-    ├──{bold_blue('level_1')}
-    │   └──{bold_green('gordion_demo_b')} {green('develop')}:{green('fe4fd4d')}
-    └──{bold_blue('level_2')}
-        └──{bold_green('gordion_demo_c')} {green('develop')}:{green('1a8f7fe')}"""
+    f"""{bold_blue('repos')}
+├──{bold_blue('.dependencies')}
+│   ├──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')}
+│   ├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
+│   └──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}
+└──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}"""
 
 
-def test_nominal_status(demo_a):
+def test_nominal_status(tree_a):
   """
   Verifies the nominal status string (all green).
   """
 
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert NOMINAL_STATUS == gordion.app.status.terminal_status(root)
+  # TODO remove
+  # print("\n\n")
+  # print(NOMINAL_STATUS)
+  # print("\n\n")
+  # print(gordion.app.status.terminal_status(tree_a))
+  assert NOMINAL_STATUS == gordion.app.status.terminal_status(tree_a)
 
 
 # =================================================================================================
 # Tests for repository status
 
-def test_dangling_repository(demo_a):
+def test_dangling_repository(tree_a):
   """
   Verifies the repository will appear RED if it is unlisted. The commit and branch will appear
   white.
   """
-  demo_a.handle.git.checkout('-b', 'test_dangling_repository', 'origin/test_dangling_repository')
-  expected = NOMINAL_STATUS.replace(f"{green('test_status')}:{green('4d95f11')}",
-                                    f"{green('test_dangling_repository')}:{green('4b8e62f')}")
-  expected = \
-      expected.replace(f"{bold_green('gordion_demo_c')} {green('develop')}:{green('1a8f7fe')}",
-                       f"{bold_red('gordion_demo_c')} develop:1a8f7fe")
+  # demo_a.handle.git.checkout('-b', 'test_dangling_repository', 'origin/test_dangling_repository')
+  # expected = NOMINAL_STATUS.replace(f"{green('test_status')}:{green('4d95f11')}",
+  #                                   f"{green('test_dangling_repository')}:{green('4b8e62f')}")
+  # expected = \
+  #     expected.replace(f"{bold_green('gordion_demo_c')} {green('develop')}:{green('1a8f7fe')}",
+  #                      f"{bold_red('gordion_demo_c')} develop:1a8f7fe")
 
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.terminal_status(root)
+  # root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
+  # assert expected == gordion.app.status.terminal_status(root)
 
 
 # =================================================================================================

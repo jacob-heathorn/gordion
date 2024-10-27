@@ -110,7 +110,8 @@ class RepositoryFolder(Folder):
 
     # Create display name
     display_name = name_header + " " + branch_header + tag_header
-    display_name += " " + errors_header
+    if errors_header:
+      display_name += " " + errors_header
     return display_name
 
   def _get_branch_name(self):
