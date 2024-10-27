@@ -34,13 +34,14 @@ def mock_dependencies():
   """
   Creates a .dependencies folder in the REPOS_DIR and then deletes it.
   """
-  mock_dependencies = os.path.join(REPOS_DIR, '.dependencies')
+  mock_dependencies = gordion.Workspace().dependencies_path
+  shutil.rmtree(mock_dependencies, ignore_errors=True)
   os.mkdir(mock_dependencies)
 
   yield mock_dependencies
 
-  # shutil.rmtree(mock_dependencies, ignore_errors=True)
-  # gordion.Workspace().discover_repositories()
+  shutil.rmtree(mock_dependencies, ignore_errors=True)
+  gordion.Workspace().discover_repositories()
 
 
 # =================================================================================================
@@ -129,15 +130,14 @@ def test_trim_repositories_wrong_path(repository_a, mock_dependencies):
   gordion.Workspace().trim_repositories()
   assert not gordion.Repository.exists(repo_b_wrong_path)
 
-# TODO here, need a to be complete, move to test_tree? Or move fixture here. Actually just move
-# tree_a fixture? and share it here.
 
-
-def test_trim_repositories_not_listed(repository_a, mock_dependencies):
+def test_trim_repositories_not_listed(tree_a):
   """
   If a dependency is not listed, then it is trimmed.
   """
-  not_listed_path = os.path.join(mock_dependencies, 'forge')
+  # NOTE: We need tree_a fixture for this, because we need a complete workspace in order for trim to
+  # delete unlisted repositories.
+  not_listed_path = os.path.join(gordion.Workspace().dependencies_path, 'forge')
   gordion.Repository.clone(not_listed_path, 'https://github.com/jacob-heathorn/forge.git')
   assert gordion.Repository.exists(not_listed_path)
   gordion.Workspace().trim_repositories()

@@ -12,35 +12,6 @@
 import os
 import gordion
 import pytest
-from tests.conftest import recursive_git_blast
-from conftest import REPOS_DIR
-
-
-# =================================================================================================
-# Fixtures
-
-@pytest.fixture
-def tree_a(repository_a):
-  """
-  This puts the gordion.Tree session object back into a well-known state for each test case.
-  """
-  # Setup
-  #
-  # Set the object to a known commit on the develop branch.
-  tag = 'c9da3e67006cbb03b6810d2e5b8effebb0f0b674'
-  branch_name = 'develop'
-
-  # Set the target branch/commit.
-  tree_a = gordion.Tree(repository_a)
-  tree_a.update(tag, branch_name, force=True)
-
-  yield tree_a
-
-  # Cleanup.
-  recursive_git_blast(REPOS_DIR)
-
-  # Update to our known commit.
-  tree_a.update(tag, branch_name, force=True)
 
 
 # =================================================================================================
