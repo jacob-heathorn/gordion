@@ -39,8 +39,8 @@ def mock_dependencies():
 
   yield mock_dependencies
 
-  shutil.rmtree(mock_dependencies, ignore_errors=True)
-  gordion.Workspace().discover_repositories()
+  # shutil.rmtree(mock_dependencies, ignore_errors=True)
+  # gordion.Workspace().discover_repositories()
 
 
 # =================================================================================================
@@ -120,16 +120,22 @@ def test_trim_repositories_wrong_path(repository_a, mock_dependencies):
   """
   If a dependency is in the wrong location it is trimmed.
   """
-  repo_b_path = os.path.join(mock_dependencies, 'gordion_demo_wrong_name')
-  gordion.Repository.clone(repo_b_path, 'https://github.com/jacob-heathorn/gordion_demo_b.git')
-  assert gordion.Repository.exists(repo_b_path)
+  subdir = os.path.join(mock_dependencies, 'subdir')
+  os.mkdir(subdir)
+  repo_b_wrong_path = os.path.join(subdir, 'gordion_demo_b')
+  gordion.Repository.clone(repo_b_wrong_path,
+                           'https://github.com/jacob-heathorn/gordion_demo_b.git')
+  assert gordion.Repository.exists(repo_b_wrong_path)
   gordion.Workspace().trim_repositories()
-  assert not gordion.Repository.exists(repo_b_path)
+  assert not gordion.Repository.exists(repo_b_wrong_path)
+
+# TODO here, need a to be complete, move to test_tree? Or move fixture here. Actually just move
+# tree_a fixture? and share it here.
 
 
 def test_trim_repositories_not_listed(repository_a, mock_dependencies):
   """
-  If a dependency is in the wrong location it is trimmed.
+  If a dependency is not listed, then it is trimmed.
   """
   not_listed_path = os.path.join(mock_dependencies, 'forge')
   gordion.Repository.clone(not_listed_path, 'https://github.com/jacob-heathorn/forge.git')

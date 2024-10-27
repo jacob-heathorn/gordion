@@ -141,21 +141,29 @@ class Workspace:
     paths = set()
     for _, repo in self.repos().items():
       if self.is_dependency(repo.path):
+        print("here1")
         # If it is not listed, remove it.
         is_listed, complete = self.is_listed(repo)
+        print(f"complete: {complete}, is_listed: {is_listed}")
         if not is_listed and complete:
           paths.add(repo.path)
+          print("here2")
 
         # If it is a duplicate of a working.
         for _, other in self.repos().items():
+          print(f"other {other.path}")
           if not self.is_dependency(other.path):
+            print("ok1")
             if other.path != repo.path and gordion.utils.compare_urls(other.url, repo.url):
               paths.add(repo.path)
+              print("here3")
 
         # If it is not at the expected path remove it.
         expected_path = os.path.join(self.dependencies_path, repo.name)
+        print(f"expected: {expected_path}")
         if repo.path != expected_path:
           paths.add(repo.path)
+          print("here4")
 
     for path in paths:
       gordion.Repository.safe_delete(path)
