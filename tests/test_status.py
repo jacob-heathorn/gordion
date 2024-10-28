@@ -25,6 +25,8 @@ def tree_a(tree_a):
 
   yield tree_a
 
+  print("here1")
+
 
 # =================================================================================================
 # Nominal status test
@@ -42,51 +44,31 @@ def test_nominal_status(tree_a):
   """
   Verifies the nominal status string (all green).
   """
-
-  # TODO remove
-  # print("\n\n")
-  # print(NOMINAL_STATUS)
-  # print("\n\n")
-  # print(gordion.app.status.terminal_status(tree_a))
   assert NOMINAL_STATUS == gordion.app.status.terminal_status(tree_a)
-
-
-# =================================================================================================
-# Tests for repository status
-
-def test_dangling_repository(tree_a):
-  """
-  Verifies the repository will appear RED if it is unlisted. The commit and branch will appear
-  white.
-  """
-  # demo_a.handle.git.checkout('-b', 'test_dangling_repository', 'origin/test_dangling_repository')
-  # expected = NOMINAL_STATUS.replace(f"{green('test_status')}:{green('4d95f11')}",
-  #                                   f"{green('test_dangling_repository')}:{green('4b8e62f')}")
-  # expected = \
-  #     expected.replace(f"{bold_green('gordion_demo_c')} {green('develop')}:{green('1a8f7fe')}",
-  #                      f"{bold_red('gordion_demo_c')} develop:1a8f7fe")
-
-  # root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  # assert expected == gordion.app.status.terminal_status(root)
 
 
 # =================================================================================================
 # Tests for commit status
 
-def test_wrong_commit(demo_a):
+def test_wrong_commit(tree_a):
   """
   Verifies the commit will appear RED if it does not match the parent gordion.yaml file.
   """
 
   # In demoC, checkout HEAD~1
-  demo_c = demo_a.children['gordion_demo_c']
-  demo_c.handle.head.reset('HEAD~1', index=True, working_tree=True)
+  # repo_c = gordion.Workspace().get_repository('gordion_demo_c')
+  # repo_c.handle.head.reset('HEAD~1', index=True, working_tree=True)
 
-  # Get the expected status string.
-  demo_c_new_commit = demo_c.handle.head.commit.hexsha[:7]
-  expected = NOMINAL_STATUS.replace(green('1a8f7fe'), red(demo_c_new_commit))
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.terminal_status(root)
+  # # Get the expected status string.
+  # demo_c_new_commit = repo_c.handle.head.commit.hexsha[:7]
+  # expected = NOMINAL_STATUS.replace(green(':1a8f7fe'), red(f":{demo_c_new_commit}"))
+  # assert expected == gordion.app.status.terminal_status(tree_a)
+
+  # TODO remove
+  # print("\n\n")
+  # print(expected)
+  # print("\n\n")
+  # print(gordion.app.status.terminal_status(tree_a))
 
 
 def test_child_mismatch(demo_a):

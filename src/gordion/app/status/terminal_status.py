@@ -31,14 +31,15 @@ def get_tag_incoherent_listings(folder, root_listings) -> List[gordion.Tree.List
       unique_good_tags.add(commit.hexsha)
     else:
       folder.incoherent_tag = True
-      return listings
 
   if len(unique_good_tags) > 1:
     folder.incoherent_tag = True
-    return listings
   else:
     if repo.handle.head.commit.hexsha == list(unique_good_tags)[0]:
       folder.correct_tag = True
+
+  if folder.incoherent_tag:
+    return listings
 
   return []
 

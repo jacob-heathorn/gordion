@@ -49,43 +49,42 @@ def tree_a(repository_a):
 
   yield tree_a
 
-  # Cleanup.
-  recursive_git_blast(REPOS_DIR)
+  # print("here2")
 
-  # Update to our known commit.
-  tree_a.update(tag, branch_name, force=True)
+  # # Cleanup.
+  recursive_git_blast_workspace()
+
+  # print("here4")
+
+  # # Update to our known commit.
+  gordion.Workspace().discover_repositories()
+  # tree_a = gordion.Tree(gordion.Workspace().get_repository('gordion_demo_a'))
+  print(gordion.app.status.terminal_status(tree_a))
+  # tree_a.update(tag, branch_name, force=True)
+
+  # print("here5")
 
 
 # =================================================================================================
 # Helpers
 
-def git_clean(path):
-  if gordion.Repository.exists(path):
-    repo = gordion.Repository(path)
-    repo.handle.git.reset('--hard')
-    repo.handle.git.clean('-fdx')
-    repo.handle.git.stash('clear')
+def git_clean(repo):
+  repo.handle.git.reset('--hard')
+  repo.handle.git.clean('-fdx')
+  repo.handle.git.stash('clear')
 
 
-def git_delete_non_develop_branches(path):
-  if gordion.Repository.exists(path):
-    repo = gordion.Repository(path)
-    repo.handle.branches['develop'].checkout()
-    branches = list(repo.handle.branches)
-    for branch in branches:
-      if branch.name != 'develop':
-        repo.handle.delete_head(branch, force=True)
+def git_delete_non_develop_branches(repo):
+  repo.handle.branches['develop'].checkout()
+  branches = list(repo.handle.branches)
+  for branch in branches:
+    if branch.name != 'develop':
+      repo.handle.delete_head(branch, force=True)
 
 
-def recursive_git_blast(path):
-  # Cleanup root directory.
-  git_clean(path)
-  git_delete_non_develop_branches(path)
+def recursive_git_blast_workspace():
+  # gordion.Workspace().discover_repositories()
 
-  # Cleanup child directories.
-  for root, dirs, _ in os.walk(path):
-    for dir in dirs:
-      dir = os.path.join(root, dir)
-      if gordion.Repository.exists(dir):
-        git_clean(dir)
-        git_delete_non_develop_branches(dir)
+  for _, repo in gordion.Workspace().repos().items():
+    git_clean(repo)
+    git_delete_non_develop_branches(repo)
