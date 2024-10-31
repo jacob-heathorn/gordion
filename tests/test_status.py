@@ -63,24 +63,36 @@ def test_wrong_commit(tree_a):
   assert expected == gordion.app.status.terminal_status(tree_a)
 
 
-def test_child_mismatch(demo_a):
+def test_child_mismatch(tree_a):
   """
   Verifies the following commit appendages:
     -mismatch
     -dirty
   """
   # Change demoB's listing of demoD to HEAD~1
-  demo_b = demo_a.children['gordion_demo_b']
-  demo_d = demo_b.children['gordion_demo_d']
-  dminus1 = demo_d.handle.head.commit.parents[0]
-  demo_b.yeditor.write_repository_tag('gordion_demo_d', dminus1.hexsha)
-  demo_b.yeditor.save()
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+  dminus1 = repo_d.handle.head.commit.parents[0]
+  repo_b.yeditor.write_repository_tag('gordion_demo_d', dminus1.hexsha)
+  repo_b.yeditor.save()
 
   # Verify.
-  expected = NOMINAL_STATUS.replace(green('c516fff'), red('c516fff-mismatch'))
-  expected = expected.replace(green('fe4fd4d'), green('fe4fd4d') + yellow('-dirty'))
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.terminal_status(root)
+  expected = NOMINAL_STATUS.replace(green(':c516fff'), red(':c516fff (TAG INCOHERENCE)'))
+  expected = expected.replace(green(':fe4fd4d'), green(':fe4fd4d') + yellow('-dirty'))
+  expected_header = gordion.utils.bold_red("Tag Incoherences:\n")
+  repo_b_listings, _ = tree_a.listings(name='gordion_demo_b', url=None)
+  expected_header += gordion.utils.red(
+      f"* {gordion.utils.filelink(repo_b_listings[0].file, 'gordion_demo_b/gordion.yaml')} : gordion_demo_d : {dminus1.hexsha}\n")
+  repo_d_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
+  expected_header += gordion.utils.red(
+      f"* {gordion.utils.filelink(repo_d_listings[0].file, 'gordion_demo_b/gordion.yaml')} : {repo_d.handle.head.commit.hexsha}\n\n")
+  expected = expected_header + expected
+  assert expected == gordion.app.status.terminal_status(tree_a)
+
+  print("\n\nexpected:")
+  print(expected)
+  print("\n\n")
+  print(gordion.app.status.terminal_status(tree_a))
 
 
 # =================================================================================================
