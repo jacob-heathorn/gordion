@@ -49,20 +49,11 @@ def tree_a(repository_a):
 
   yield tree_a
 
-  # print("here2")
-
-  # # Cleanup.
+  # Cleanup.
   recursive_git_blast_workspace()
 
-  # print("here4")
-
-  # # Update to our known commit.
-  gordion.Workspace().discover_repositories()
-  # tree_a = gordion.Tree(gordion.Workspace().get_repository('gordion_demo_a'))
-  print(gordion.app.status.terminal_status(tree_a))
-  # tree_a.update(tag, branch_name, force=True)
-
-  # print("here5")
+  # Update to our known commit.
+  tree_a.update(tag, branch_name, force=True)
 
 
 # =================================================================================================
@@ -83,8 +74,7 @@ def git_delete_non_develop_branches(repo):
 
 
 def recursive_git_blast_workspace():
-  # gordion.Workspace().discover_repositories()
-
   for _, repo in gordion.Workspace().repos().items():
     git_clean(repo)
     git_delete_non_develop_branches(repo)
+    repo.yeditor.reload()

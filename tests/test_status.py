@@ -25,8 +25,6 @@ def tree_a(tree_a):
 
   yield tree_a
 
-  print("here1")
-
 
 # =================================================================================================
 # Nominal status test
@@ -56,19 +54,13 @@ def test_wrong_commit(tree_a):
   """
 
   # In demoC, checkout HEAD~1
-  # repo_c = gordion.Workspace().get_repository('gordion_demo_c')
-  # repo_c.handle.head.reset('HEAD~1', index=True, working_tree=True)
+  repo_c = gordion.Workspace().get_repository('gordion_demo_c')
+  repo_c.handle.head.reset('HEAD~1', index=True, working_tree=True)
 
-  # # Get the expected status string.
-  # demo_c_new_commit = repo_c.handle.head.commit.hexsha[:7]
-  # expected = NOMINAL_STATUS.replace(green(':1a8f7fe'), red(f":{demo_c_new_commit}"))
-  # assert expected == gordion.app.status.terminal_status(tree_a)
-
-  # TODO remove
-  # print("\n\n")
-  # print(expected)
-  # print("\n\n")
-  # print(gordion.app.status.terminal_status(tree_a))
+  # Get the expected status string.
+  demo_c_new_commit = repo_c.handle.head.commit.hexsha[:7]
+  expected = NOMINAL_STATUS.replace(green(':1a8f7fe'), red(f":{demo_c_new_commit}"))
+  assert expected == gordion.app.status.terminal_status(tree_a)
 
 
 def test_child_mismatch(demo_a):

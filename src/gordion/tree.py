@@ -213,7 +213,6 @@ class Tree:
         child_tag = child_info['tag']
 
         # Add this listing.
-        # print(f"add: {child_name}, {child_tag}")
         listings.append(
             gordion.Tree.Listing(
                 child_name,
