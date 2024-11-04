@@ -259,7 +259,7 @@ class Tree:
     is_listed = len(listings) > 0
     return is_listed, complete
 
-  @ staticmethod
+  @staticmethod
   def find(path: str) -> str:
     """
     Returns the gordion repository Tree object containing this path.
@@ -274,3 +274,19 @@ class Tree:
       return gordion.Tree(gordion.Workspace().repos().get(current_repo_path))
     else:
       raise gordion.NotAGordionRepositoryError()
+
+  @staticmethod
+  def list_tag(listing: Listing) -> str:
+    repo = gordion.Workspace().get_repository(listing.name)
+    listing_str = "* "
+    if listing.file:
+      partial_path = os.path.join(
+          os.path.basename(
+              os.path.dirname(
+                  listing.file)), os.path.basename(
+              listing.file))
+      listing_str += f"{gordion.utils.filelink(listing.file, partial_path)} : {listing.name} : "
+    else:
+      listing_str += f"{listing.name}* : "
+    listing_str += repo.try_resolve_tag(listing.tag)
+    return listing_str

@@ -426,3 +426,12 @@ class Repository:
     shutil.rmtree(path)
     gordion.Repository.unregister(path)
     gordion.Workspace().delete_empty_parent_folders(path)
+
+  def try_resolve_tag(self, tag: str) -> str:
+    resolved_tag = ""
+    commit = self.verify_tag_nothrow(tag)
+    if commit:
+      resolved_tag = commit.hexsha
+    else:
+      resolved_tag = tag + " (BAD TAG)"
+    return resolved_tag

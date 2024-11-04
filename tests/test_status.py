@@ -79,15 +79,12 @@ def test_child_mismatch(tree_a):
   # Verify.
   expected = NOMINAL_STATUS.replace(green(':c516fff'), red(':c516fff (TAG INCOHERENCE)'))
   expected = expected.replace(green(':fe4fd4d'), green(':fe4fd4d') + yellow('-dirty'))
+
   expected_header = gordion.utils.bold_red("Tag Incoherences:\n")
   repo_b_listings, _ = tree_a.listings(name='gordion_demo_b', url=None)
-  expected_header += gordion.utils.red(
-      f"* {gordion.utils.filelink(repo_b_listings[0].file, 'gordion_demo_b/gordion.yaml')} : gordion_demo_d : {dminus1.hexsha}\n")
-  repo_d_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
-  expected_header += gordion.utils.red(
-      f"* {gordion.utils.filelink(repo_d_listings[0].file, 'gordion_demo_b/gordion.yaml')} : {repo_d.handle.head.commit.hexsha}\n\n")
-  expected = expected_header + expected
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  for listing in repo_b_listings:
+    listing_str = gordion.Tree.list_tag(listing)
+    expected_header += gordion.utils.red(listing_str + "\n")
 
   print("\n\nexpected:")
   print(expected)

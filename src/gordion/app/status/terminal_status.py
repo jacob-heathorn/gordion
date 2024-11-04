@@ -2,7 +2,7 @@ import os
 from .folder import Folder
 from .repository_folder import RepositoryFolder
 import gordion
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 
 def set_parent(folder, folders):
@@ -35,8 +35,9 @@ def get_tag_incoherent_listings(folder, root_listings) -> List[gordion.Tree.List
   if len(unique_good_tags) > 1:
     folder.incoherent_tag = True
   else:
-    if repo.handle.head.commit.hexsha == list(unique_good_tags)[0]:
-      folder.correct_tag = True
+    if len(unique_good_tags) > 0:
+      if repo.handle.head.commit.hexsha == list(unique_good_tags)[0]:
+        folder.correct_tag = True
 
   if folder.incoherent_tag:
     return listings
@@ -139,25 +140,8 @@ def terminal_status(root: gordion.Tree) -> str:
   if len(all_tag_incoherent_listings) > 0:
     error_header += gordion.utils.bold_red("\nTag Incoherences:\n")
     for listing in all_tag_incoherent_listings:
-      repo = workspace.get_repository(listing.name)
-      commit = repo.verify_tag_nothrow(listing.tag)
-      resolved_tag = ""
-      if commit:
-        resolved_tag = commit.hexsha
-      else:
-        resolved_tag = listing.tag + " (BAD TAG)"
-      listing_str = "* "
-      if listing.file:
-        partial_path = os.path.join(
-            os.path.basename(
-                os.path.dirname(
-                    listing.file)), os.path.basename(
-                listing.file))
-        listing_str += f"{gordion.utils.filelink(listing.file, partial_path)} : {listing.name} : "
-      else:
-        listing_str += f"{listing.name}* : "
-      listing_str += resolved_tag + "\n"
-      error_header += gordion.utils.red(listing_str)
+      listing_str = gordion.Tree.list_tag(listing)
+      error_header += gordion.utils.red(listing_str + "\n")
 
   # Add intermediary folders.
   intermediary_folders: List[Folder] = []
