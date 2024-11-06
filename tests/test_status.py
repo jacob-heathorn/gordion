@@ -128,27 +128,22 @@ def test_branch_ahead(tree_a):
 
   assert expected == gordion.app.status.terminal_status(tree_a)
 
-  # print("\n\nexpected:")
-  # print(expected)
-  # print("\n\n")
-  # print(gordion.app.status.terminal_status(tree_a))
 
-
-def test_wrong_tracking_branch(demo_a):
+def test_wrong_tracking_branch(tree_a):
   """
   Verifies situations:
     6. Child is different branch while default branch is available.
     9. (default branch?)
     11. (wrong tracking branch)
   """
-  demo_c = demo_a.children['gordion_demo_c']
-  demo_c.handle.git.checkout('-b', 'different_branch')
-  demo_c.handle.active_branch.set_tracking_branch(demo_c.handle.remotes['origin'].refs['develop'])
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+  repo_d.handle.git.checkout('-b', 'different_branch')
+  repo_d.handle.active_branch.set_tracking_branch(repo_d.handle.remotes['origin'].refs['develop'])
   expected = replace_i(NOMINAL_STATUS,
                        green('develop'),
                        yellow('different_branch') + yellow('(develop?, wrong tracking branch)'), 2)
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.terminal_status(root)
+
+  assert expected == gordion.app.status.terminal_status(tree_a)
 
 
 def test_child_branch_is_root_branch(demo_a):
@@ -166,6 +161,12 @@ def test_child_branch_is_root_branch(demo_a):
   expected = replace_i(expected,
                        green('develop'),
                        green('root_branch') + yellow('(untracked)'), 1)
+
+  print("\n\nexpected:")
+  print(expected)
+  print("\n\n")
+  print(gordion.app.status.terminal_status(tree_a))
+
   root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
   assert expected == gordion.app.status.terminal_status(root)
 
