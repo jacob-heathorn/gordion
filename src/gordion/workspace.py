@@ -15,7 +15,7 @@ class Workspace:
     self.path = ''
 
   def repos(self) -> Dict[str, gordion.Repository]:
-    return gordion.Repository.registry()
+    return gordion.Repository.registry()  # type: ignore[attr-defined]
 
   def setup(self, subpath, force=False):
     """
@@ -124,7 +124,7 @@ class Workspace:
 
     # Working repositories don't need to be listed
     if not self.is_dependency(target.path):
-      return True
+      is_listed = True
 
     for _, repo in self.working(name=None, url=None).items():
       tree = gordion.Tree(repo)
@@ -134,7 +134,7 @@ class Workspace:
 
     return is_listed, complete
 
-  def trim_repositories(self) -> bool:
+  def trim_repositories(self):
     """
     Deletes duplicates and unlisted repositories.
     """

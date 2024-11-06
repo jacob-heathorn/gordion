@@ -1,6 +1,5 @@
 import gordion
 import os
-import git
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
@@ -130,16 +129,6 @@ class Tree:
     else:
       return self
 
-  def _list_child_repository_paths(self) -> List[str]:
-    """
-    Returns a list of the child repository paths.
-    """
-    paths = []
-    for _, repo in self.children.items():
-      paths.append(repo.path)
-      paths.extend(repo._list_child_repository_paths())
-    return paths
-
   def _check_different_name_same_url(self, name, url):
     """
     Recursively checks for different listings that have the same repo.
@@ -180,7 +169,7 @@ class Tree:
       if listing_n_commit != listing_0_commit:
         raise gordion.UpdateSameRepoDifferentTagError(target.path, listings)
 
-  @ dataclass
+  @dataclass
   class Listing:
     name: str
     url: str
@@ -260,7 +249,7 @@ class Tree:
     return is_listed, complete
 
   @staticmethod
-  def find(path: str) -> str:
+  def find(path: str):
     """
     Returns the gordion repository Tree object containing this path.
     """
@@ -271,22 +260,25 @@ class Tree:
       raise gordion.NotAGordionRepositoryError()
 
     if gordion.Repository.is_gordion(current_repo_path):
-      return gordion.Tree(gordion.Workspace().repos().get(current_repo_path))
+      repo = gordion.Workspace().repos().get(current_repo_path)
+      assert repo is not None
+      return gordion.Tree(repo)  # type: ignore[union-attr]
     else:
       raise gordion.NotAGordionRepositoryError()
 
   @staticmethod
   def list_tag(listing: Listing) -> str:
     repo = gordion.Workspace().get_repository(listing.name)
-    listing_str = "* "
-    if listing.file:
-      partial_path = os.path.join(
-          os.path.basename(
-              os.path.dirname(
-                  listing.file)), os.path.basename(
-              listing.file))
-      listing_str += f"{gordion.utils.filelink(listing.file, partial_path)} : {listing.name} : "
+    if repo:
+      listing_str = "* "
+      if listing.file:
+        partial_path = os.path.join(
+            os.path.basename(os.path.dirname(listing.file)),
+            os.path.basename(listing.file))
+        listing_str += f"{gordion.utils.filelink(listing.file, partial_path)} : {listing.name} : "
+      else:
+        listing_str += f"{listing.name}* : "
+      listing_str += repo.try_resolve_tag(listing.tag)
+      return listing_str
     else:
-      listing_str += f"{listing.name}* : "
-    listing_str += repo.try_resolve_tag(listing.tag)
-    return listing_str
+      return "error"

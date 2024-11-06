@@ -156,8 +156,8 @@ class UnsafeRemoveLocalBranchNoTrackingBranch(Exception):
 class UnsafeRemoveStashes(Exception):
   def __init__(self, path, stashes):
     self.message = (
-        f"Cannot remove repository<{path}> because it has the following stashes that would be lost:\n"
-        f"{stashes}."
+        f"Cannot remove repository<{path}> because it has the following stashes that would be"
+        f" lost:\n{stashes}."
     )
     super().__init__(self.message)
 

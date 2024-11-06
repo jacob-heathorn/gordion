@@ -79,11 +79,11 @@ def test_child_mismatch(tree_a):
                                     red(':c516fff') + " " + red('(TAG INCOHERENCE)'))
   expected = expected.replace(green(':fe4fd4d'), green(':fe4fd4d') + yellow('-dirty'))
 
-  expected_header = gordion.utils.bold_red("\nTag Incoherences:\n")
+  expected_header = bold_red("\nTag Incoherences:\n")
   repo_b_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
   for listing in repo_b_listings:
     listing_str = gordion.Tree.list_tag(listing)
-    expected_header += gordion.utils.red(listing_str + "\n")
+    expected_header += red(listing_str + "\n")
   expected = expected_header + "\n" + expected
 
   assert expected == gordion.app.status.terminal_status(tree_a)

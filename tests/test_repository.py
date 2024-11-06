@@ -6,7 +6,6 @@ import gordion
 import pytest
 import git
 from tests.conftest import recursive_git_blast_workspace
-from conftest import REPOS_DIR
 
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))

@@ -118,9 +118,9 @@ def terminal_status(root: gordion.Tree) -> str:
   # URL INCOHERENCES.
   all_conflicted = []
   for listing in root_listings:
-    url_conflicted = [other for other in root_listings if other.name ==
+    url_conflicted = [other for other in root_listings if other.name ==  # noqa: W504
                       listing.name and other.url != listing.url]
-    name_conflicted = [other for other in root_listings if other.name !=
+    name_conflicted = [other for other in root_listings if other.name !=  # noqa: W504
                        listing.name and other.url == listing.url]
     all_conflicted.extend(url_conflicted)
     all_conflicted.extend(name_conflicted)
