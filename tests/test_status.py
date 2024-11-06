@@ -196,25 +196,24 @@ def test_child_different_root_available(tree_a):
   expected = replace_i(expected,
                        green('develop'),
                        yellow('different_branch') + yellow('(root_branch?, untracked)'), 0)
+  assert expected == gordion.app.status.terminal_status(tree_a)
+
+
+def test_child_detached_root_available(tree_a):
+  """
+  Verifies situations:
+    7. Child is DETACHED while root or default branch is available.
+  """
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+  repo_d.handle.git.checkout(repo_d.handle.head.commit)
+  expected = replace_i(NOMINAL_STATUS,
+                       green('develop'),
+                       yellow('DETACHED HEAD') + yellow('(develop?)'), 2)
   print("\n\nexpected:")
   print(expected)
   print("\n\n")
   print(gordion.app.status.terminal_status(tree_a))
   assert expected == gordion.app.status.terminal_status(tree_a)
-
-
-def test_child_detached_root_available(demo_a):
-  """
-  Verifies situations:
-    7. Child is DETACHED while root or default branch is available.
-  """
-  demo_d = demo_a.children['gordion_demo_b'].children['gordion_demo_d']
-  demo_d.handle.git.checkout(demo_d.handle.head.commit)
-  expected = replace_i(NOMINAL_STATUS,
-                       green('develop'),
-                       yellow('DETACHED HEAD') + yellow('(develop?)'), 0)
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_child_detached_green(demo_a):
