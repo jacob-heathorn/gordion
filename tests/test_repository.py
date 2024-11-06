@@ -5,7 +5,7 @@ import os
 import gordion
 import pytest
 import git
-from tests.conftest import recursive_git_blast
+from tests.conftest import recursive_git_blast_workspace
 from conftest import REPOS_DIR
 
 
@@ -37,7 +37,7 @@ def demo_a(repository_a):
   yield repository_a
 
   # Cleanup.
-  recursive_git_blast(REPOS_DIR)
+  recursive_git_blast_workspace()
 
   # Update to our known commit.
   repository_a.update(tag, branch_name, force=True)
