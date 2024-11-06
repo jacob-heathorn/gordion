@@ -170,7 +170,7 @@ def test_child_default_root_available(tree_a):
     4. Child is default branch while root branch is available.
     8. (root branch?)
   """
-  tree_a.handle.git.checkout('-b', 'root_branch')
+  tree_a.repo.handle.git.checkout('-b', 'root_branch')
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
   repo_b.handle.git.checkout('-b', 'root_branch')
   repo_b.handle.branches['develop'].checkout()
@@ -179,31 +179,28 @@ def test_child_default_root_available(tree_a):
   expected = replace_i(expected,
                        green('develop'),
                        yellow('develop') + yellow('(root_branch?)'), 0)
+  assert expected == gordion.app.status.terminal_status(tree_a)
 
+
+def test_child_different_root_available(tree_a):
+  """
+  Verifies situations:
+    5. Child is different branch while root branch is available.
+  """
+  tree_a.repo.handle.git.checkout('-b', 'root_branch')
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  repo_b.handle.git.checkout('-b', 'root_branch')
+  repo_b.handle.git.checkout('-b', 'different_branch')
+  expected = NOMINAL_STATUS.replace(green('test_status'),
+                                    green('root_branch') + yellow('(untracked)'))
+  expected = replace_i(expected,
+                       green('develop'),
+                       yellow('different_branch') + yellow('(root_branch?, untracked)'), 0)
   print("\n\nexpected:")
   print(expected)
   print("\n\n")
   print(gordion.app.status.terminal_status(tree_a))
   assert expected == gordion.app.status.terminal_status(tree_a)
-
-
-def test_child_different_root_available(demo_a):
-  """
-  Verifies situations:
-    5. Child is different branch while root branch is available.
-  """
-  demo_a.handle.git.checkout('-b', 'root_branch')
-  demo_b = demo_a.children['gordion_demo_b']
-  demo_b.handle.git.checkout('-b', 'root_branch')
-  demo_b.handle.git.checkout('-b', 'different_branch')
-  expected = \
-      NOMINAL_STATUS.replace(green('test_status'),
-                             green('root_branch') + yellow('(untracked)'))
-  expected = replace_i(expected,
-                       green('develop'),
-                       yellow('different_branch') + yellow('(root_branch?, untracked)'), 1)
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.terminal_status(root)
 
 
 def test_child_detached_root_available(demo_a):
