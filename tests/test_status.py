@@ -209,14 +209,10 @@ def test_child_detached_root_available(tree_a):
   expected = replace_i(NOMINAL_STATUS,
                        green('develop'),
                        yellow('DETACHED HEAD') + yellow('(develop?)'), 2)
-  print("\n\nexpected:")
-  print(expected)
-  print("\n\n")
-  print(gordion.app.status.terminal_status(tree_a))
   assert expected == gordion.app.status.terminal_status(tree_a)
 
 
-def test_child_detached_green(demo_a):
+def test_child_detached_green(tree_a):
   """
   Verifies situations:
     3. Child is DETACHED and root/default branches are not available.
@@ -224,12 +220,13 @@ def test_child_detached_green(demo_a):
   """
   # Make a commit to demoC while detached. The default branch is not available at this commit,
   # so 'DETACHED HEAD' is green.
-  demo_d = demo_a.children['gordion_demo_b'].children['gordion_demo_d']
-  demo_d.handle.git.checkout(demo_d.handle.head.commit)
-  demo_d.handle.index.commit("Empty commit for test_child_detached_green")
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+  original_commit = repo_d.handle.head.commit.hexsha
+  repo_d.handle.git.checkout(repo_d.handle.head.commit)
+  repo_d.handle.index.commit("Empty commit for test_child_detached_green")
   expected = replace_i(NOMINAL_STATUS,
                        green('develop'),
-                       green('DETACHED HEAD') + yellow('(unsaved)'), 0)
-  expected = expected.replace(green('c516fff'), red(demo_d.handle.head.commit.hexsha[0:7]))
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.terminal_status(root)
+                       green('DETACHED HEAD') + yellow('(unsaved)'), 2)
+  expected = expected.replace(green(':' + original_commit[0:7]),
+                              red(':' + repo_d.handle.head.commit.hexsha[0:7]))
+  assert expected == gordion.app.status.terminal_status(tree_a)
