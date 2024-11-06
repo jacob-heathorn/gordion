@@ -112,20 +112,26 @@ def test_child_mismatch(tree_a):
 #   12. (untracked)
 #   13. (unsaved)
 
-def test_branch_ahead(demo_a):
+def test_branch_ahead(tree_a):
   """
   Verifies situations:
     10. (ahead)
     2. Child branch is default branch, while root branch is not available.
        (All children are default branch, and still green)
   """
-  demo_a.handle.index.commit("Empty commit for test_branch_color")
+  original_tag = green(":" + tree_a.repo.handle.head.commit.hexsha[0:7])
+  tree_a.repo.handle.index.commit("Empty commit for test_branch_ahead")
   expected = NOMINAL_STATUS.replace(green('test_status'),
                                     green('test_status') + yellow('(ahead)'))
-  expected = expected.replace(green('4d95f11'),
-                              green(demo_a.handle.head.commit.hexsha[0:7]))
-  root = gordion.Tree(gordion.app.root.gordion_root(demo_a.path))
-  assert expected == gordion.app.status.terminal_status(root)
+  expected = expected.replace(original_tag,
+                              green(":" + tree_a.repo.handle.head.commit.hexsha[0:7]))
+
+  assert expected == gordion.app.status.terminal_status(tree_a)
+
+  # print("\n\nexpected:")
+  # print(expected)
+  # print("\n\n")
+  # print(gordion.app.status.terminal_status(tree_a))
 
 
 def test_wrong_tracking_branch(demo_a):
