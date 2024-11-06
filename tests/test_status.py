@@ -65,9 +65,7 @@ def test_wrong_commit(tree_a):
 
 def test_child_mismatch(tree_a):
   """
-  Verifies the following commit appendages:
-    -mismatch
-    -dirty
+  Verifies (TAG INCOHERENCE)
   """
   # Change demoB's listing of demoD to HEAD~1
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
@@ -77,19 +75,18 @@ def test_child_mismatch(tree_a):
   repo_b.yeditor.save()
 
   # Verify.
-  expected = NOMINAL_STATUS.replace(green(':c516fff'), red(':c516fff (TAG INCOHERENCE)'))
+  expected = NOMINAL_STATUS.replace(green(':c516fff'),
+                                    red(':c516fff') + " " + red('(TAG INCOHERENCE)'))
   expected = expected.replace(green(':fe4fd4d'), green(':fe4fd4d') + yellow('-dirty'))
 
-  expected_header = gordion.utils.bold_red("Tag Incoherences:\n")
-  repo_b_listings, _ = tree_a.listings(name='gordion_demo_b', url=None)
+  expected_header = gordion.utils.bold_red("\nTag Incoherences:\n")
+  repo_b_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
   for listing in repo_b_listings:
     listing_str = gordion.Tree.list_tag(listing)
     expected_header += gordion.utils.red(listing_str + "\n")
+  expected = expected_header + "\n" + expected
 
-  print("\n\nexpected:")
-  print(expected)
-  print("\n\n")
-  print(gordion.app.status.terminal_status(tree_a))
+  assert expected == gordion.app.status.terminal_status(tree_a)
 
 
 # =================================================================================================
