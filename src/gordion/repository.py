@@ -27,6 +27,7 @@ class Repository:
     cache = gordion.Cache()
     _, self.default_branch_name = cache.ensure_mirror(self.url)
     self.fetched = False
+    Repository.register(self.path, self)  # type: ignore[attr-defined]
 
   @staticmethod
   def ensure(path: str, url: str) -> 'gordion.Repository':
@@ -63,7 +64,7 @@ class Repository:
     subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     # Now create and return the repo.
-    return gordion.Repository.register(key=path, path=path)  # type: ignore[attr-defined]
+    return gordion.Repository(path)
 
   @staticmethod
   def _derive_url(path: str, url: str):
@@ -382,9 +383,8 @@ class Repository:
     print(f"Moving repository: {source} -> {destination}")
     shutil.move(source, destination)
     gordion.Repository.unregister(key=source)  # type: ignore[attr-defined]
-    gordion.Repository.register(key=destination, path=destination)  # type: ignore[attr-defined]
 
-    return gordion.Repository.registry().get(destination)  # type: ignore[attr-defined]
+    return gordion.Repository(destination)
 
   @staticmethod
   def safe_delete(path, force: bool = False):

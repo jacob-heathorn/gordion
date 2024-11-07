@@ -110,10 +110,9 @@ def test_trim_repositories_duplicate(repository_a, mock_dependencies):
   """
   duplicate_path = os.path.join(mock_dependencies, repository_a.name)
   shutil.copytree(repository_a.path, duplicate_path)
-  gordion.Repository.register(key=duplicate_path, path=duplicate_path)
+  gordion.Repository(duplicate_path)
   assert gordion.Repository.exists(duplicate_path)
   gordion.Workspace().trim_repositories()
-  print(duplicate_path)
   assert not gordion.Repository.exists(duplicate_path)
 
 

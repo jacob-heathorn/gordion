@@ -4,7 +4,6 @@ from urllib.parse import urlparse
 import traceback
 import re
 import git
-from typing import Type, TypeVar
 
 
 # Context manager for pushd. Example from
@@ -150,51 +149,109 @@ def singleton(cls):
   return get_instance
 
 
-T = TypeVar('T')
+# def registry(cls):
+#   """
+#   A class decorator that adds new instances to a registry when they are created.
+#   """
+#   cls._registry = {}  # Initialize an empty registry dictionary as a class attribute
+
+#   # # Save the original __init__ to not lose any initialization that the class might do
+#   # original_init = cls.__init__
+
+#   # def new_init(self, *args, **kwargs):
+#   #   # Call the original constructor
+#   #   original_init(self, *args, **kwargs)
+#   #   # Use a unique identifier for the registry key, e.g., self.path
+#   #   cls._registry[self.path] = self
+
+#   # # Replace the original __init__ with new_init
+#   # cls.__init__ = new_init
+
+#   # # Optionally, add a method to access the registry
+#   # @classmethod
+#   # def get_instance(cls, path):
+#   #   return cls._registry.get(path)
+
+#   # @classmethod
+#   # def reset_registry(cls):
+#   #   cls._registry = {}
+
+#   # cls.get_instance = get_instance
+#   # cls.reset_registry = reset_registry
+
+# return cls
+
+def registry(cls):
+  cls.registry_ = {}
+
+  @classmethod  # type: ignore[misc]
+  def register(cls, key, obj):
+    cls.registry_[key] = obj
+
+  @classmethod  # type: ignore[misc]
+  def unregister(cls, key):
+    if key in cls.registry_:
+      del cls.registry_[key]
+
+  @classmethod  # type: ignore[misc]
+  def registry(cls):
+    return cls.registry_
+
+  @classmethod  # type: ignore[misc]
+  def reset_registry(cls):
+    cls.registry_ = {}
+
+  # Attach the method to the class
+  cls.register = register
+  cls.unregister = unregister
+  cls.registry = registry
+  cls.reset_registry = reset_registry
+
+  return cls
 
 
-def registry(cls: Type[T]) -> Type[T]:
-  """
-  A decorator that adds registry functionality to a class.
-  """
-  registry_ = {}
-  LIFETIME_METHODS = False
+# def registry(cls: Type[T]) -> Type[T]:
+#   """
+#   A decorator that adds registry functionality to a class.
+#   """
+#   registry_ = {}
+#   LIFETIME_METHODS = False
 
-  class RegistryWrapper(cls):  # type: ignore
-    @classmethod
-    def register(cls: Type[T], key, *args, **kwargs):
-      if key not in registry_:
-        registry_[key] = super(RegistryWrapper, cls).__new__(cls)
-        cls.__init__(registry_[key], *args, **kwargs)
-        if LIFETIME_METHODS:
-          cls.on_create(registry_[key])  # type: ignore[attr-defined]
-      return registry_[key]
+#   class RegistryWrapper(cls):  # type: ignore
+#     @classmethod
+#     def register(cls: Type[T], key, *args, **kwargs):
+#       if key not in registry_:
+#         registry_[key] = super(RegistryWrapper, cls).__new__(cls)
+#         cls.__init__(registry_[key], *args, **kwargs)
+#         if LIFETIME_METHODS:
+#           cls.on_create(registry_[key])  # type: ignore[attr-defined]
+#       return registry_[key]
 
-    @classmethod
-    def unregister(cls: Type[T], key):
-      if key in registry_:
-        instance = registry_.pop(key)
-        if LIFETIME_METHODS:
-          cls.on_destroy(instance)  # type: ignore[attr-defined]
+#     @classmethod
+#     def unregister(cls: Type[T], key):
+#       if key in registry_:
+#         instance = registry_.pop(key)
+#         if LIFETIME_METHODS:
+#           cls.on_destroy(instance)  # type: ignore[attr-defined]
 
-    @classmethod
-    def on_create(cls: Type[T], instance):
-      print(f"Instance created: {instance.name}")
+#     @classmethod
+#     def on_create(cls: Type[T], instance):
+#       print(f"Instance created: {instance.name}")
 
-    @classmethod
-    def on_destroy(cls: Type[T], instance):
-      print(f"Instance destroyed: {instance.name}")
+#     @classmethod
+#     def on_destroy(cls: Type[T], instance):
+#       print(f"Instance destroyed: {instance.name}")
 
-    @classmethod
-    def registry(cls: Type[T]):
-      return registry_
+#     @classmethod
+#     def registry(cls: Type[T]):
+#       return registry_
 
-    @classmethod
-    def reset_registry(cls: Type[T]):
-      nonlocal registry_
-      registry_ = {}
+#     @classmethod
+#     def reset_registry(cls: Type[T]):
+#       nonlocal registry_
+#       registry_ = {}
 
-  return RegistryWrapper
+#   return RegistryWrapper
 
 
 def override(interface_class):
