@@ -33,7 +33,7 @@ class Repository:
     """
     Ensures the repository exists at <path> with <url> and clones it with <url> if not.
     """
-    repo = gordion.Repository.registry().get(path, None)
+    repo = gordion.Repository.registry().get(path, None)  # type: ignore[attr-defined]
     if repo:
       if gordion.utils.compare_urls(url, repo.url):
         return repo
@@ -63,7 +63,7 @@ class Repository:
     subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     # Now create and return the repo.
-    return gordion.Repository.register(key=path, path=path)
+    return gordion.Repository.register(key=path, path=path)  # type: ignore[attr-defined]
 
   @staticmethod
   def _derive_url(path: str, url: str):
@@ -392,7 +392,7 @@ class Repository:
     repository has unsaved branches/commits or if it has stashes.
     """
     assert gordion.Repository.exists(path)
-    repo = gordion.Repository.registry().get(path)
+    repo = gordion.Repository.registry().get(path)  # type: ignore[attr-defined]
 
     # Check if repository has local changes.
     if repo.handle.is_dirty(untracked_files=True):
@@ -424,7 +424,7 @@ class Repository:
     # If we reach here, it's safe to delete the repository
     print(f"Deleting repository: {path}")
     shutil.rmtree(path)
-    gordion.Repository.unregister(path)
+    gordion.Repository.unregister(path)  # type: ignore[attr-defined]
     gordion.Workspace().delete_empty_parent_folders(path)
 
   def try_resolve_tag(self, tag: str) -> str:

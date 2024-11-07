@@ -87,7 +87,7 @@ def terminal_status(root: gordion.Tree) -> str:
           if not any(duplicate.path == repo.path for duplicate in duplicates):
             duplicates.append(repo)
 
-          folder = find_folder_by_path(folders, repo.path)
+          folder = find_folder_by_path(folders, repo.path)  # type: ignore[assignment]
           if folder:
             folder.has_duplicate = True
 
@@ -96,7 +96,7 @@ def terminal_status(root: gordion.Tree) -> str:
           if not any(duplicate.path == repo.path for duplicate in duplicates):
             duplicates.append(repo)
 
-          folder = find_folder_by_path(folders, repo.path)
+          folder = find_folder_by_path(folders, repo.path)  # type: ignore[assignment]
           if folder:
             folder.has_duplicate = True
 
