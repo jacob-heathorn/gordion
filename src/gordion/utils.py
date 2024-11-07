@@ -150,6 +150,9 @@ def singleton(cls):
 
 
 def registry(cls):
+  """
+  A decorator that adds registry functionality to a class.
+  """
   cls.registry_ = {}
 
   @classmethod  # type: ignore[misc]
