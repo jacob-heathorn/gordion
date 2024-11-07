@@ -57,7 +57,7 @@ class Repository:
     # At this point the mirror should exist regardless of whether the repository exists. so ensure
     # it first.
     cache = gordion.Cache()
-    mirror_path, default_branch_name = cache.ensure_mirror(url)
+    mirror_path, _ = cache.ensure_mirror(url)
 
     # Clone it.
     args = ['git', 'clone', '--reference', mirror_path, url, path]
@@ -332,7 +332,7 @@ class Repository:
   @staticmethod
   def exists(path: str) -> bool:
     try:
-        # Initialize the Repo object
+      # Initialize the Repo object
       repo = git.Repo(path)
       # Compare the absolute paths to determine if 'path' is the repository root
       return os.path.abspath(str(repo.working_tree_dir)) == os.path.abspath(path)
