@@ -40,7 +40,7 @@ class Folder:
     self.children.append(child)
 
   def _get_symbol_row(self):
-    symbols = []
+    symbols: List[str] = []
     if self.parent:
       if self.parent._is_last_child(self.name):
         symbols.insert(0, "└──")
@@ -55,7 +55,7 @@ class Folder:
           else:
             symbols.insert(0, "│   ")
 
-        current_folder = current_folder.parent
+        current_folder = current_folder.parent  # type: ignore[assignment]
 
     return symbols
 

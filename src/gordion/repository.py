@@ -237,8 +237,9 @@ class Repository:
     # Check if the target commit is different from the HEAD commit
     if commit.hexsha != head_commit.hexsha:
       # Check if the local HEAD commit is contained in a local or remote branch
-      local_branches = [branch for branch in self.handle.branches if head_commit.hexsha in [
-          commit.hexsha for commit in branch.commit.iter_parents()]]
+      local_branches = [branch for branch in self.handle.branches  # type: ignore[attr-defined]
+                        if head_commit.hexsha in
+                        [commit.hexsha for commit in branch.commit.iter_parents()]]
       if not local_branches:
         self._fetch_once()
         remote_branches = [branch for branch in self.handle.remotes.origin.refs if
@@ -380,10 +381,10 @@ class Repository:
     # Move it
     print(f"Moving repository: {source} -> {destination}")
     shutil.move(source, destination)
-    gordion.Repository.unregister(key=source)
-    gordion.Repository.register(key=destination, path=destination)
+    gordion.Repository.unregister(key=source)  # type: ignore[attr-defined]
+    gordion.Repository.register(key=destination, path=destination)  # type: ignore[attr-defined]
 
-    return gordion.Repository.registry().get(destination)
+    return gordion.Repository.registry().get(destination)  # type: ignore[attr-defined]
 
   @staticmethod
   def safe_delete(path, force: bool = False):

@@ -86,7 +86,7 @@ class Workspace:
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
-    gordion.Repository.reset_registry()
+    gordion.Repository.reset_registry()  # type: ignore[attr-defined]
 
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       # Create a copy of dirnames for iteration to avoid modifying the list while iterating
@@ -94,7 +94,8 @@ class Workspace:
         full_dirpath = os.path.join(dirpath, dirname)
 
         if gordion.Repository.exists(full_dirpath):
-          gordion.Repository.register(key=full_dirpath, path=full_dirpath)
+          gordion.Repository.register(key=full_dirpath,  # type: ignore[attr-defined]
+                                      path=full_dirpath)
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)

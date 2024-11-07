@@ -146,7 +146,7 @@ def terminal_status(root: gordion.Tree) -> str:
   # Add intermediary folders.
   intermediary_folders: List[Folder] = []
   workspace_folder = folders[0]
-  for folder in folders[1:]:
+  for folder in folders[1:]:  # type: ignore[assignment]
     relative_path = os.path.relpath(folder.path, workspace_folder.path)
     relative_path_parts = relative_path.strip(os.sep).split(os.sep)
     current_path = workspace_folder.path
@@ -164,7 +164,7 @@ def terminal_status(root: gordion.Tree) -> str:
   folders = sorted(folders, key=lambda folder: folder.path)
 
   # 3) Set the heirarchy of folders.
-  for folder in folders[1:]:
+  for folder in folders[1:]:  # type: ignore[assignment]
     set_parent(folder, folders)
 
   if error_header:
