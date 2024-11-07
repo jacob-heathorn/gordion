@@ -5,7 +5,7 @@ import os
 import gordion
 import pytest
 import git
-from tests.conftest import recursive_git_blast
+from tests.conftest import recursive_git_blast_workspace
 
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -36,7 +36,7 @@ def demo_a(repository_a):
   yield repository_a
 
   # Cleanup.
-  recursive_git_blast(repository_a.path)
+  recursive_git_blast_workspace()
 
   # Update to our known commit.
   repository_a.update(tag, branch_name, force=True)

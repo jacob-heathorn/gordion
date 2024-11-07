@@ -6,7 +6,7 @@ from .tree import Tree
 from .cache import Cache
 from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
-from .exception import UpdateRepoIsDirtyError
+from .exception import UpdateRepoIsDirtyError, DanglingDependenciesNotEmpty
 from .exception import UpdateSameRepoDifferentTagError, UnsafeRemoveDirty
 from .exception import NotAGordionRepositoryError, DanglingGordionRepositoryError
 from .exception import BadRepositoryNamePathMismach, UpdateDifferentNameSameUrlError
@@ -16,3 +16,4 @@ from .exception import UpdateTargetPathExistsError, UpdateMultipleRepositoriesAl
 from .exception import UpdateWorkingRepositoryWrongUrlError, UpdateSameNameDifferentUrlError
 from .yeditor import YamlEditor
 from .workspace import Workspace
+from .app import terminal_status

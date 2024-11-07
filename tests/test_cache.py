@@ -22,7 +22,6 @@ class TestCache(unittest.TestCase):
     self.assertEqual(host, "github.com")
     self.assertEqual(username, "username")
     self.assertEqual(repo_name, "repository")
-    print(f"host: {host}")
 
     url = "http://bitbucket.org/username/repository"
     host, username, repo_name = gordion.extract_repo_details(url)
@@ -40,7 +39,7 @@ class TestCache(unittest.TestCase):
     cache = gordion.Cache()
     cache.clean()
     path, default_branch = cache.ensure_mirror(
-      'https://github.com/jacob-heathorn/gordion_demo_a.git')
+        'https://github.com/jacob-heathorn/gordion_demo_a.git')
     self.assertEqual(path, os.path.join(os.environ['HOME'], '.local', 'share', 'gordion',
                                         'mirrors', 'github.com', 'jacob-heathorn',
                                         'gordion_demo_a'))

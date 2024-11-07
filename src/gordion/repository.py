@@ -13,9 +13,12 @@ class Repository:
 
   """
 
-  # TODO comment headers for these various creation functions
   def __init__(self, path: str) -> None:
-    self.path = path
+    """
+    The constructor is only meant to be called for a repository that already exists on path. If one
+    needs to or might need to be created, use the ensure() method.
+    """
+    self.path = os.path.normpath(path)
     self.name = os.path.basename(self.path)
     assert gordion.Repository.exists(path)
     self.handle: git.Repo = git.Repo(path)
@@ -26,11 +29,11 @@ class Repository:
     self.fetched = False
 
   @staticmethod
-  def ensure(path: str, url: str):
+  def ensure(path: str, url: str) -> 'gordion.Repository':
     """
     Ensures the repository exists at <path> with <url> and clones it with <url> if not.
     """
-    repo = gordion.Repository.registry().get(path, None)
+    repo = gordion.Repository.registry().get(path, None)  # type: ignore[attr-defined]
     if repo:
       if gordion.utils.compare_urls(url, repo.url):
         return repo
@@ -40,7 +43,7 @@ class Repository:
     return gordion.Repository.clone(path, url)
 
   @staticmethod
-  def clone(path, url):
+  def clone(path, url) -> 'gordion.Repository':
     """
     Clones the repository and returns it.
     """
@@ -60,7 +63,7 @@ class Repository:
     subprocess.check_call(args, stderr=subprocess.STDOUT)
 
     # Now create and return the repo.
-    return gordion.Repository.register(key=path, path=path)
+    return gordion.Repository.register(key=path, path=path)  # type: ignore[attr-defined]
 
   @staticmethod
   def _derive_url(path: str, url: str):
@@ -234,8 +237,9 @@ class Repository:
     # Check if the target commit is different from the HEAD commit
     if commit.hexsha != head_commit.hexsha:
       # Check if the local HEAD commit is contained in a local or remote branch
-      local_branches = [branch for branch in self.handle.branches if head_commit.hexsha in [
-          commit.hexsha for commit in branch.commit.iter_parents()]]
+      local_branches = [branch for branch in self.handle.branches  # type: ignore[attr-defined]
+                        if head_commit.hexsha in
+                        [commit.hexsha for commit in branch.commit.iter_parents()]]
       if not local_branches:
         self._fetch_once()
         remote_branches = [branch for branch in self.handle.remotes.origin.refs if
@@ -280,6 +284,7 @@ class Repository:
     else:
       return commit in remote_branch.commit.iter_parents()
 
+  # TODO remove underscore
   def _verify_tag(self, tag: str) -> git.Commit:
     """
     Verifies and returns the commit object for the specified tag if it exists, otherwise throws an
@@ -299,6 +304,13 @@ class Repository:
       return commit
 
     return commit
+
+  def verify_tag_nothrow(self, tag: str) -> Optional[git.Commit]:
+    try:
+      commit = self._verify_tag(tag)
+      return commit
+    except BaseException:
+      return None
 
   def _does_local_branch_have_commit(self, branch_name: str, commit: git.Commit) -> bool:
     """
@@ -369,10 +381,10 @@ class Repository:
     # Move it
     print(f"Moving repository: {source} -> {destination}")
     shutil.move(source, destination)
-    gordion.Repository.unregister(key=source)
-    gordion.Repository.register(key=destination, path=destination)
+    gordion.Repository.unregister(key=source)  # type: ignore[attr-defined]
+    gordion.Repository.register(key=destination, path=destination)  # type: ignore[attr-defined]
 
-    return gordion.Repository.registry().get(destination)
+    return gordion.Repository.registry().get(destination)  # type: ignore[attr-defined]
 
   @staticmethod
   def safe_delete(path, force: bool = False):
@@ -381,7 +393,7 @@ class Repository:
     repository has unsaved branches/commits or if it has stashes.
     """
     assert gordion.Repository.exists(path)
-    repo = gordion.Repository.registry().get(path)
+    repo = gordion.Repository.registry().get(path)  # type: ignore[attr-defined]
 
     # Check if repository has local changes.
     if repo.handle.is_dirty(untracked_files=True):
@@ -413,5 +425,14 @@ class Repository:
     # If we reach here, it's safe to delete the repository
     print(f"Deleting repository: {path}")
     shutil.rmtree(path)
-    gordion.Repository.unregister(path)
+    gordion.Repository.unregister(path)  # type: ignore[attr-defined]
     gordion.Workspace().delete_empty_parent_folders(path)
+
+  def try_resolve_tag(self, tag: str) -> str:
+    resolved_tag = ""
+    commit = self.verify_tag_nothrow(tag)
+    if commit:
+      resolved_tag = commit.hexsha
+    else:
+      resolved_tag = tag + " (BAD TAG)"
+    return resolved_tag

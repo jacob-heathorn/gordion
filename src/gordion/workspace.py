@@ -1,39 +1,41 @@
 import os
 import gordion
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 import shutil
 
 
 @gordion.utils.singleton
 class Workspace:
   """
-  Singleton class dedicated to managing the gordion/ folder.
+  Singleton class dedicated to locating and managing the gordion workspace.
   """
 
   def __init__(self) -> None:
     self.path = ''
 
   def repos(self) -> Dict[str, gordion.Repository]:
-    return gordion.Repository.registry()
+    return gordion.Repository.registry()  # type: ignore[attr-defined]
 
-  def setup(self, subpath):
+  def setup(self, subpath, force=False):
     """
     User must call this function once with a path somewhere inside a workspace.
     """
-    self.path = self.find_root(subpath)
+    if force:
+      self.path = subpath
+    else:
+      self.path = Workspace.find_root(subpath)
     self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
     self.discover_repositories()
 
-  def find_root(self, path: str) -> str:
+  @staticmethod
+  def find_root(subpath: str) -> str:
     """
     Finds the workspace given a path inside it.
     """
-    # Convert string path to Path object if necessary
-    path = Path(path) if not isinstance(path, Path) else path
 
     # Iterate through parts of the path from root to the last element
-    parts = path.parts
+    parts = Path(subpath).parts
     current_path = Path(parts[0])  # Start with the root
 
     for part in parts[1:]:
@@ -45,8 +47,13 @@ class Workspace:
           if gordion.Repository.is_gordion(str(child)):
             return os.path.normpath(current_path)
 
-    # Return the original path parent.
-    return os.path.normpath(path.parent)
+    # If the given path is a repository, return it's parent.
+    repo_root = gordion.utils.get_repository_root(subpath)
+    if repo_root:
+      return os.path.normpath(os.path.dirname(repo_root))
+
+    # Otherwise return the argument itself, which initiallizes a new workspace here.
+    return os.path.normpath(subpath)
 
   def is_dependency(self, path: str) -> bool:
     if os.path.commonprefix([self.dependencies_path, path]) == self.dependencies_path:
@@ -79,6 +86,7 @@ class Workspace:
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
+    gordion.Repository.reset_registry()  # type: ignore[attr-defined]
 
     for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
       # Create a copy of dirnames for iteration to avoid modifying the list while iterating
@@ -86,7 +94,8 @@ class Workspace:
         full_dirpath = os.path.join(dirpath, dirname)
 
         if gordion.Repository.exists(full_dirpath):
-          gordion.Repository.register(key=full_dirpath, path=full_dirpath)
+          gordion.Repository.register(key=full_dirpath,  # type: ignore[attr-defined]
+                                      path=full_dirpath)
           # Remove the current directory's name from dirnames so os.walk will skip its
           # subdirectories
           dirnames.remove(dirname)
@@ -107,33 +116,85 @@ class Workspace:
       else:
         break
 
-  def is_listed(self, target: gordion.Repository) -> bool:
+  def is_listed(self, target: gordion.Repository) -> Tuple[bool, bool]:
     """
     Checks that the repository is listed by name by least one of the working repositories.
     """
+    complete = True
+    is_listed = False
+
     # Working repositories don't need to be listed
     if not self.is_dependency(target.path):
-      return True
+      is_listed = True
 
     for _, repo in self.working(name=None, url=None).items():
       tree = gordion.Tree(repo)
-      if tree.is_listed(target):
-        return True
-    return False
+      is_listed_here, complete = tree.is_listed(target)
+      if is_listed_here:
+        is_listed = True
 
-  def trim_repositories(self) -> bool:
+    return is_listed, complete
+
+  def trim_repositories(self):
     """
     Deletes duplicates and unlisted repositories.
     """
-    paths = []
+    paths = set()
     for _, repo in self.repos().items():
       if self.is_dependency(repo.path):
-        if not self.is_listed(repo):
-          paths.append(repo.path)
-        else:
-          expected_path = os.path.join(self.dependencies_path, repo.name)
-          if repo.path != expected_path:
-            paths.append(repo.path)
+        # If it is not listed, remove it.
+        is_listed, complete = self.is_listed(repo)
+        if not is_listed and complete:
+          paths.add(repo.path)
+
+        # If it is a duplicate of a working.
+        for _, other in self.repos().items():
+          if not self.is_dependency(other.path):
+            if other.path != repo.path and gordion.utils.compare_urls(other.url, repo.url):
+              paths.add(repo.path)
+
+        # If it is not at the expected path remove it.
+        expected_path = os.path.join(self.dependencies_path, repo.name)
+        if repo.path != expected_path:
+          paths.add(repo.path)
 
     for path in paths:
       gordion.Repository.safe_delete(path)
+
+  def unify_dependencies(self):
+    """
+    Looks for a .dependencies folder that is below the root, and unifies with the folder at the
+    root.
+    """
+    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
+      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+        full_dirpath = os.path.join(dirpath, dirname)
+        if dirname == ".dependencies" and full_dirpath != self.dependencies_path:
+          # Found a dangling .dependencies folder, merge it.
+          print(f"Merging dangling .dependencies: {full_dirpath} ...")
+          self._safe_merge_dangling_dependencies(full_dirpath)
+
+          # Remove the current directory's name from dirnames so os.walk will skip its
+          # subdirectories
+          dirnames.remove(dirname)
+
+  def _safe_merge_dangling_dependencies(self, other_dependencies_path):
+    for dirpath, dirnames, _ in os.walk(other_dependencies_path, topdown=True):
+      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+        full_dirpath = os.path.join(dirpath, dirname)
+        # Move repositories
+        if gordion.Repository.exists(full_dirpath):
+          destination = os.path.join(self.dependencies_path, dirname)
+          gordion.Repository.safe_move(full_dirpath, destination)
+
+          # Remove the current directory's name from dirnames so os.walk will skip its
+          # subdirectories
+          dirnames.remove(dirname)
+
+    if os.listdir(other_dependencies_path):
+      raise gordion.DanglingDependenciesNotEmpty(other_dependencies_path)
+    else:
+      print(f"Deleting empty folder: {other_dependencies_path}")
+      shutil.rmtree(other_dependencies_path)

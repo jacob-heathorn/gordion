@@ -14,12 +14,11 @@ class RepositoryFolder(Folder):
     super().__init__(repo.path)
     self.repo = repo
     self.root: gordion.Tree = root
-    self.root_listings = self.root.listings(name=None, url=None)
+    self.root_listings, _ = self.root.listings(name=None, url=None)
     self.workspace = gordion.Workspace()
-    self.is_listed_by_root = False
-    self.is_listed_by_workspace = False
-    self.has_duplicate_name = False
-    self.has_duplicate_url = False
+    self.has_duplicate = False
+    self.incoherent_tag = False
+    self.correct_tag = False
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -27,17 +26,9 @@ class RepositoryFolder(Folder):
         return False
     return True
 
-  def unique_listed_tags(self):
-    listings = [listing for listing in self.root_listings if self.repo.name == listing.name]
-    listings = [listing for listing in listings if self.repo.url == listing.url]
-    unique_tags = set()
-    for listing in listings:
-      unique_tags.add(self.repo._verify_tag(listing.tag).hexsha)
-
-    return unique_tags
-
   # TODO move outside for speed?
 
+  # TODO remove?
   def is_name_conflicted(self):
     """
     Name is conflicted if two or more listings of the same url have different names.
@@ -67,40 +58,20 @@ class RepositoryFolder(Folder):
     Returns the repository folder name, with branch:commit and warnings in descriptive colors.
     """
 
-    # Aggregate existence errors and return if they have occured
+    # Aggregate errors
     errors = []
-    if not self.is_listed_by_root and not self.is_listed_by_workspace:
-      errors.append("NOT LISTED")
 
     # Repository name.
     name_header = gordion.utils.bold_green(self.decorated_name())
 
     # Check for duplicates
-    if self.has_duplicate_name and self.has_duplicate_url:
-      errors.append("DUPLICATE")
-      name_header = gordion.utils.bold_red(self.decorated_name())
-    elif self.has_duplicate_name:
-      errors.append("DUPLICATE:NAME")
-      name_header = gordion.utils.bold_red(self.decorated_name())
-    elif self.has_duplicate_url:
-      errors.append("DUPLICATE:URL")
+    if self.has_duplicate:
+      errors.append("HAS DUPLICATE")
       name_header = gordion.utils.bold_red(self.decorated_name())
 
     # A dependency repo can have the wrong path.
     if not self.is_correct_path():
       errors.append("WRONG PATH")
-
-    # Special situations when the repo is not listed by root.
-    if not self.is_listed_by_root:
-      # If we only unmuted to show that it is a duplicate...
-      if self.is_listed_by_workspace:
-        if self.has_duplicate_name or self.has_duplicate_url:
-          return name_header + gordion.utils.red(f" ({', '.join(errors)})")
-
-      # If it is not listed at all.
-      else:
-        name_header = gordion.utils.bold_red(self.decorated_name())
-        return name_header + gordion.utils.red(f" ({', '.join(errors)})")
 
     # Check if it is name conflicated
     if self.is_name_conflicted():
@@ -118,24 +89,12 @@ class RepositoryFolder(Folder):
     if branch_warnings:
       branch_header += gordion.utils.yellow(f"({', '.join(branch_warnings)})")
 
-    # Tag header.
-    #
-    # If any of the tags are incorrect, the commit is incorrect.
-    unique_tags = self.unique_listed_tags()
-    correct_tag = True
-    conflicted_tag = False
-    for tag in unique_tags:
-      if tag != self.repo.handle.head.commit.hexsha:
-        correct_tag = False
-    if len(unique_tags) > 1:
-      conflicted_tag = True
-
     tag_header = ""
-    if conflicted_tag:
-      errors.append("CONFLICTED TAG")
+    if self.incoherent_tag:
+      errors.append("TAG INCOHERENCE")
       tag_header = gordion.utils.red(f":{self.repo.handle.head.commit.hexsha[:7]}")
     else:
-      if correct_tag:
+      if self.correct_tag:
         tag_header = gordion.utils.green(f":{self.repo.handle.head.commit.hexsha[:7]}")
       else:
         tag_header = gordion.utils.red(f":{self.repo.handle.head.commit.hexsha[:7]}")
@@ -151,7 +110,8 @@ class RepositoryFolder(Folder):
 
     # Create display name
     display_name = name_header + " " + branch_header + tag_header
-    display_name += " " + errors_header
+    if errors_header:
+      display_name += " " + errors_header
     return display_name
 
   def _get_branch_name(self):

@@ -49,6 +49,7 @@ class YamlEditor:
       # Handle the case where the repository doesn't exist
       raise ValueError(f"Repository '{name}' not found in YAML data.")
 
+  # TODO remove
   def read_repository_gpath(self, name: str):
     """
     Returns the subpath within the gordion direcotry of the repository

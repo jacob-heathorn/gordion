@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import traceback
 import re
 import git
+from typing import Type, TypeVar
 
 
 # Context manager for pushd. Example from
@@ -149,41 +150,49 @@ def singleton(cls):
   return get_instance
 
 
-def registry(cls):
+T = TypeVar('T')
+
+
+def registry(cls: Type[T]) -> Type[T]:
   """
   A decorator that adds registry functionality to a class.
   """
   registry_ = {}
   LIFETIME_METHODS = False
 
-  class RegistryWrapper(cls):
+  class RegistryWrapper(cls):  # type: ignore
     @classmethod
-    def register(cls, key, *args, **kwargs):
+    def register(cls: Type[T], key, *args, **kwargs):
       if key not in registry_:
         registry_[key] = super(RegistryWrapper, cls).__new__(cls)
         cls.__init__(registry_[key], *args, **kwargs)
         if LIFETIME_METHODS:
-          cls.on_create(registry_[key])
+          cls.on_create(registry_[key])  # type: ignore[attr-defined]
       return registry_[key]
 
     @classmethod
-    def unregister(cls, key):
+    def unregister(cls: Type[T], key):
       if key in registry_:
         instance = registry_.pop(key)
         if LIFETIME_METHODS:
-          cls.on_destroy(instance)
+          cls.on_destroy(instance)  # type: ignore[attr-defined]
 
     @classmethod
-    def on_create(cls, instance):
+    def on_create(cls: Type[T], instance):
       print(f"Instance created: {instance.name}")
 
     @classmethod
-    def on_destroy(cls, instance):
+    def on_destroy(cls: Type[T], instance):
       print(f"Instance destroyed: {instance.name}")
 
     @classmethod
-    def registry(cls):
+    def registry(cls: Type[T]):
       return registry_
+
+    @classmethod
+    def reset_registry(cls: Type[T]):
+      nonlocal registry_
+      registry_ = {}
 
   return RegistryWrapper
 

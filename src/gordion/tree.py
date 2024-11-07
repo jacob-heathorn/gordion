@@ -1,7 +1,6 @@
 import gordion
 import os
-import git
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
 
@@ -22,9 +21,13 @@ class Tree:
     """
     Updates this repository and it's children.
     """
+    # First check/fix dangling .dependencies folders
+    root = self._root()
+    if self is root:
+      self.workspace.unify_dependencies()
+
     # Check for duplicate tag first. We have to do this here because the repo needs to veriy and
     # compare commits.
-    root = self._root()
     root._check_same_repo_different_tag(self.repo)
     self.repo.update(tag, branch_name, force)
 
@@ -59,7 +62,17 @@ class Tree:
         if len(working) == 0:
           if len(dependencies) == 0:
             child_path = os.path.join(self.workspace.dependencies_path, child_name)
-            child_repo = gordion.Repository.clone(child_path, child_url)
+
+            # If there is exactly one dependency already with this url, different name, move it.
+            deps_by_url = self.workspace.dependencies(name=None, url=child_url)
+            if len(deps_by_url) == 1:
+              dep = next(iter(deps_by_url.values()))
+              child_repo = gordion.Repository.safe_move(dep.path, child_path)
+            # Otherwise delete and reclone.
+            else:
+              for _, dep in deps_by_url.items():
+                gordion.Repository.safe_delete(dep.path)
+              child_repo = gordion.Repository.clone(child_path, child_url)
 
           # Only one dependency repo with this name...
           elif len(dependencies) == 1:
@@ -79,17 +92,17 @@ class Tree:
           else:
             for _, dependency in dependencies.items():
               gordion.Repository.safe_delete(dependency.path)
-            child_path = os.path.join(self.workspace.dependencies_path, child_repo.name)
+            child_path = os.path.join(self.workspace.dependencies_path, child_name)
             child_repo = gordion.Repository.clone(child_path, child_url)
 
         # There is exactly one working repo with this name...
         elif len(working) == 1:
-          child_repo = next(iter(dependencies.values()))
+          child_repo = next(iter(working.values()))
 
           # If it has the wrong url..
-          if gordion.utils.compare_urls(child_repo.url, child_url):
+          if not gordion.utils.compare_urls(child_repo.url, child_url):
             raise gordion.UpdateWorkingRepositoryWrongUrlError(
-                child_path, child_repo.url, child_url)
+                child_repo.path, child_repo.url, child_url)
 
           # If there are dependencies, delete them.
           for _, dependency in dependencies.items():
@@ -98,6 +111,9 @@ class Tree:
         # There is more than one working repo with this name...
         else:
           raise gordion.UpdateMultipleRepositoriesAlreadyExistsError(child_path, working)
+
+        # Delete dependencies that have the same url, different name.
+        dependencies = self.workspace.dependencies(name=child_name, url=None)
 
         assert child_repo
         child = Tree(child_repo, self)
@@ -113,22 +129,12 @@ class Tree:
     else:
       return self
 
-  def _list_child_repository_paths(self) -> List[str]:
-    """
-    Returns a list of the child repository paths.
-    """
-    paths = []
-    for _, repo in self.children.items():
-      paths.append(repo.path)
-      paths.extend(repo._list_child_repository_paths())
-    return paths
-
   def _check_different_name_same_url(self, name, url):
     """
     Recursively checks for different listings that have the same repo.
     """
     # Collect all child listings that are the same repository (same effective url).
-    listings = self.listings(name=None, url=url)
+    listings, _ = self.listings(name=None, url=url)
 
     # Check each listing to see if there are any that are a different name.
     for listing in listings:
@@ -140,7 +146,7 @@ class Tree:
     Recursively checks for duplicate listings with different urls in this tree.
     """
 
-    listings = self.listings(name, url=None)
+    listings, _ = self.listings(name, url=None)
 
     # Raise an error if any listing doesn't match the target url.
     for listing in listings:
@@ -154,7 +160,7 @@ class Tree:
     """
 
     # Filter for an exact match to the name and url.
-    listings = self.listings(target.name, target.url)
+    listings, _ = self.listings(target.name, target.url)
 
     # Raise an error if any two listings don't match tags.
     listing_0_commit = target._verify_tag(listings[0].tag)
@@ -163,7 +169,7 @@ class Tree:
       if listing_n_commit != listing_0_commit:
         raise gordion.UpdateSameRepoDifferentTagError(target.path, listings)
 
-  @ dataclass
+  @dataclass
   class Listing:
     name: str
     url: str
@@ -172,12 +178,13 @@ class Tree:
 
   # TODO reconsider recursing argument
   def listings(self, name: Optional[str], url: Optional[str],
-               recursing: bool = False) -> List[Listing]:
+               recursing: bool = False) -> Tuple[List[Listing], bool]:
     """
     Generates a list of Listings in the recursable Tree, including the self. A listing holds
     information as-listed in the gordion.yaml file, unless it is the root which doesn't have a
     parent gordion.yaml file.
     """
+    complete = True
     # Add self if not recursing.
     listings = []
     if not recursing:
@@ -218,7 +225,14 @@ class Tree:
             if child_listed_commit:
               if child_repo.handle.head.commit == child_listed_commit:
                 tree = gordion.Tree(child_repo)
-                listings.extend(tree.listings(name=name, url=url, recursing=True))
+                child_listings, complete = tree.listings(name=name, url=url, recursing=True)
+                listings.extend(child_listings)
+              else:
+                complete = False
+            else:
+              complete = False
+        else:
+          complete = False
 
     # Filter by name and url once at the top level.
     if not recursing:
@@ -227,14 +241,15 @@ class Tree:
       if url:
         listings = [listing for listing in listings if gordion.utils.compare_urls(listing.url, url)]
 
-    return listings
+    return listings, complete
 
-  def is_listed(self, repo: gordion.Repository):
-    listings = self.listings(name=repo.name, url=None)
-    return len(listings) > 0
+  def is_listed(self, repo: gordion.Repository) -> Tuple[bool, bool]:
+    listings, complete = self.listings(name=repo.name, url=None)
+    is_listed = len(listings) > 0
+    return is_listed, complete
 
-  @ staticmethod
-  def find(path: str) -> str:
+  @staticmethod
+  def find(path: str):
     """
     Returns the gordion repository Tree object containing this path.
     """
@@ -245,6 +260,25 @@ class Tree:
       raise gordion.NotAGordionRepositoryError()
 
     if gordion.Repository.is_gordion(current_repo_path):
-      return gordion.Tree(gordion.Workspace().repos().get(current_repo_path))
+      repo = gordion.Workspace().repos().get(current_repo_path)
+      assert repo is not None
+      return gordion.Tree(repo)  # type: ignore[union-attr]
     else:
       raise gordion.NotAGordionRepositoryError()
+
+  @staticmethod
+  def list_tag(listing: Listing) -> str:
+    repo = gordion.Workspace().get_repository(listing.name)
+    if repo:
+      listing_str = "* "
+      if listing.file:
+        partial_path = os.path.join(
+            os.path.basename(os.path.dirname(listing.file)),
+            os.path.basename(listing.file))
+        listing_str += f"{gordion.utils.filelink(listing.file, partial_path)} : {listing.name} : "
+      else:
+        listing_str += f"{listing.name}* : "
+      listing_str += repo.try_resolve_tag(listing.tag)
+      return listing_str
+    else:
+      return "error"
