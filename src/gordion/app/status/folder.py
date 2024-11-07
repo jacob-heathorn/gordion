@@ -16,7 +16,6 @@ class Folder:
     self.name = os.path.basename(path)
     self.children: List[Folder] = []
     self.parent: Optional[Folder] = None
-    self.mute = False
 
   def terminal_status(self) -> str:
     """
@@ -24,9 +23,8 @@ class Folder:
     """
     status_string = ""
 
-    if not self.mute:
-      status_string = ''.join(self._get_symbol_row())
-      status_string += self._get_display_name()
+    status_string = ''.join(self._get_symbol_row())
+    status_string += self._get_display_name()
 
     for child in self.children:
       child_status = child.terminal_status()
