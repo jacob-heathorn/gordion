@@ -54,13 +54,10 @@ def terminal_status(root: gordion.Tree) -> str:
   # Add workspace and root repository folders.
   workspace = gordion.Workspace()
   folders = [Folder(workspace.path)]
-  # folders.append(RepositoryFolder(root.repo, root))
-  # extend_folders_from_mainline(folders, root, root)
-
-  not_found_listings = []
-  all_tag_incoherent_listings: List[gordion.Tree.Listing] = []
 
   # Trace the mainline tree.
+  not_found_listings = []
+  all_tag_incoherent_listings: List[gordion.Tree.Listing] = []
   root_listings, _ = root.listings(name=None, url=None)
   for listing in root_listings:
     repo = workspace.get_repository(name=listing.name)
