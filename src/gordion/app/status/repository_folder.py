@@ -26,9 +26,6 @@ class RepositoryFolder(Folder):
         return False
     return True
 
-  # TODO move outside for speed?
-
-  # TODO remove?
   def is_name_conflicted(self):
     """
     Name is conflicted if two or more listings of the same url have different names.

@@ -279,3 +279,21 @@ class Tree:
       return listing_str
     else:
       return "error"
+
+  # TODO rename these.
+  @staticmethod
+  def list_url(listing: Listing) -> str:
+    repo = gordion.Workspace().get_repository(listing.name)
+    if repo:
+      listing_str = "* "
+      if listing.file:
+        partial_path = os.path.join(
+            os.path.basename(os.path.dirname(listing.file)),
+            os.path.basename(listing.file))
+        listing_str += f"{gordion.utils.filelink(listing.file, partial_path)} : {listing.name} : "
+      else:
+        listing_str += f"{listing.name}* : "
+      listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}"
+      return listing_str
+    else:
+      return "error"

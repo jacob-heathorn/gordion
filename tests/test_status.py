@@ -89,6 +89,55 @@ def test_child_mismatch(tree_a):
   assert expected == gordion.app.status.terminal_status(tree_a)
 
 
+def test_conflicted(tree_a):
+  """
+  Verifies NAME_CONFLICTED, URL_CONFLICTED, and NOT_FOUND.
+  """
+  # Change demoC's listing of "gordion_demo_d"s URL to "gordion_demo_b"s URL.
+  repo_c = gordion.Workspace().get_repository('gordion_demo_c')
+  b_url = tree_a.repo.yeditor.yaml_data['repositories']['gordion_demo_b']['url']
+  repo_c.yeditor.yaml_data['repositories']['gordion_demo_d']['url'] = b_url
+  repo_c.yeditor.save()
+
+  # Verify.
+  # demoC commit is dirty.
+  c_commit = repo_c.handle.head.commit.hexsha
+  expected = NOMINAL_STATUS.replace(green(':' + c_commit[0:7]),
+                                    green(':' + c_commit[0:7]) + yellow("-dirty"))
+  # demoB is NAME_CONFLICTED. There are two listings that have demoB's URL, but they have different
+  # names.
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  b_commit = repo_b.handle.head.commit.hexsha
+  expected = expected.replace(green(':' + b_commit[0:7]),
+                              green(':' + b_commit[0:7]) + " " + red("(NAME CONFLICTED)"))
+  # demoD is URL_CONFLICTED. There are two listings of demoD, with different URLs.
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+  d_commit = repo_d.handle.head.commit.hexsha
+  expected = expected.replace(green(':' + d_commit[0:7]),
+                              green(':' + d_commit[0:7]) + " " + red("(URL CONFLICTED)"))
+
+  # The not found listing will be the demoD listing with demoBs url.
+  expected_header = bold_red("\nNot Found:\n")
+  not_found_listings, _ = tree_a.listings(name='gordion_demo_d', url=b_url)
+  assert len(not_found_listings) == 1
+  listing_str = gordion.Tree.list_url(not_found_listings[0])
+  expected_header += red(listing_str + "\n")
+
+  # The URL Incoherences (all demoD, and demoB listings)
+  expected_header += bold_red("\nURL Incoherences:\n")
+  repo_d_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
+  repo_b_listings, _ = tree_a.listings(name='gordion_demo_b', url=None)
+  all_incoherences = []
+  all_incoherences.extend(repo_d_listings)
+  all_incoherences.extend(repo_b_listings)
+  all_incoherences.sort(key=lambda listing: listing.name)
+  for listing in all_incoherences:
+    listing_str = gordion.Tree.list_url(listing)
+    expected_header += red(listing_str + "\n")
+  expected = expected_header + "\n" + expected
+  assert expected == gordion.app.status.terminal_status(tree_a)
+
+
 # =================================================================================================
 # Tests for branch status
 #
@@ -111,6 +160,7 @@ def test_child_mismatch(tree_a):
 #   11. (wrong tracking branch)
 #   12. (untracked)
 #   13. (unsaved)
+
 
 def test_branch_ahead(tree_a):
   """

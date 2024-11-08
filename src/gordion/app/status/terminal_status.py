@@ -111,33 +111,31 @@ def terminal_status(root: gordion.Tree) -> str:
   if len(not_found_listings) > 0:
     error_header += gordion.utils.bold_red("\nNot Found:\n")
     for listing in not_found_listings:
-      listing_str = f"* {gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
-      listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}\n"
-      error_header += gordion.utils.red(listing_str)
+      listing_str = gordion.Tree.list_url(listing)
+      error_header += gordion.utils.red(listing_str + "\n")
 
   # URL INCOHERENCES.
-  all_conflicted = []
+  all_incoherences = []
   for listing in root_listings:
-    url_conflicted = [other for other in root_listings if other.name ==  # noqa: W504
-                      listing.name and other.url != listing.url]
-    name_conflicted = [other for other in root_listings if other.name !=  # noqa: W504
-                       listing.name and other.url == listing.url]
-    # Add to all conflicted, but without duplicating.
-    all_conflicted.extend(url_conflicted)
-    for nc in name_conflicted:
-      if nc not in all_conflicted:
-        all_conflicted.append(nc)
+    url_incoherences = [listing for other in root_listings if other.name ==  # noqa: W504
+                        listing.name and other.url != listing.url]
+    name_incoherences = [listing for other in root_listings if other.name !=  # noqa: W504
+                         listing.name and other.url == listing.url]
+    # Combine the two lists.
+    incoherences = url_incoherences.copy()
+    incoherences.extend(name_incoherences)
 
-  if len(all_conflicted):
+    # Add to all_conflicted, checking for duplicates.
+    for nc in incoherences:
+      if nc not in all_incoherences:
+        all_incoherences.append(nc)
+
+  if len(all_incoherences) > 0:
+    all_incoherences.sort(key=lambda listing: listing.name)
     error_header += gordion.utils.bold_red("\nURL Incoherences:\n")
-    for listing in all_conflicted:
-      listing_str = "* "
-      if listing.file:
-        listing_str += f"{gordion.utils.filelink(listing.file, listing.file)} : {listing.name} : "
-      else:
-        listing_str += f"{listing.name}* : "
-      listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}\n"
-      error_header += gordion.utils.red(listing_str)
+    for listing in all_incoherences:
+      listing_str = gordion.Tree.list_url(listing)
+      error_header += gordion.utils.red(listing_str + "\n")
 
   # TAG INCOHERENCES
   if len(all_tag_incoherent_listings) > 0:
