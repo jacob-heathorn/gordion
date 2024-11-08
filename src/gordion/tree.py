@@ -163,9 +163,9 @@ class Tree:
     listings, _ = self.listings(target.name, target.url)
 
     # Raise an error if any two listings don't match tags.
-    listing_0_commit = target._verify_tag(listings[0].tag)
+    listing_0_commit = target.verify_tag(listings[0].tag)
     for listing_n in listings:
-      listing_n_commit = target._verify_tag(listing_n.tag)
+      listing_n_commit = target.verify_tag(listing_n.tag)
       if listing_n_commit != listing_0_commit:
         raise gordion.UpdateSameRepoDifferentTagError(target.path, listings)
 
@@ -217,7 +217,7 @@ class Tree:
             # Try to verify the tag, but don't error, it just means we cannot recurse if it fails.
             child_listed_commit = None
             try:
-              child_listed_commit = child_repo._verify_tag(child_tag)
+              child_listed_commit = child_repo.verify_tag(child_tag)
             except Exception:
               pass  # TODO print?
 

@@ -88,7 +88,7 @@ class Repository:
     not be lost in the process, otherwise it will raise descriptive errors about what to do next.
 
     """
-    commit: git.Commit = self._verify_tag(tag)
+    commit: git.Commit = self.verify_tag(tag)
 
     # If the commit does not change, we are done. Allow user to manually checkout a HEAD or
     # different branch name and still satisfy the update.
@@ -285,8 +285,7 @@ class Repository:
     else:
       return commit in remote_branch.commit.iter_parents()
 
-  # TODO remove underscore
-  def _verify_tag(self, tag: str) -> git.Commit:
+  def verify_tag(self, tag: str) -> git.Commit:
     """
     Verifies and returns the commit object for the specified tag if it exists, otherwise throws an
     error. This fuction will perform a fetch if necessary to check if recent remote changes contain
@@ -308,7 +307,7 @@ class Repository:
 
   def verify_tag_nothrow(self, tag: str) -> Optional[git.Commit]:
     try:
-      commit = self._verify_tag(tag)
+      commit = self.verify_tag(tag)
       return commit
     except BaseException:
       return None
