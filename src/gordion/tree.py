@@ -33,7 +33,6 @@ class Tree:
     self.repo.yeditor.reload()
     self._update_children(branch_name, force)
 
-    # TODO move outside of tree so don't need root, so dont need parent?
     if self is root:
       self.workspace.trim_repositories()
 
@@ -175,7 +174,6 @@ class Tree:
     tag: str
     file: Optional[str]
 
-  # TODO reconsider recursing argument
   def listings(self, name: Optional[str], url: Optional[str],
                recursing: bool = False) -> Tuple[List[Listing], bool]:
     """
@@ -218,7 +216,7 @@ class Tree:
             try:
               child_listed_commit = child_repo.verify_tag(child_tag)
             except Exception:
-              pass  # TODO print?
+              pass
 
             # If we have the child commit and it the head of the repo, we can recurse.
             if child_listed_commit:
