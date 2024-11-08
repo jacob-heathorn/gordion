@@ -180,15 +180,6 @@ class DanglingGordionRepositoryError(Exception):
     super().__init__(self.message)
 
 
-class BadRepositoryNamePathMismach(Exception):
-  def __init__(self, file, path, name):
-    self.message = (
-        f"File<{file}> lists repository name<{name}> but the path is <{path}>. The name needs to"
-        f" match the base directory name of the path."
-    )
-    super().__init__(self.message)
-
-
 class DanglingCommitError(UpdateError):
   def __init__(self, target_path, target_tag):
     reason = (f"Commit<{target_tag}> is dangling (does not belong to a branch)")
