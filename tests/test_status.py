@@ -75,10 +75,12 @@ def test_child_mismatch(tree_a):
   repo_b.yeditor.save()
 
   # Verify.
-  # TODO hardoceed
-  expected = NOMINAL_STATUS.replace(green(':c516fff'),
-                                    red(':c516fff') + " " + red('(TAG INCOHERENCE)'))
-  expected = expected.replace(green(':fe4fd4d'), green(':fe4fd4d') + yellow('-dirty'))
+  d_commit = repo_d.handle.head.commit.hexsha
+  expected = NOMINAL_STATUS.replace(green(f':{d_commit[0:7]}'),
+                                    red(f':{d_commit[0:7]}') + " " + red('(TAG INCOHERENCE)'))
+  b_commit = repo_b.handle.head.commit.hexsha
+  expected = expected.replace(green(f':{b_commit[0:7]}'),
+                              green(f':{b_commit[0:7]}') + yellow('-dirty'))
 
   expected_header = bold_red("\nTag Incoherences:\n")
   repo_b_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
@@ -103,19 +105,19 @@ def test_conflicted(tree_a):
   # Verify.
   # demoC commit is dirty.
   c_commit = repo_c.handle.head.commit.hexsha
-  expected = NOMINAL_STATUS.replace(green(':' + c_commit[0:7]),
-                                    green(':' + c_commit[0:7]) + yellow("-dirty"))
+  expected = NOMINAL_STATUS.replace(green(f':{c_commit[0:7]}'),
+                                    green(f':{c_commit[0:7]}') + yellow("-dirty"))
   # demoB is NAME_CONFLICTED. There are two listings that have demoB's URL, but they have different
   # names.
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
   b_commit = repo_b.handle.head.commit.hexsha
-  expected = expected.replace(green(':' + b_commit[0:7]),
-                              green(':' + b_commit[0:7]) + " " + red("(NAME CONFLICTED)"))
+  expected = expected.replace(green(f':{b_commit[0:7]}'),
+                              green(f':{b_commit[0:7]}') + " " + red("(NAME CONFLICTED)"))
   # demoD is URL_CONFLICTED. There are two listings of demoD, with different URLs.
   repo_d = gordion.Workspace().get_repository('gordion_demo_d')
   d_commit = repo_d.handle.head.commit.hexsha
-  expected = expected.replace(green(':' + d_commit[0:7]),
-                              green(':' + d_commit[0:7]) + " " + red("(URL CONFLICTED)"))
+  expected = expected.replace(green(f':{d_commit[0:7]}'),
+                              green(f':{d_commit[0:7]}') + " " + red("(URL CONFLICTED)"))
 
   # The Not Found will be the demoD listing with demoBs url.
   expected_header = bold_red("\nNot Found:\n")
@@ -170,12 +172,12 @@ def test_branch_ahead(tree_a):
     2. Child branch is default branch, while root branch is not available.
        (All children are default branch, and still green)
   """
-  original_tag = green(":" + tree_a.repo.handle.head.commit.hexsha[0:7])
+  original_tag = green(f':{tree_a.repo.handle.head.commit.hexsha[0:7]}')
   tree_a.repo.handle.index.commit("Empty commit for test_branch_ahead")
   expected = NOMINAL_STATUS.replace(green('test_status'),
                                     green('test_status') + yellow('(ahead)'))
   expected = expected.replace(original_tag,
-                              green(":" + tree_a.repo.handle.head.commit.hexsha[0:7]))
+                              green(f':{tree_a.repo.handle.head.commit.hexsha[0:7]}'))
 
   assert expected == gordion.app.status.terminal_status(tree_a)
 
