@@ -122,8 +122,11 @@ def terminal_status(root: gordion.Tree) -> str:
                       listing.name and other.url != listing.url]
     name_conflicted = [other for other in root_listings if other.name !=  # noqa: W504
                        listing.name and other.url == listing.url]
+    # Add to all conflicted, but without duplicating.
     all_conflicted.extend(url_conflicted)
-    all_conflicted.extend(name_conflicted)
+    for nc in name_conflicted:
+      if nc not in all_conflicted:
+        all_conflicted.append(nc)
 
   if len(all_conflicted):
     error_header += gordion.utils.bold_red("\nURL Incoherences:\n")
