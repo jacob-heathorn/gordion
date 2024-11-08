@@ -75,6 +75,7 @@ def test_child_mismatch(tree_a):
   repo_b.yeditor.save()
 
   # Verify.
+  # TODO hardoceed
   expected = NOMINAL_STATUS.replace(green(':c516fff'),
                                     red(':c516fff') + " " + red('(TAG INCOHERENCE)'))
   expected = expected.replace(green(':fe4fd4d'), green(':fe4fd4d') + yellow('-dirty'))
@@ -82,7 +83,7 @@ def test_child_mismatch(tree_a):
   expected_header = bold_red("\nTag Incoherences:\n")
   repo_b_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
   for listing in repo_b_listings:
-    listing_str = gordion.Tree.list_tag(listing)
+    listing_str = gordion.Tree.format_listing_tag(listing)
     expected_header += red(listing_str + "\n")
   expected = expected_header + "\n" + expected
 
@@ -116,11 +117,11 @@ def test_conflicted(tree_a):
   expected = expected.replace(green(':' + d_commit[0:7]),
                               green(':' + d_commit[0:7]) + " " + red("(URL CONFLICTED)"))
 
-  # The not found listing will be the demoD listing with demoBs url.
+  # The Not Found will be the demoD listing with demoBs url.
   expected_header = bold_red("\nNot Found:\n")
   not_found_listings, _ = tree_a.listings(name='gordion_demo_d', url=b_url)
   assert len(not_found_listings) == 1
-  listing_str = gordion.Tree.list_url(not_found_listings[0])
+  listing_str = gordion.Tree.format_listing_url(not_found_listings[0])
   expected_header += red(listing_str + "\n")
 
   # The URL Incoherences (all demoD, and demoB listings)
@@ -132,7 +133,7 @@ def test_conflicted(tree_a):
   all_incoherences.extend(repo_b_listings)
   all_incoherences.sort(key=lambda listing: listing.name)
   for listing in all_incoherences:
-    listing_str = gordion.Tree.list_url(listing)
+    listing_str = gordion.Tree.format_listing_url(listing)
     expected_header += red(listing_str + "\n")
   expected = expected_header + "\n" + expected
   assert expected == gordion.app.status.terminal_status(tree_a)

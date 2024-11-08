@@ -111,7 +111,7 @@ def terminal_status(root: gordion.Tree) -> str:
   if len(not_found_listings) > 0:
     error_header += gordion.utils.bold_red("\nNot Found:\n")
     for listing in not_found_listings:
-      listing_str = gordion.Tree.list_url(listing)
+      listing_str = gordion.Tree.format_listing_url(listing)
       error_header += gordion.utils.red(listing_str + "\n")
 
   # URL INCOHERENCES.
@@ -134,14 +134,14 @@ def terminal_status(root: gordion.Tree) -> str:
     all_incoherences.sort(key=lambda listing: listing.name)
     error_header += gordion.utils.bold_red("\nURL Incoherences:\n")
     for listing in all_incoherences:
-      listing_str = gordion.Tree.list_url(listing)
+      listing_str = gordion.Tree.format_listing_url(listing)
       error_header += gordion.utils.red(listing_str + "\n")
 
   # TAG INCOHERENCES
   if len(all_tag_incoherent_listings) > 0:
     error_header += gordion.utils.bold_red("\nTag Incoherences:\n")
     for listing in all_tag_incoherent_listings:
-      listing_str = gordion.Tree.list_tag(listing)
+      listing_str = gordion.Tree.format_listing_tag(listing)
       error_header += gordion.utils.red(listing_str + "\n")
 
   # Add intermediary folders.

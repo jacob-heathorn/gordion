@@ -264,7 +264,7 @@ class Tree:
       raise gordion.NotAGordionRepositoryError()
 
   @staticmethod
-  def list_tag(listing: Listing) -> str:
+  def format_listing_tag(listing: Listing) -> str:
     repo = gordion.Workspace().get_repository(listing.name)
     if repo:
       listing_str = "* "
@@ -280,9 +280,8 @@ class Tree:
     else:
       return "error"
 
-  # TODO rename these.
   @staticmethod
-  def list_url(listing: Listing) -> str:
+  def format_listing_url(listing: Listing) -> str:
     repo = gordion.Workspace().get_repository(listing.name)
     if repo:
       listing_str = "* "
