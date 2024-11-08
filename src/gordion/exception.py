@@ -106,7 +106,8 @@ def append_reason_with_tagged_listings(reason: str, listings) -> str:
 class UpdateDifferentNameSameUrlError(UpdateError):
   def __init__(self, target_path, listings):
     reason = "Multiple unique listings have the same URL!"
-    reason = append_reason_with_urled_listings(reason, listings)
+    for listing in listings:
+      reason += "\n" + gordion.Tree.format_listing_url(listing)
     suggestion = ("\nMake sure all different listings have unique URLs, jeez")
     super().__init__(target_path, reason, suggestion)
 

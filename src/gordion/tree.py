@@ -282,17 +282,15 @@ class Tree:
 
   @staticmethod
   def format_listing_url(listing: Listing) -> str:
-    repo = gordion.Workspace().get_repository(listing.name)
-    if repo:
-      listing_str = "* "
-      if listing.file:
-        partial_path = os.path.join(
-            os.path.basename(os.path.dirname(listing.file)),
-            os.path.basename(listing.file))
-        listing_str += f"{gordion.utils.filelink(listing.file, partial_path)} : {listing.name} : "
-      else:
-        listing_str += f"{listing.name}* : "
-      listing_str += f"{gordion.utils.hyperlink(listing.url, listing.url)}"
-      return listing_str
+    listing_str = "* "
+    formatted_file = ""
+    if listing.file:
+      partial_path = os.path.join(
+          os.path.basename(os.path.dirname(listing.file)),
+          os.path.basename(listing.file))
+      formatted_file = f"{gordion.utils.filelink(listing.file, partial_path)}"
     else:
-      return "error"
+      formatted_file = f"{listing.name}*"
+    formatted_url = f"{gordion.utils.hyperlink(listing.url, listing.url)}"
+    listing_str = f"* {formatted_file} : {listing.name} : {formatted_url}"
+    return listing_str

@@ -61,6 +61,9 @@ def test_different_name_same_url(tree_a):
   repo_d = gordion.Workspace().get_repository('gordion_demo_d')
   listings, _ = tree_a.listings(name=None, url=repo_d.url)
   expected = gordion.UpdateDifferentNameSameUrlError('gordion_demo_d_different_name', listings)
+  print("\n\n")
+  print(expected)
+  print("\n\n")
   assert str(context.value) == str(expected)
 
 
