@@ -6,11 +6,10 @@ from dataclasses import dataclass
 
 class Tree:
   """
-  Extends a gordion.Repository to add tree functionality. A gordion repository can have children
+  Wraps a gordion.Repository to add tree functionality. A gordion repository can have children
   gordion repositories that have children and so on.
   """
 
-  # TODO add_child function.
   def __init__(self, repo: gordion.Repository, parent=None) -> None:
     self.repo: gordion.Repository = repo
     self.parent: Tree = parent
