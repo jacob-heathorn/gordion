@@ -34,7 +34,7 @@ def tmp1():
   """
   Creates a tmp1 folder in the REPOS_DIR/.dependencies and then deletes it.
   """
-  tmp1 = os.path.join(REPOS_DIR, 'tmp1')
+  tmp1 = os.path.join(REPOS_DIR, '.dependencies', 'tmp1')
   os.mkdir(tmp1)
 
   yield tmp1
@@ -179,11 +179,33 @@ def test_duplicate(tree_a, tmp1):
   expected_header += red(f"* {repo_b.path} ({repo_b.url})\n")
   expected_header += red(f"* {duplciate.path} ({duplciate.url})\n")
   expected = expected_header + "\n" + expected
-  print("\n\n")
-  print(expected)
-  print("\n\n")
-  print(gordion.app.status.terminal_status(tree_a))
   assert expected == gordion.app.status.terminal_status(tree_a)
+
+
+# flake8: noqa
+EXPECTED_WRONG_PATH_STATUS = \
+    f"""{bold_blue('repos')}
+├──{bold_blue('.dependencies')}
+│   ├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
+│   ├──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}
+│   └──{bold_blue('tmp1')}
+│       └──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')} {red("(WRONG PATH)")}
+└──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}"""
+
+
+def test_wrong_path(tree_a, tmp1):
+  """
+  Verifies WRONG_PATH
+  """
+  # Make a duplicate in the ./dependencies/tmp1 directory and delete demo_b
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  wrong_path = os.path.join(tmp1, 'gordion_demo_b')
+  shutil.copytree(repo_b.path, wrong_path)
+  gordion.Repository(wrong_path)
+  gordion.Repository.safe_delete(repo_b.path)
+
+  # Verify
+  assert EXPECTED_WRONG_PATH_STATUS == gordion.app.status.terminal_status(tree_a)
 
   # =================================================================================================
   # Tests for branch status
