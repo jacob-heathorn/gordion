@@ -17,7 +17,7 @@ workspace.setup(subpath=REPOS_DIR, force=True)
 # =================================================================================================
 # Fixtures
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def repository_a():
   """
   Creates the gordion.Repository interface for gordion_demo_a only once for the lifetime of this
