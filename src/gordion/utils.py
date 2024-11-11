@@ -3,6 +3,7 @@ import os
 from urllib.parse import urlparse
 import traceback
 import re
+import git
 
 
 # Context manager for pushd. Example from
@@ -129,18 +130,61 @@ def singleton(cls):
   Decorator to turn a class into a Singleton
   """
   instances = {}
+  import functools
 
+  @functools.wraps(cls)  # This helps in preserving the original class's metadata
   def get_instance(*args, **kwargs):
     if cls not in instances:
       instances[cls] = cls(*args, **kwargs)
     return instances[cls]
+
+  # Copy static methods and other attributes to the get_instance function
+  for attr in dir(cls):
+    if not hasattr(get_instance, attr):
+      try:
+        setattr(get_instance, attr, getattr(cls, attr))
+      except TypeError:
+        pass  # Skip setting attributes that cause TypeError
+
   return get_instance
+
+
+def registry(cls):
+  """
+  A decorator that adds registry functionality to a class.
+  """
+  cls.registry_ = {}
+
+  @classmethod  # type: ignore[misc]
+  def register(cls, key, obj):
+    cls.registry_[key] = obj
+
+  @classmethod  # type: ignore[misc]
+  def unregister(cls, key):
+    if key in cls.registry_:
+      del cls.registry_[key]
+
+  @classmethod  # type: ignore[misc]
+  def registry(cls):
+    return cls.registry_
+
+  @classmethod  # type: ignore[misc]
+  def reset_registry(cls):
+    cls.registry_ = {}
+
+  # Attach the method to the class
+  cls.register = register
+  cls.unregister = unregister
+  cls.registry = registry
+  cls.reset_registry = reset_registry
+
+  return cls
 
 
 def override(interface_class):
   def overrider(method):
     assert (method.__name__ in dir(interface_class)), \
-      f"Error: {method.__name__} does not override any method in {interface_class.__name__}"
+        f"Error: {method.__name__} does not override any method in {interface_class.__name__}"
     return method
   return overrider
 
@@ -169,6 +213,14 @@ def yellow(str):
   return '\033[93m' + str + "\033[0m"
 
 
+def hyperlink(link, text):
+  return f"\033]8;;{link}\033\\{text}\033]8;;\033\\"
+
+
+def filelink(link, text):
+  return f"\033]8;;file://{link}\033\\{text}\033]8;;\033\\"
+
+
 def replace_i(text, old, new, occurrence_i):
   """
   Replaces 'old' with 'new' at the 'occurrence_i' instance index in 'text'.
@@ -193,3 +245,17 @@ def replace_i(text, old, new, occurrence_i):
 
   # Replace only the specified occurrence
   return text[:start] + new + text[end:]
+
+
+def get_repository_root(path: str):
+  """
+  Returns the root of a git repository.
+  """
+  try:
+    # Create a Repo object pointing to the current directory
+    repo = git.Repo(path, search_parent_directories=True)
+    # Get the git root directory
+    git_root = repo.git.rev_parse("--show-toplevel")
+    return git_root
+  except Exception:
+    return None

@@ -1,9 +1,10 @@
 import os
+import gordion
 
 
 class UpdateError(Exception):
   def __init__(self, target_path, reason, suggestion):
-    self.message = (f"Cannot update repository<{os.path.basename(target_path)}>.\n"
+    self.message = (f"Cannot update repository<{target_path}>. "
                     f"{reason}. {suggestion}.")
     super().__init__(self.message)
 
@@ -14,6 +15,30 @@ class UpdateLocalBranchAheadError(UpdateError):
               f"Update would lose one or more of these commit(s)")
     suggestion = "Push or remove the commits please"
     super().__init__(target_path, reason, suggestion)
+
+
+class UpdateTargetPathExistsError(UpdateError):
+  def __init__(self, target_path):
+    reason = f"{target_path} already exists but is not a repository"
+    suggestion = f"Manually delete {target_path}"
+    super().__init__(target_path, reason, suggestion)
+
+
+class UpdateMultipleRepositoriesAlreadyExistsError(UpdateError):
+  def __init__(self, target_path, other_repos):
+    reason = f"Multiple repositories with url<{other_repos[0].url}> already exist:"
+    for _, other_repo in other_repos.items():
+      reason += f"\n * {other_repo.path}"
+    suggestion = "\nDelete duplicate repositories"
+    super().__init__(target_path, reason, suggestion)
+
+
+class UpdateWorkingRepositoryWrongUrlError(UpdateError):
+  def __init__(self, path, current_url, correct_url):
+    reason = (f"The working repository name<{os.path.basename(path)}> has the wrong "
+              f"url<{current_url}>")
+    suggestion = f"Manually delete it and re-clone it with <{correct_url}>"
+    super().__init__(path, reason, suggestion)
 
 
 class UpdateNoTrackingBranchError(UpdateError):
@@ -48,22 +73,12 @@ class UpdateRepoIsDirtyError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
-class UpdateDifferentRepoSamePathError(UpdateError):
+class UpdateDifferentNameSameUrlError(UpdateError):
   def __init__(self, target_path, listings):
-    reason = f"Different repositories are attempted to be cloned at the same path<{target_path}>!"
+    reason = "Multiple unique listings have the same URL!"
     for listing in listings:
-      reason += f"\nRepository<{listing.url}>"
-    suggestion = "\nYou need to make sure repositories have unique paths in the gordion.yaml files"
-    super().__init__(target_path, reason, suggestion)
-
-
-class UpdateSameRepoDifferentPathError(UpdateError):
-  def __init__(self, target_path, listings):
-    reason = "The same repository is attempted to be cloned at different paths!"
-    for listing in listings:
-      reason += f"\nRepository<{listing.url}> at path<{listing.path}>"
-    suggestion = ("\nMake sure all listings of the same repository have the same "
-                  "local path in the gordion.yaml file")
+      reason += "\n" + gordion.Tree.format_listing_url(listing)
+    suggestion = ("\nMake sure all different listings have unique URLs, jeez")
     super().__init__(target_path, reason, suggestion)
 
 
@@ -71,15 +86,24 @@ class UpdateSameRepoDifferentTagError(UpdateError):
   def __init__(self, target_path, listings):
     reason = "Gordion repository tag mismatch!"
     for listing in listings:
-      reason += f"\n{listing.listed_path}:{listing.tag}"
-    suggestion = ("\nThe tags need to match. I guess that's kinda the whole point of this thing")
+      reason += "\n" + gordion.Tree.format_listing_tag(listing)
+    suggestion = ("\nThe tags need to identify the same commit pleaaaaase")
+    super().__init__(target_path, reason, suggestion)
+
+
+class UpdateSameNameDifferentUrlError(UpdateError):
+  def __init__(self, target_path, listings):
+    reason = "Gordion repository url mismatch!"
+    for listing in listings:
+      reason += "\n" + gordion.Tree.format_listing_url(listing)
+    suggestion = ("\nThe urls need to point to the same repository ehh")
     super().__init__(target_path, reason, suggestion)
 
 
 class UnsafeRemoveDirty(Exception):
   def __init__(self, path):
     self.message = (
-      f"Cannot remove repository<{path}> because it is dirty."
+        f"Cannot remove repository<{path}> because it is dirty."
     )
     super().__init__(self.message)
 
@@ -87,8 +111,8 @@ class UnsafeRemoveDirty(Exception):
 class UnsafeRemoveLocalBranchAhead(Exception):
   def __init__(self, path, local_branch, tracking_branch, num_commits_ahead):
     self.message = (
-      f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that is "
-      f"{num_commits_ahead} commit(s) ahead of tracking branch<{tracking_branch}>."
+        f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that is "
+        f"{num_commits_ahead} commit(s) ahead of tracking branch<{tracking_branch}>."
     )
     super().__init__(self.message)
 
@@ -96,8 +120,8 @@ class UnsafeRemoveLocalBranchAhead(Exception):
 class UnsafeRemoveLocalBranchNoTrackingBranch(Exception):
   def __init__(self, path, local_branch):
     self.message = (
-      f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that does "
-      f"not have a tracking branch."
+        f"Cannot remove repository<{path}> because it has local branch<{local_branch}> that does "
+        f"not have a tracking branch."
     )
     super().__init__(self.message)
 
@@ -105,16 +129,16 @@ class UnsafeRemoveLocalBranchNoTrackingBranch(Exception):
 class UnsafeRemoveStashes(Exception):
   def __init__(self, path, stashes):
     self.message = (
-      f"Cannot remove repository<{path}> because it has the following stashes that would be lost:\n"
-      f"{stashes}."
+        f"Cannot remove repository<{path}> because it has the following stashes that would be"
+        f" lost:\n{stashes}."
     )
     super().__init__(self.message)
 
 
-class NotAGordionRepositoryError(Exception):
+class NotARepositoryError(Exception):
   def __init__(self):
     self.message = (
-      "You are not in a gordion repository!"
+        "You are not in a repository!"
     )
     super().__init__(self.message)
 
@@ -122,18 +146,9 @@ class NotAGordionRepositoryError(Exception):
 class DanglingGordionRepositoryError(Exception):
   def __init__(self, current_repo_path, disconnected_parent_path):
     self.message = (
-      f"You are in repository<{current_repo_path}>. There is a parent gordion "
-      f"repository<{disconnected_parent_path}> but it does not list this repository. Therefore "
-      f"this repository appears to be dangling and should be deleted."
-    )
-    super().__init__(self.message)
-
-
-class BadRepositoryNamePathMismach(Exception):
-  def __init__(self, file, path, name):
-    self.message = (
-      f"File<{file}> lists repository name<{name}> but the path is <{path}>. The name needs to"
-      f" match the base directory name of the path."
+        f"You are in repository<{current_repo_path}>. There is a parent gordion "
+        f"repository<{disconnected_parent_path}> but it does not list this repository. Therefore "
+        f"this repository appears to be dangling and should be deleted."
     )
     super().__init__(self.message)
 
@@ -143,3 +158,12 @@ class DanglingCommitError(UpdateError):
     reason = (f"Commit<{target_tag}> is dangling (does not belong to a branch)")
     suggestion = ("Update the commit tag in the parent gordion.yaml")
     super().__init__(target_path, reason, suggestion)
+
+
+class DanglingDependenciesNotEmpty(Exception):
+  def __init__(self, dangling_dependencies_path):
+    self.message = (
+        f"Directory<{dangling_dependencies_path}> is not empty after moving it's repositories. "
+        f"Manually delete it."
+    )
+    super().__init__(self.message)

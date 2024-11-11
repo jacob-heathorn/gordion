@@ -5,7 +5,7 @@ import os
 import gordion
 import pytest
 import git
-from tests.conftest import recursive_git_blast
+from tests.conftest import recursive_git_blast_workspace
 
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -14,11 +14,11 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 def test_exists():
   # A file inside a repository is not an existing repository
   path = os.path.join(SCRIPT_DIR)
-  assert not gordion.Repository._exists(path)
+  assert not gordion.Repository.exists(path)
 
   # Verify this repository root is a git repository path.
   path = os.path.join(SCRIPT_DIR, '..')
-  assert gordion.Repository._exists(path)
+  assert gordion.Repository.exists(path)
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def demo_a(repository_a):
   yield repository_a
 
   # Cleanup.
-  recursive_git_blast(repository_a.path)
+  recursive_git_blast_workspace()
 
   # Update to our known commit.
   repository_a.update(tag, branch_name, force=True)
@@ -44,17 +44,17 @@ def demo_a(repository_a):
 
 def test_verify_tag(demo_a):
   # Verify HEAD of active branch exists.
-  demo_a._verify_tag(demo_a.handle.head.commit.hexsha)
+  demo_a.verify_tag(demo_a.handle.head.commit.hexsha)
 
   # Verify older commit of active branch exists.
-  demo_a._verify_tag(demo_a.handle.head.commit.parents[0].hexsha)
+  demo_a.verify_tag(demo_a.handle.head.commit.parents[0].hexsha)
 
   # Verify a tag that only exists on a different remote branch (test_single_1) in fact exists.
-  demo_a._verify_tag('05090461f38c8b725d89bf30a31c716383778b48')
+  demo_a.verify_tag('05090461f38c8b725d89bf30a31c716383778b48')
 
   # Verify that an ill-formed commit will raise an error.
   with pytest.raises(git.BadName):
-    demo_a._verify_tag("123")
+    demo_a.verify_tag("123")
 
 
 def test_does_local_branch_have_commit(demo_a):
@@ -81,7 +81,7 @@ def test_does_local_branch_have_commit(demo_a):
   assert demo_a._does_local_branch_have_commit('test_single_1', head_commit)
 
   # Verfiy commit on remote but not on local returns false.
-  future_commit = demo_a._verify_tag('04518b39225d45f69fc9a2f9f5c0dba1fe6a6227')
+  future_commit = demo_a.verify_tag('04518b39225d45f69fc9a2f9f5c0dba1fe6a6227')
   assert not demo_a._does_local_branch_have_commit('test_single', future_commit)
 
 
@@ -147,7 +147,7 @@ def test_does_remote_branch_have_commit(demo_a):
   """
 
   # Verify a commit is on remote branch but not local.
-  commit = demo_a._verify_tag('04518b39225d45f69fc9a2f9f5c0dba1fe6a6227')
+  commit = demo_a.verify_tag('04518b39225d45f69fc9a2f9f5c0dba1fe6a6227')
   assert not demo_a._does_local_branch_have_commit('test_single', commit)
   assert demo_a._does_remote_branch_have_commit('test_single', commit)
 
@@ -226,14 +226,14 @@ def test_requested_branch_does_not_have_commit(demo_a):
 
   # If the commit moves, and exists on the default branch but not the requested branch, it will go
   # there. Choose a commit on develop but not test_single_1.
-  new_commit = demo_a._verify_tag('8a477c37ae584072dd1c7909c5000f5e2677fec5')
+  new_commit = demo_a.verify_tag('8a477c37ae584072dd1c7909c5000f5e2677fec5')
   demo_a.update(new_commit, "test_single_1")
   assert demo_a.handle.active_branch.name == "develop"
   assert demo_a.handle.head.commit == new_commit
 
   # If the commit moves, and exists on a non-default branch, but not the requested branch, it will
   # checkout detached HEAD. Choose a commit that exists on test_single_1 only.
-  new_commit = demo_a._verify_tag('05090461f38c8b725d89bf30a31c716383778b48')
+  new_commit = demo_a.verify_tag('05090461f38c8b725d89bf30a31c716383778b48')
   demo_a.update(new_commit, "test_single")
   assert demo_a.handle.head.is_detached
   assert demo_a.handle.head.commit == new_commit
@@ -253,7 +253,7 @@ def test_dont_specify_branch(demo_a):
 
   # If the commit moves, and exists on the default branch (develop) it will go there. Choose a
   # commit that only exists on develop branch.
-  new_commit = demo_a._verify_tag('8a477c37ae584072dd1c7909c5000f5e2677fec5')
+  new_commit = demo_a.verify_tag('8a477c37ae584072dd1c7909c5000f5e2677fec5')
   demo_a.update(new_commit, None)
   assert demo_a.handle.active_branch.name == "develop"
   assert demo_a.handle.head.commit == new_commit
