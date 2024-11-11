@@ -4,6 +4,9 @@ import gordion
 from gordion.utils import green, bold_green, bold_blue, red, bold_red, yellow
 from gordion.utils import replace_i
 import pytest
+from conftest import REPOS_DIR
+import os
+import shutil
 
 
 # =================================================================================================
@@ -24,6 +27,20 @@ def tree_a(tree_a):
   tree_a.update(tag, branch_name, force=True)
 
   yield tree_a
+
+
+@pytest.fixture
+def tmp1():
+  """
+  Creates a tmp1 folder in the REPOS_DIR/.dependencies and then deletes it.
+  """
+  tmp1 = os.path.join(REPOS_DIR, 'tmp1')
+  os.mkdir(tmp1)
+
+  yield tmp1
+
+  shutil.rmtree(tmp1, ignore_errors=True)
+  gordion.Workspace().discover_repositories()
 
 
 # =================================================================================================
@@ -141,28 +158,55 @@ def test_conflicted(tree_a):
   assert expected == gordion.app.status.terminal_status(tree_a)
 
 
-# =================================================================================================
-# Tests for branch status
-#
-# Verifies root branch color rendering in the following situations:
-# Green:
-#   1. Child same as root branch.
-#   2. Child is default branch, while root branch is not available.
-#   3. Child is DETACHED and root/default branches are not available.
+def test_duplicate(tree_a, tmp1):
+  """
+  Verifies HAS_DUPLICATE
+  """
+  # Make a duplicate in the ./dependencies/tmp1 directory.
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  duplicate_path = os.path.join(tmp1, 'gordion_demo_x')
+  shutil.copytree(repo_b.path, duplicate_path)
+  duplciate = gordion.Repository(duplicate_path)
 
-# Yellow:
-#   4. Child is default branch while root branch is available.
-#   5. Child is different branch while root branch is available.
-#   6. Child is different branch while default branch is available.
-#   7. Child is DETACHED while root or default branch is available.
+  # repo B becomes red and shows HAS_DUPLICATE.
+  expected = NOMINAL_STATUS.replace(bold_green('gordion_demo_b'), bold_red('gordion_demo_b'))
+  b_commit = repo_b.handle.head.commit.hexsha
+  expected = expected.replace(green(f':{b_commit[0:7]}'),
+                              green(f':{b_commit[0:7]}') + " " + red("(HAS DUPLICATE)"))
 
-# Suggestions:
-#   8.  (root branch?)
-#   9.  (default branch?)
-#   10. (ahead)
-#   11. (wrong tracking branch)
-#   12. (untracked)
-#   13. (unsaved)
+  # Duplicates header.
+  expected_header = bold_red("\nDuplicates:\n")
+  expected_header += red(f"* {repo_b.path} ({repo_b.url})\n")
+  expected_header += red(f"* {duplciate.path} ({duplciate.url})\n")
+  expected = expected_header + "\n" + expected
+  print("\n\n")
+  print(expected)
+  print("\n\n")
+  print(gordion.app.status.terminal_status(tree_a))
+  assert expected == gordion.app.status.terminal_status(tree_a)
+
+  # =================================================================================================
+  # Tests for branch status
+  #
+  # Verifies root branch color rendering in the following situations:
+  # Green:
+  #   1. Child same as root branch.
+  #   2. Child is default branch, while root branch is not available.
+  #   3. Child is DETACHED and root/default branches are not available.
+
+  # Yellow:
+  #   4. Child is default branch while root branch is available.
+  #   5. Child is different branch while root branch is available.
+  #   6. Child is different branch while default branch is available.
+  #   7. Child is DETACHED while root or default branch is available.
+
+  # Suggestions:
+  #   8.  (root branch?)
+  #   9.  (default branch?)
+  #   10. (ahead)
+  #   11. (wrong tracking branch)
+  #   12. (untracked)
+  #   13. (unsaved)
 
 
 def test_branch_ahead(tree_a):
