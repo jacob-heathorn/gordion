@@ -8,7 +8,7 @@ from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
 from .exception import UpdateRepoIsDirtyError, DanglingDependenciesNotEmpty
 from .exception import UpdateSameRepoDifferentTagError, UnsafeRemoveDirty
-from .exception import NotAGordionRepositoryError, DanglingGordionRepositoryError
+from .exception import NotARepositoryError, DanglingGordionRepositoryError
 from .exception import UpdateDifferentNameSameUrlError
 from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes

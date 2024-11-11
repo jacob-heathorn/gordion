@@ -254,14 +254,11 @@ class Tree:
 
     # If we are not in a git repository, then we are not in a gordion repository.
     if current_repo_path is None:
-      raise gordion.NotAGordionRepositoryError()
+      raise gordion.NotARepositoryError()
 
-    if gordion.Repository.is_gordion(current_repo_path):
-      repo = gordion.Workspace().repos().get(current_repo_path)
-      assert repo is not None
-      return gordion.Tree(repo)  # type: ignore[union-attr]
-    else:
-      raise gordion.NotAGordionRepositoryError()
+    repo = gordion.Workspace().repos().get(current_repo_path)
+    assert repo is not None
+    return gordion.Tree(repo)  # type: ignore[union-attr]
 
   @staticmethod
   def format_listing_tag(listing: Listing) -> str:

@@ -135,10 +135,10 @@ class UnsafeRemoveStashes(Exception):
     super().__init__(self.message)
 
 
-class NotAGordionRepositoryError(Exception):
+class NotARepositoryError(Exception):
   def __init__(self):
     self.message = (
-        "You are not in a gordion repository!"
+        "You are not in a repository!"
     )
     super().__init__(self.message)
 
