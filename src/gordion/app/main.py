@@ -18,6 +18,7 @@ def main(argv=None):
   parser.add_argument('-u', '--update', action='store_true', help='Update the gordion tree')
   parser.add_argument('-w', '--workspace', action='store_true', help='Print the gordion workspace')
   parser.add_argument('-s', '--status', action='store_true', help='Show the gordion status')
+  parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
   args = parser.parse_args()
 
   try:
@@ -41,6 +42,12 @@ def main(argv=None):
     if args.status:
       root = gordion.Tree.find(os.getcwd())
       print(gordion.app.status.terminal_status(root))
+
+    # Print the respository path.
+    if args.find:
+      repo = workspace.get_repository(args.find)
+      if repo:
+        print(repo.path)
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)
