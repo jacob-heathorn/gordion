@@ -4,10 +4,12 @@ from urllib.parse import urlparse
 import traceback
 import re
 import git
-
+import sys
 
 # Context manager for pushd. Example from
 # (https://stackoverflow.com/questions/6194499/pushd-through-os-system)
+
+
 @contextlib.contextmanager
 def pushd(dir, create=False):
   """
@@ -121,8 +123,8 @@ def print_exception(e, trace: bool = False):
   RED = '\033[91m'
   RESET = '\033[0m'
   if trace:
-    print(f"{formatted_traceback}\n")
-  print(f"{RED}{e}{RESET}")
+    print(f"{formatted_traceback}\n", file=sys.stderr)
+  print(f"{RED}{e}{RESET}", file=sys.stderr)
 
 
 def singleton(cls):

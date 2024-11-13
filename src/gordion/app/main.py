@@ -5,6 +5,7 @@ import gordion
 import os
 import cProfile
 import pstats
+import sys
 
 PROFILE = False
 
@@ -48,9 +49,12 @@ def main(argv=None):
       repo = workspace.get_repository(args.find)
       if repo:
         print(repo.path)
+      else:
+        raise Exception(f"Could not find repository<{args.find}>!")
 
   except Exception as e:
-    gordion.utils.print_exception(e=e, trace=True)
+    gordion.utils.print_exception(e=e, trace=False)
+    sys.exit(1)
 
   if PROFILE:
     profiler.disable()
