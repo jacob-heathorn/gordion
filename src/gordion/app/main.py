@@ -20,6 +20,8 @@ def main(argv=None):
   parser.add_argument('-w', '--workspace', action='store_true', help='Print the gordion workspace')
   parser.add_argument('-s', '--status', action='store_true', help='Show the gordion status')
   parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
+  parser.add_argument('-e', '--expand', type=str, help='Expand gordion env variables in a file')
+  parser.add_argument('-o', '--output', type=str, help='Output file after expansion')
   args = parser.parse_args()
 
   try:
@@ -46,11 +48,12 @@ def main(argv=None):
 
     # Print the respository path.
     if args.find:
-      repo = workspace.get_repository(args.find)
-      if repo:
-        print(repo.path)
-      else:
-        raise Exception(f"Could not find repository<{args.find}>!")
+      repo = workspace.get_repository_or_throw(args.find)
+      print(repo.path)
+
+    # Expand file.
+    if args.expand:
+      gordion.app.expand(args.expand, args.output)
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=False)

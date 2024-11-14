@@ -82,6 +82,17 @@ class Workspace:
     else:
       return None
 
+  def get_repository_or_throw(self, name: str) -> gordion.Repository:
+    """
+    Returns the repository with <name> or throws an error if it does not exist.
+    """
+
+    repo = self.get_repository(name)
+    if repo:
+      return repo
+    else:
+      raise Exception(f"Could not find repository<{name}>!")
+
   def discover_repositories(self):
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
