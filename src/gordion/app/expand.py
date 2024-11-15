@@ -1,7 +1,6 @@
 import re
 import gordion
-
-GREEN_CHECK = "\033[32m\u2713\033[0m"
+import os
 
 
 def expand(ifile: str, ofile: str):
@@ -11,10 +10,9 @@ def expand(ifile: str, ofile: str):
   pattern = r"<gordion:path:(\w+)>"
 
   # Read the input file
-  print(f"Reading {ifile}", end=" ")
+  print(f"Reading {ifile}.")
   with open(ifile, 'r') as f:
     content = f.read()
-  print(GREEN_CHECK)
 
   # Find all occurrences and store them in a list of tuples (full_match, name)
   matches = re.findall(pattern, content)
@@ -24,8 +22,15 @@ def expand(ifile: str, ofile: str):
     repo = workspace.get_repository_or_throw(name)
     content = re.sub(f"<gordion:path:{name}>", repo.path, content)
 
+  # Read output file if it exists.
+  if os.path.isfile(ofile):
+    with open(ofile, 'r') as f:
+      existing_content = f.read()
+      if existing_content == content:
+        print("No changes necessary.")
+        return
+
   # Write the modified content to the output file
-  print(f"Writing {ofile}", end=" ")
+  print(f"Writing {ofile}.")
   with open(ofile, 'w') as f:
     f.write(content)
-  print(GREEN_CHECK)
