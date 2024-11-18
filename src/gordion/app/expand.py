@@ -4,6 +4,9 @@ import os
 
 
 def expand(ifile: str, ofile: str):
+  """
+  Expands <gordion:> environment variables from the input file and generates the output file.
+  """
   workspace = gordion.Workspace()
 
   # Define the pattern to match <gordion:path:name> and capture "name" as repo_name
