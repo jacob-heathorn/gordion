@@ -115,6 +115,7 @@ class Repository:
         # Checkout the target commit in a detached HEAD state as long as it is not dangling.
         self._check_dangling_commit(commit)
         self.handle.git.checkout(commit)
+        self.handle.git.clean("-fdx")
 
     # A branch HAS been specified.
     else:
@@ -125,6 +126,7 @@ class Repository:
           # Checkout the target commit in a detached HEAD state as long as it is not dangling.
           self._check_dangling_commit(commit)
           self.handle.git.checkout(commit)
+          self.handle.git.clean("-fdx")
 
   def _try_checkout(self, branch_name: str, commit: git.Commit, force: bool) -> bool:
     """
