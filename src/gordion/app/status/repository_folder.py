@@ -263,4 +263,4 @@ class RepositoryFolder(Folder):
 
   @gordion.utils.override(Folder)
   def _get_git_status(self) -> str:
-    return self.repo.handle.git.status('-b', '-s', '--ahead-behind')
+    return self.repo.handle.git.status('-s')
