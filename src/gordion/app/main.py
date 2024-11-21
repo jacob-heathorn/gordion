@@ -22,6 +22,7 @@ def main(argv=None):
   parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
   parser.add_argument('-e', '--expand', type=str, help='Expand gordion env variables in a file')
   parser.add_argument('-o', '--output', type=str, help='Output file after expansion')
+  parser.add_argument('-a', '--add', action='store_true', help='git add in all repositories')
   args = parser.parse_args()
 
   try:
@@ -54,6 +55,10 @@ def main(argv=None):
     # Expand file.
     if args.expand:
       gordion.app.expand(args.expand, args.output)
+
+    if args.add:
+      root = gordion.Tree.find(os.getcwd())
+      root.add()
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=False)

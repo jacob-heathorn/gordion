@@ -66,6 +66,12 @@ class Repository:
     # Now create and return the repo.
     return gordion.Repository(path)
 
+  def add(self):
+    """
+    Adds uncommited files
+    """
+    self.handle.git.add(self.path)
+
   @staticmethod
   def _derive_url(path: str, url: str):
     # Derive url if necessary.

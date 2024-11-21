@@ -36,6 +36,15 @@ class Tree:
     if self is root:
       self.workspace.trim_repositories()
 
+  def add(self):
+    self.repo.add()
+    # if self.repo.yeditor.exists():
+    #   assert self.repo.yeditor.yaml_data
+    #   for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
+    #     child_url = child_info['url']
+    #     child_tag = child_info['tag']
+    #     child_repo: Optional[gordion.Repository] = None
+
   def _update_children(self, branch_name: str, force: bool):
     """
     Updates the children repository listed in this repositorie's yaml.
