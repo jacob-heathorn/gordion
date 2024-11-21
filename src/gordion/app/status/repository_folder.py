@@ -260,3 +260,7 @@ class RepositoryFolder(Folder):
     if not self.repo.handle.head.is_detached:
       return self.repo.handle.active_branch.name == self.repo.default_branch_name
     return False
+
+  @gordion.utils.override(Folder)
+  def _get_git_status(self) -> str:
+    return self.repo.handle.git.status('-b', '-s', '--ahead-behind')
