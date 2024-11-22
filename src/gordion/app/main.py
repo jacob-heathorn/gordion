@@ -27,6 +27,20 @@ def main(argv=None):
   parser_status = subparsers.add_parser('status', help='Show the gordion status')
   parser_status.add_argument('-v', '--verbose', action='store_true', help='verbose')
 
+  parser_clean = subparsers.add_parser('clean', help='Git clean in all repositories')
+  parser_clean.add_argument('-f', '--force', action='store_true',
+                            help='Force the clean by removing all untracked files')
+  parser_clean.add_argument(
+      '-d',
+      '--dirs',
+      action='store_true',
+      help='Remove untracked directories in addition to untracked files')
+  parser_clean.add_argument(
+      '-x',
+      '--extra',
+      action='store_true',
+      help='Remove only files ignored by git, excluding those specified by .gitignore')
+
   args = parser.parse_args()
 
   try:
@@ -46,11 +60,6 @@ def main(argv=None):
     if args.workspace:
       print(f"{workspace.path}")
 
-    # Print status.
-    if args.command == 'status':
-      root = gordion.Tree.find(os.getcwd())
-      print(gordion.app.status.terminal_status(root, args.verbose))
-
     # Print the respository path.
     if args.find:
       repo = workspace.get_repository_or_throw(args.find)
@@ -59,6 +68,16 @@ def main(argv=None):
     # Expand file.
     if args.expand:
       gordion.app.expand(args.expand, args.output)
+
+    # Git Analogs
+    #
+    if args.command == 'status':
+      root = gordion.Tree.find(os.getcwd())
+      print(gordion.app.status.terminal_status(root, args.verbose))
+
+    if args.command == 'clean':
+      root = gordion.Tree.find(os.getcwd())
+      root.clean(args.force, args.dirs, args.extra)
 
     if args.add:
       root = gordion.Tree.find(os.getcwd())

@@ -66,12 +66,6 @@ class Repository:
     # Now create and return the repo.
     return gordion.Repository(path)
 
-  def add(self):
-    """
-    Adds uncommited files
-    """
-    self.handle.git.add(self.path)
-
   @staticmethod
   def _derive_url(path: str, url: str):
     # Derive url if necessary.
@@ -443,3 +437,33 @@ class Repository:
     else:
       resolved_tag = tag + " (BAD TAG)"
     return resolved_tag
+
+  # =================================================================================================
+  # Git Command Analogs
+
+  def add(self):
+    """
+    Does 'git add'
+    """
+    self.handle.git.add(self.path)
+
+  def clean(self, force: bool, dirs: bool, extra: bool):
+    """
+    Does 'git clean'
+    """
+    args = ""
+    if force:
+      args += "f"
+
+    if dirs:
+      args += "d"
+
+    if extra:
+      args += "x"
+
+    if args:
+      args = "-" + args
+
+    output = self.handle.git.clean(args)
+    if output:
+      print(f"{self.name}: {output}")

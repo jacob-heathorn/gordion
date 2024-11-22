@@ -36,15 +36,6 @@ class Tree:
     if self is root:
       self.workspace.trim_repositories()
 
-  def add(self):
-    self.repo.add()
-    # if self.repo.yeditor.exists():
-    #   assert self.repo.yeditor.yaml_data
-    #   for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
-    #     child_url = child_info['url']
-    #     child_tag = child_info['tag']
-    #     child_repo: Optional[gordion.Repository] = None
-
   def _update_children(self, branch_name: str, force: bool):
     """
     Updates the children repository listed in this repositorie's yaml.
@@ -303,3 +294,31 @@ class Tree:
       formatted_file = f"{listing.name}*"
     formatted_url = f"{gordion.utils.hyperlink(listing.url, listing.url)}"
     return f"* {formatted_file} : {listing.name} : {formatted_url}"
+
+# =================================================================================================
+# Git Command Analogs
+
+  def add(self):
+    self.repo.add()
+
+  def clean(self, force: bool, dirs: bool, extra: bool):
+    self.repo.clean(force, dirs, extra)
+    if self.repo.yeditor.exists():
+      assert self.repo.yeditor.yaml_data
+      for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
+        child_url = child_info['url']
+        child_tag = child_info['tag']
+        child = gordion.Workspace().get_repository_or_throw(child_name)
+
+        if not gordion.utils.compare_urls(child.url, child_url):
+          raise gordion.UpdateWorkingRepositoryWrongUrlError(
+              child.path, child.url, child_url)
+
+        # Clean in the child. NOTE: tag does not need to be correct.
+        child.clean(force, dirs, extra)
+
+        # Recurse into it's children only if tag is correct.
+        child_listed_commit = child.verify_tag_nothrow(child_tag)
+        if child_listed_commit and child.handle.head.commit == child_listed_commit:
+          child_tree = gordion.Tree(child)
+          child_tree.clean(force, dirs, extra)
