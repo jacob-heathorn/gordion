@@ -15,44 +15,9 @@ def main(argv=None):
     profiler = cProfile.Profile()
     profiler.enable()
 
-  # # Main parser setup
-  # parser = argparse.ArgumentParser(prog='gordion', description="Manage gordion tasks")
-  # parser.add_argument(
-  #     '-s',
-  #     '--silent',
-  #     action='store_true',
-  #     help='Run in silent mode',
-  #     dest='global_silent')
-
-  # # Setting up subparsers for specific commands under 'gordion'
-  # subparsers = parser.add_subparsers(dest='command', help='Available commands')
-
-  # # 'status' command subparser
-  # parser_status = subparsers.add_parser('status', help='Show the gordion status')
-  # parser_status.add_argument('-s', '--show', action='store_true',
-  #                            help='Display detailed status information')
-
-  # # 'clean' command subparser
-  # parser_clean = subparsers.add_parser('clean', help='Clean gordion environment')
-
-  # # Parse the arguments
-  # args = parser.parse_args()
-
-  # # Process based on the input
-  # if args.global_silent:
-  #   print("Global silent mode activated")
-
-  # if args.command == 'status':
-  #   print("status")
-  # elif args.command == 'clean':
-  #   print("clean")
-
-  # return 0
-
   parser = argparse.ArgumentParser(prog='gordion', description="Gordion user commands")
   parser.add_argument('-u', '--update', action='store_true', help='Update the gordion tree')
   parser.add_argument('-w', '--workspace', action='store_true', help='Print the gordion workspace')
-  # parser.add_argument('-s', '--status', action='store_true', help='Show the gordion status')
   parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
   parser.add_argument('-e', '--expand', type=str, help='Expand gordion env variables in a file')
   parser.add_argument('-o', '--output', type=str, help='Output file after expansion')
