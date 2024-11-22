@@ -297,9 +297,29 @@ class Tree:
 
 # =================================================================================================
 # Git Command Analogs
+# TODO re-usable run function
 
-  def add(self):
-    self.repo.add()
+  # TODO what if child has already been handled?
+  def add(self, branch_name: str):
+    self.repo.add(branch_name)
+    if self.repo.yeditor.exists():
+      assert self.repo.yeditor.yaml_data
+      for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
+        child_url = child_info['url']
+        child_tag = child_info['tag']
+        child = gordion.Workspace().get_repository_or_throw(child_name)
+
+        if not gordion.utils.compare_urls(child.url, child_url):
+          raise gordion.UpdateWorkingRepositoryWrongUrlError(
+              child.path, child.url, child_url)
+
+        # Recurse into it's children only if tag is correct.
+        child_listed_commit = child.verify_tag_nothrow(child_tag)
+        if child_listed_commit and child.handle.head.commit == child_listed_commit:
+          child_tree = gordion.Tree(child)
+          child_tree.add(branch_name)
+        else:
+          child.add(branch_name)
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     self.repo.clean(force, dirs, extra)
@@ -314,11 +334,10 @@ class Tree:
           raise gordion.UpdateWorkingRepositoryWrongUrlError(
               child.path, child.url, child_url)
 
-        # Clean in the child. NOTE: tag does not need to be correct.
-        child.clean(force, dirs, extra)
-
         # Recurse into it's children only if tag is correct.
         child_listed_commit = child.verify_tag_nothrow(child_tag)
         if child_listed_commit and child.handle.head.commit == child_listed_commit:
           child_tree = gordion.Tree(child)
           child_tree.clean(force, dirs, extra)
+        else:
+          child.clean(force, dirs, extra)
