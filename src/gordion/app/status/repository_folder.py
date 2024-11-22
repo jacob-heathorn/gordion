@@ -10,7 +10,7 @@ class RepositoryFolder(Folder):
   repository can print information about the repository in pretty colors.
   """
 
-  def __init__(self, repo: gordion.Repository, root: gordion.Tree) -> None:
+  def __init__(self, repo: gordion.Repository, root: gordion.Tree, verbose: bool) -> None:
     super().__init__(repo.path)
     self.repo = repo
     self.root: gordion.Tree = root
@@ -19,6 +19,7 @@ class RepositoryFolder(Folder):
     self.has_duplicate = False
     self.incoherent_tag = False
     self.correct_tag = False
+    self.verbose = verbose
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -263,4 +264,7 @@ class RepositoryFolder(Folder):
 
   @gordion.utils.override(Folder)
   def _get_git_status(self) -> str:
-    return self.repo.handle.git.status('-s')
+    if self.verbose:
+      return self.repo.handle.git.status()
+    else:
+      return self.repo.handle.git.status('-s')
