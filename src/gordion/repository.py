@@ -448,18 +448,19 @@ class Repository:
     return self.handle.is_dirty(untracked_files=True)
 
   # TODO path argument
-  def add(self, branch_name: Optional[str]):
+  def add(self, branch_name: Optional[str], pathspec):
     """
     Does 'git add'
     """
     if self.handle.is_dirty(untracked_files=True):
-      output = self.handle.git.add(self.path)
+      output = self.handle.git.add(self.path, pathspec)
       if output:
         print(output)
-      if branch_name and self.handle.active_branch.name != branch_name:
-        print(gordion.utils.yellow(
-            f"Warning<{self.name}>: branch<{self.handle.active_branch.name}> "
-            f"differs from root<{branch_name}>"))
+      # if branch_name and self.handle.active_branch.name != branch_name:
+      #   # TODO mo
+      #   print(gordion.utils.yellow(
+      #       f"Warning<{self.name}>: branch<{self.handle.active_branch.name}> "
+      #       f"differs from root<{branch_name}>"))
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     """

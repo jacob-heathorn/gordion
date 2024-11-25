@@ -78,21 +78,24 @@ def main(argv=None):
 
     # Git Analogs
     #
+    # Status
     if args.command == 'status':
       root = gordion.Tree.find(os.getcwd())
       print(gordion.app.status.terminal_status(root, args.verbose))
 
+    # Clean
     if args.command == 'clean':
       root = gordion.Tree.find(os.getcwd())
       root.clean(args.force, args.dirs, args.extra)
 
-    # TODO use pthspec
+    # Add
     if args.command == 'add':
       root = gordion.Tree.find(os.getcwd())
+      # TODO force branch or error.
       branch_name = None
       if root.repo.handle.active_branch:
         branch_name = root.repo.handle.active_branch.name
-      root.add(branch_name)
+      root.add(branch_name, args.pathspec)
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=False)

@@ -356,8 +356,7 @@ class Tree:
 
     return True
 
-  def add(self, branch_name: str):
-    self.repo.add(branch_name)
+  def add(self, branch_name: str, pathspec: str):
     if self.trace():
       # First make sure branch names are correct.
       if not self.verify_changes_are_branch(branch_name):
@@ -365,11 +364,11 @@ class Tree:
         return
 
       # Add this.
-      self.repo.add(branch_name)
+      self.repo.add(branch_name, pathspec)
 
       # Add all children.
       for _, child in self.children.items():
-        child.add(branch_name)
+        child.add(branch_name, pathspec)
 
     else:
       print("TODO error couild not trace reposiotry tree. See 'gor status'")
