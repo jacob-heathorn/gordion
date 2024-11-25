@@ -297,29 +297,82 @@ class Tree:
 
 # =================================================================================================
 # Git Command Analogs
+#
 # TODO re-usable run function
+# Ability to check if all repositories in a path will satisfy a set of requirements:
+# 1) branch name. (for adding, commiting)
+# 2)
 
-  # TODO what if child has already been handled?
-  def add(self, branch_name: str):
-    self.repo.add(branch_name)
+# steps:
+# 1) Trace the path, get all repositories. If it is traceable, return the trace.
+# 2) For each function, you can loop through the trace, and check things like branch name.
+
+#
+# A trace() sets the children if possible, and returns true if complete, otherwise it will return
+# listings that are not traced successfully.
+
+  def trace(self) -> bool:
+    self.children = {}
     if self.repo.yeditor.exists():
       assert self.repo.yeditor.yaml_data
       for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
         child_url = child_info['url']
         child_tag = child_info['tag']
-        child = gordion.Workspace().get_repository_or_throw(child_name)
+        child_repo = gordion.Workspace().get_repository(child_name)
 
-        if not gordion.utils.compare_urls(child.url, child_url):
-          raise gordion.UpdateWorkingRepositoryWrongUrlError(
-              child.path, child.url, child_url)
-
-        # Recurse into it's children only if tag is correct.
-        child_listed_commit = child.verify_tag_nothrow(child_tag)
-        if child_listed_commit and child.handle.head.commit == child_listed_commit:
-          child_tree = gordion.Tree(child)
-          child_tree.add(branch_name)
+        if child_repo:
+          if gordion.utils.compare_urls(child_repo.url, child_url):
+            child_listed_commit = child_repo.verify_tag_nothrow(child_tag)
+            if child_listed_commit and child_repo.handle.head.commit == child_listed_commit:
+              child_tree = gordion.Tree(child_repo)
+              self.children[child_name] = child_tree
+              return child_tree.trace()
+            else:
+              return False
+          else:
+            return False
         else:
-          child.add(branch_name)
+          return False
+    else:
+      return True
+
+  # def is_branch(self, branch_name: str) -> bool:
+  #   if self.repo.is_branch(branch_name):
+  #     for child in self.children:
+  #       if child.
+  #   branch_name = None
+  #     if root.repo.handle.active_branch:
+  #       branch_name = root.repo.handle.active_branch.name
+  #   if self.repo.handle.active_branch
+
+  def verify_changes_are_branch(self, branch_name: str) -> bool:
+    if self.repo.is_dirty():
+      if not self.repo.is_branch(branch_name):
+        return False
+
+    for _, child in self.children.items():
+      if not child.verify_changes_are_branch(branch_name):
+        return False
+
+    return True
+
+  def add(self, branch_name: str):
+    self.repo.add(branch_name)
+    if self.trace():
+      # First make sure branch names are correct.
+      if not self.verify_changes_are_branch(branch_name):
+        print("TODO error not all changes are on this branch See 'gor status'")
+        return
+
+      # Add this.
+      self.repo.add(branch_name)
+
+      # Add all children.
+      for _, child in self.children.items():
+        child.add(branch_name)
+
+    else:
+      print("TODO error couild not trace reposiotry tree. See 'gor status'")
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     self.repo.clean(force, dirs, extra)

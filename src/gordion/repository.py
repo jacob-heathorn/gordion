@@ -441,6 +441,12 @@ class Repository:
   # =================================================================================================
   # Git Command Analogs
 
+  def is_branch(self, branch_name: str) -> bool:
+    return bool(self.handle.active_branch) and self.handle.active_branch.name == branch_name
+
+  def is_dirty(self) -> bool:
+    return self.handle.is_dirty(untracked_files=True)
+
   # TODO path argument
   def add(self, branch_name: Optional[str]):
     """
