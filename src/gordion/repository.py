@@ -447,8 +447,8 @@ class Repository:
   def is_dirty(self) -> bool:
     return self.handle.is_dirty(untracked_files=True)
 
-  # TODO path argument
-  def add(self, branch_name: Optional[str], pathspec):
+  # TODO branch not optional.
+  def add(self, branch_name: Optional[str], pathspec: str):
     """
     Does 'git add'
     """
@@ -456,11 +456,19 @@ class Repository:
       output = self.handle.git.add(self.path, pathspec)
       if output:
         print(output)
-      # if branch_name and self.handle.active_branch.name != branch_name:
-      #   # TODO mo
-      #   print(gordion.utils.yellow(
-      #       f"Warning<{self.name}>: branch<{self.handle.active_branch.name}> "
-      #       f"differs from root<{branch_name}>"))
+
+  def restore(self, pathspec: str, staged: bool):
+    """
+    Does 'git restore'
+    """
+    args = pathspec
+    if staged:
+      args += " --staged"
+
+    if self.handle.is_dirty(untracked_files=True):
+      output = self.handle.git.restore(pathspec, args)
+      if output:
+        print(output)
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     """

@@ -22,7 +22,6 @@ def main(argv=None):
   parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
   parser.add_argument('-e', '--expand', type=str, help='Expand gordion env variables in a file')
   parser.add_argument('-o', '--output', type=str, help='Output file after expansion')
-  parser.add_argument('-a', '--add', action='store_true', help='git add in all repositories')
 
   # Status parser
   subparsers = parser.add_subparsers(dest='command', help='Git analog commands')
@@ -47,6 +46,12 @@ def main(argv=None):
   # Add parser
   parser_add = subparsers.add_parser('add', help='Git add <pathspec> in all repositories')
   parser_add.add_argument('pathspec', nargs='+', help='Pathspec to add to staging')
+
+  # Restore parser
+  parser_restore = subparsers.add_parser(
+      'restore', help='Git restore <pathspec> in all repositories')
+  parser_restore.add_argument('-S', '--staged', action='store_true', help='Restore staged changes')
+  parser_restore.add_argument('pathspec', nargs='+', help='Pathspec to add to staging')
 
   args = parser.parse_args()
 
@@ -96,6 +101,11 @@ def main(argv=None):
       if root.repo.handle.active_branch:
         branch_name = root.repo.handle.active_branch.name
       root.add(branch_name, args.pathspec)
+
+    # Restore
+    if args.command == 'restore':
+      root = gordion.Tree.find(os.getcwd())
+      root.restore(args.pathspec, args.staged)
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=False)

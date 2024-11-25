@@ -373,6 +373,18 @@ class Tree:
     else:
       print("TODO error couild not trace reposiotry tree. See 'gor status'")
 
+  def restore(self, pathspec: str, staged: bool):
+    if self.trace():
+      # Restore this.
+      self.repo.restore(pathspec, staged)
+
+      # Add all children.
+      for _, child in self.children.items():
+        child.restore(pathspec, staged)
+
+    else:
+      print("TODO error couild not trace reposiotry tree. See 'gor status'")
+
   def clean(self, force: bool, dirs: bool, extra: bool):
     self.repo.clean(force, dirs, extra)
     if self.repo.yeditor.exists():
