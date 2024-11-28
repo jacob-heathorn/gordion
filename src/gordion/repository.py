@@ -461,12 +461,12 @@ class Repository:
     """
     Does 'git restore'
     """
-    args = pathspec
+    args = [pathspec]
     if staged:
-      args += " --staged"
+      args.append("--staged")
 
     if self.handle.is_dirty(untracked_files=True):
-      output = self.handle.git.restore(pathspec, args)
+      output = self.handle.git.restore(args)
       if output:
         print(output)
 
