@@ -2,6 +2,7 @@ import gordion
 import os
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
+import git
 
 
 class Tree:
@@ -15,6 +16,7 @@ class Tree:
     self.parent: Tree = parent
     self.children: dict[str, Tree] = {}
     self.workspace = gordion.Workspace()
+    self.committed = False
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
@@ -377,12 +379,40 @@ class Tree:
     def make_unique_by_path(objects):
       unique_objects = {}
       for obj in objects:
-        unique_objects[obj.path] = obj
+        unique_objects[obj.repo.path] = obj
       return list(unique_objects.values())
 
     return make_unique_by_path(found)
 
-  def commit(self, branch_name: str):
+  def references(self, other) -> bool:
+    if self.repo.yeditor.exists():
+      assert self.repo.yeditor.yaml_data
+      for child_name, _ in self.repo.yeditor.yaml_data['repositories'].items():
+        if child_name == other.repo.name:
+          return True
+    return False
+
+  def find_referencers(self, other):
+    referencers: List[gordion.Tree] = []
+
+    # Check if children reference other.
+    for _, child in self.children.items():
+      if child.repo.name == other.repo.name:
+        referencers.append(self)
+      else:
+        referencers.extend(child.find_referencers(other))
+
+    # TODO duplicate code.
+    def make_unique_by_path(objects):
+      unique_objects = {}
+      for obj in objects:
+        unique_objects[obj.repo.path] = obj
+      return list(unique_objects.values())
+
+    return make_unique_by_path(referencers)
+
+  def commit(self, branch_name: str) -> bool:
+
     if self.trace():
       # First make sure branch names are correct.
       if not self.verify_changes_are_branch(branch_name):
@@ -395,15 +425,33 @@ class Tree:
         for repo in found:
           print(f"{repo.name} has needs to checkout branch due to lineage.")
 
-        # # Add this.
-        # self.repo.add(branch_name, pathspec)
+      # Recurse into children.
+      for _, child in self.children.items():
+        child.commit(branch_name)
 
-        # # Add all children.
-        # for _, child in self.children.items():
-        #   child.add(branch_name, pathspec)
+        # If the child committed, update it's referencers
+        if child.committed:
+          commit = child.repo.handle.head.commit
+          root = self._root()
+          referencers = root.find_referencers(child)
+          for referencer in referencers:
+            # Update gordion.yaml.
+            referencer.repo.yeditor.write_repository_tag(child.repo.name, commit.hexsha)
+            # Add changes to referencer.
+            referencer.repo.add(branch_name, ".")
+            # Commit referencer.
+            referencer.repo.commit(amend=referencer.committed)
+            referencer.committed = True
+
+      # Commit this one if it has staged changes.
+      if self.repo.has_staged_changes():
+        self.repo.commit(amend=self.committed)
+        self.committed = True
 
     else:
-      print("TODO error couild not trace reposiotry tree. See 'gor status'")
+      print("TODO error could not trace reposiotry tree. See 'gor status'")
+
+    return self.committed
 
   def add(self, branch_name: str, pathspec: str):
     if self.trace():

@@ -447,7 +447,10 @@ class Repository:
   def is_dirty(self) -> bool:
     return self.handle.is_dirty(untracked_files=True)
 
-  # TODO branch not optional.
+  def has_staged_changes(self) -> bool:
+    return self.handle.is_dirty(index=True, working_tree=False, untracked_files=False)
+
+    # TODO branch not optional.
   def add(self, branch_name: Optional[str], pathspec: str):
     """
     Does 'git add'
@@ -469,6 +472,15 @@ class Repository:
       output = self.handle.git.restore(args)
       if output:
         print(output)
+
+  def commit(self, amend: bool) -> git.Commit:
+    """
+    Does 'git commit'
+    """
+    if amend:
+      return self.handle.index.commit("TODO automatic commit message", "--amend")
+    else:
+      return self.handle.index.commit("TODO automatic commit message")
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     """
