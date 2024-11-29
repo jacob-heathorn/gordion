@@ -53,6 +53,9 @@ def main(argv=None):
   parser_restore.add_argument('-S', '--staged', action='store_true', help='Restore staged changes')
   parser_restore.add_argument('pathspec', nargs='+', help='Pathspec to add to staging')
 
+  # Commit parser
+  parser_commit = subparsers.add_parser('commit', help='Git commit in all repositories')
+
   args = parser.parse_args()
 
   try:
@@ -107,8 +110,17 @@ def main(argv=None):
       root = gordion.Tree.find(os.getcwd())
       root.restore(args.pathspec, args.staged)
 
+    # Commit
+    if args.command == 'commit':
+      root = gordion.Tree.find(os.getcwd())
+      # TODO force branch or error.
+      branch_name = None
+      if root.repo.handle.active_branch:
+        branch_name = root.repo.handle.active_branch.name
+      root.commit(branch_name)
+
   except Exception as e:
-    gordion.utils.print_exception(e=e, trace=False)
+    gordion.utils.print_exception(e=e, trace=True)
     sys.exit(1)
 
   if PROFILE:

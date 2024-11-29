@@ -336,15 +336,7 @@ class Tree:
     else:
       return True
 
-  # def is_branch(self, branch_name: str) -> bool:
-  #   if self.repo.is_branch(branch_name):
-  #     for child in self.children:
-  #       if child.
-  #   branch_name = None
-  #     if root.repo.handle.active_branch:
-  #       branch_name = root.repo.handle.active_branch.name
-  #   if self.repo.handle.active_branch
-
+  # TODO return list of repositories that have the wrong branch.
   def verify_changes_are_branch(self, branch_name: str) -> bool:
     if self.repo.is_dirty():
       if not self.repo.is_branch(branch_name):
@@ -355,6 +347,63 @@ class Tree:
         return False
 
     return True
+
+  def lineage_has_changes_staged(self) -> bool:
+    if self.repo.handle.is_dirty(index=True, working_tree=False, untracked_files=False):
+      return True
+
+    for _, child in self.children.items():
+      if child.repo.handle.is_dirty(index=True, working_tree=False,
+                                    untracked_files=False) or child.lineage_has_changes_staged():
+        return True
+    return False
+
+  def find_repos_with_wrong_branch_for_lineage(self, branch_name: str) -> List[gordion.Repository]:
+
+    # Use dictionary to ensure uniqueness
+    found: List[gordion.Repository] = []
+
+    # Add this repo if it is not the correct branch, and any of it's offspring have changes.
+    if not self.repo.is_branch(branch_name):
+      for _, child in self.children.items():
+        if child.lineage_has_changes_staged():
+          found.append(self.repo)
+          break
+
+    # Recurse
+    for _, child in self.children.items():
+      found.extend(child.find_repos_with_wrong_branch_for_lineage(branch_name))
+
+    def make_unique_by_path(objects):
+      unique_objects = {}
+      for obj in objects:
+        unique_objects[obj.path] = obj
+      return list(unique_objects.values())
+
+    return make_unique_by_path(found)
+
+  def commit(self, branch_name: str):
+    if self.trace():
+      # First make sure branch names are correct.
+      if not self.verify_changes_are_branch(branch_name):
+        print("TODO error not all changes are on this branch See 'gor status'")
+        return
+
+      # Now make sure lineage is correct branch.
+      found = self.find_repos_with_wrong_branch_for_lineage(branch_name)
+      if len(found) > 0:
+        for repo in found:
+          print(f"{repo.name} has needs to checkout branch due to lineage.")
+
+        # # Add this.
+        # self.repo.add(branch_name, pathspec)
+
+        # # Add all children.
+        # for _, child in self.children.items():
+        #   child.add(branch_name, pathspec)
+
+    else:
+      print("TODO error couild not trace reposiotry tree. See 'gor status'")
 
   def add(self, branch_name: str, pathspec: str):
     if self.trace():
