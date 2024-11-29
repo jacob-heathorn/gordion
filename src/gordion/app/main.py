@@ -22,6 +22,7 @@ def main(argv=None):
   parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
   parser.add_argument('-e', '--expand', type=str, help='Expand gordion env variables in a file')
   parser.add_argument('-o', '--output', type=str, help='Output file after expansion')
+  parser.add_argument('--force', action='store_true', help='Update the gordion tree')
 
   # Status parser
   subparsers = parser.add_subparsers(dest='command', help='Git analog commands')
@@ -69,7 +70,7 @@ def main(argv=None):
       branch = None
       if not root.repo.handle.head.is_detached:
         branch = root.repo.handle.active_branch.name
-      root.update(root.repo.handle.head.commit.hexsha, branch)
+      root.update(root.repo.handle.head.commit.hexsha, branch, force=True)
 
     # Print the workspace path.
     if args.workspace:

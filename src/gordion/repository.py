@@ -478,7 +478,7 @@ class Repository:
     Does 'git commit'
     """
     if amend:
-      return self.handle.index.commit("TODO automatic commit message", "--amend")
+      return self.handle.index.commit("TODO automatic commit message")
     else:
       return self.handle.index.commit("TODO automatic commit message")
 

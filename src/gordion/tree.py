@@ -315,6 +315,7 @@ class Tree:
 
   def trace(self) -> bool:
     self.children = {}
+    full: bool = True
     if self.repo.yeditor.exists():
       assert self.repo.yeditor.yaml_data
       for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
@@ -326,17 +327,17 @@ class Tree:
           if gordion.utils.compare_urls(child_repo.url, child_url):
             child_listed_commit = child_repo.verify_tag_nothrow(child_tag)
             if child_listed_commit and child_repo.handle.head.commit == child_listed_commit:
-              child_tree = gordion.Tree(child_repo)
+              child_tree = gordion.Tree(child_repo, self)
               self.children[child_name] = child_tree
-              return child_tree.trace()
+              if not child_tree.trace():
+                full = False
             else:
-              return False
+              full = False
           else:
-            return False
+            full = False
         else:
-          return False
-    else:
-      return True
+          full = False
+    return full
 
   # TODO return list of repositories that have the wrong branch.
   def verify_changes_are_branch(self, branch_name: str) -> bool:
@@ -384,14 +385,6 @@ class Tree:
 
     return make_unique_by_path(found)
 
-  def references(self, other) -> bool:
-    if self.repo.yeditor.exists():
-      assert self.repo.yeditor.yaml_data
-      for child_name, _ in self.repo.yeditor.yaml_data['repositories'].items():
-        if child_name == other.repo.name:
-          return True
-    return False
-
   def find_referencers(self, other):
     referencers: List[gordion.Tree] = []
 
@@ -399,6 +392,7 @@ class Tree:
     for _, child in self.children.items():
       if child.repo.name == other.repo.name:
         referencers.append(self)
+        print(f"referencer {self.repo.name} of {other.repo.name}")
       else:
         referencers.extend(child.find_referencers(other))
 
