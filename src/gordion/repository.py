@@ -478,9 +478,9 @@ class Repository:
     Does 'git commit'
     """
     if amend:
-      return self.handle.index.commit("TODO automatic commit message")
+      return self.handle.git.commit("-m", "TODO amended msg", "--amend")
     else:
-      return self.handle.index.commit("TODO automatic commit message")
+      return self.handle.git.commit("-m", "TODO automatic commit message")
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     """
