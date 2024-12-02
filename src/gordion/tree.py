@@ -2,7 +2,6 @@ import gordion
 import os
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
-import git
 
 
 class Tree:
@@ -16,6 +15,7 @@ class Tree:
     self.parent: Tree = parent
     self.children: dict[str, Tree] = {}
     self.workspace = gordion.Workspace()
+    # TODO encapsulate
     self.committed = False
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
@@ -392,7 +392,6 @@ class Tree:
     for _, child in self.children.items():
       if child.repo.name == other.repo.name:
         referencers.append(self)
-        print(f"referencer {self.repo.name} of {other.repo.name}")
       else:
         referencers.extend(child.find_referencers(other))
 
@@ -405,7 +404,7 @@ class Tree:
 
     return make_unique_by_path(referencers)
 
-  def commit(self, branch_name: str) -> bool:
+  def commit(self, branch_name: str, message: str) -> bool:
 
     if self.trace():
       # First make sure branch names are correct.
@@ -414,6 +413,7 @@ class Tree:
         return
 
       # Now make sure lineage is correct branch.
+      # TODO a referencer cannot have unadded changes to the gordion file
       found = self.find_repos_with_wrong_branch_for_lineage(branch_name)
       if len(found) > 0:
         for repo in found:
@@ -421,7 +421,7 @@ class Tree:
 
       # Recurse into children.
       for _, child in self.children.items():
-        child.commit(branch_name)
+        child.commit(branch_name, message)
 
         # If the child committed, update it's referencers
         if child.committed:
@@ -430,16 +430,26 @@ class Tree:
           referencers = root.find_referencers(child)
           for referencer in referencers:
             # Update gordion.yaml.
-            referencer.repo.yeditor.write_repository_tag(child.repo.name, commit.hexsha)
-            # Add changes to referencer.
-            referencer.repo.add(branch_name, ".")
-            # Commit referencer.
-            referencer.repo.commit(amend=referencer.committed)
-            referencer.committed = True
+            if not referencer.repo.yeditor.read_repository_tag(child.repo.name) == commit.hexsha:
+              referencer.repo.yeditor.write_repository_tag(child.repo.name, commit.hexsha)
+              # Add changes to referencer.
+              referencer.repo.add(branch_name, "gordion.yaml")
+              # Commit referencer.
+              # Only double newline first time.
+              if referencer.committed:
+                full_message = referencer.repo.handle.head.commit.message
+              else:
+                full_message = message
+              full_message += f"\n\n* Bump {child.repo.name} to {commit.hexsha}"
+
+              referencer.repo.commit(message=full_message, amend=referencer.committed)
+              referencer.committed = True
 
       # Commit this one if it has staged changes.
       if self.repo.has_staged_changes():
-        self.repo.commit(amend=self.committed)
+        if self.committed:
+          message = referencer.repo.head.commit.message
+        self.repo.commit(message=message, amend=self.committed)
         self.committed = True
 
     else:

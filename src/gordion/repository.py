@@ -473,14 +473,14 @@ class Repository:
       if output:
         print(output)
 
-  def commit(self, amend: bool) -> git.Commit:
+  def commit(self, message: str, amend: bool) -> git.Commit:
     """
     Does 'git commit'
     """
     if amend:
-      return self.handle.git.commit("-m", "TODO amended msg", "--amend")
+      return self.handle.git.commit("-m", message, "--amend")
     else:
-      return self.handle.git.commit("-m", "TODO automatic commit message")
+      return self.handle.git.commit("-m", message)
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     """

@@ -56,6 +56,7 @@ def main(argv=None):
 
   # Commit parser
   parser_commit = subparsers.add_parser('commit', help='Git commit in all repositories')
+  parser_commit.add_argument('-m', '--message', type=str, required=True, help='<message>')
 
   args = parser.parse_args()
 
@@ -118,7 +119,7 @@ def main(argv=None):
       branch_name = None
       if root.repo.handle.active_branch:
         branch_name = root.repo.handle.active_branch.name
-      root.commit(branch_name)
+      root.commit(branch_name, args.message)
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)
