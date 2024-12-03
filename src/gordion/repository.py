@@ -444,6 +444,12 @@ class Repository:
     else:
       return self.handle.active_branch.name
 
+  def get_branch_name_or_throw(self):
+    branch_name = self.get_branch_name()
+    if branch_name == "DETACHED HEAD":
+      raise Exception(f"{self.name} is DETACHED HEAD")
+    return branch_name
+
   # =================================================================================================
   # Git Command Analogs
 
@@ -456,8 +462,7 @@ class Repository:
   def has_staged_changes(self) -> bool:
     return self.handle.is_dirty(index=True, working_tree=False, untracked_files=False)
 
-    # TODO branch not optional.
-  def add(self, branch_name: Optional[str], pathspec: str):
+  def add(self, pathspec: str):
     """
     Does 'git add'
     """

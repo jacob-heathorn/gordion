@@ -447,20 +447,6 @@ class Tree:
 
     return self.committed
 
-  def add(self, branch_name: str, pathspec: str):
-    if self.trace():
-      self.verify_changes_are_branch(branch_name)
-
-      # Add this.
-      self.repo.add(branch_name, pathspec)
-
-      # Add all children.
-      for _, child in self.children.items():
-        child.add(branch_name, pathspec)
-
-    else:
-      print("TODO error couild not trace reposiotry tree. See 'gor status'")
-
   def restore(self, pathspec: str, staged: bool):
     if self.trace():
       # Restore this.

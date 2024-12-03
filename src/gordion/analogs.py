@@ -58,4 +58,14 @@ class Analogs:
       if node.repo.is_dirty():
         if not node.repo.is_branch(branch_name):
           bad_nodes.append(node.repo)
-    raise gordion.exception.WrongBranchRepositoryDirty(branch_name, bad_nodes)
+    if len(bad_nodes) > 0:
+      raise gordion.exception.WrongBranchRepositoryDirty(branch_name, bad_nodes)
+
+  def add(self, branch_name: str, pathspec: str):
+    """
+    Analog for: git add <pathspec>
+    """
+
+    self.verify_changes_are_branch(branch_name)
+    for _, node in self.nodes.items():
+      node.repo.add(pathspec)

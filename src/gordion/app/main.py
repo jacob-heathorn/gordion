@@ -101,11 +101,8 @@ def main(argv=None):
     # Add
     if args.command == 'add':
       root = gordion.Tree.find(os.getcwd())
-      # TODO force branch or error.
-      branch_name = None
-      if root.repo.handle.active_branch:
-        branch_name = root.repo.handle.active_branch.name
-      root.add(branch_name, args.pathspec)
+      branch_name = root.repo.get_branch_name_or_throw()
+      gordion.Analogs(root).add(branch_name, args.pathspec)
 
     # Restore
     if args.command == 'restore':
