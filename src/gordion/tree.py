@@ -1,6 +1,6 @@
 import gordion
 import os
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
 
@@ -353,27 +353,27 @@ class Tree:
         return True
     return False
 
-  def find_repos_with_wrong_branch_for_lineage(self, branch_name: str) -> List[gordion.Repository]:
-    found: List[gordion.Repository] = []
+  # def find_repos_with_wrong_branch_for_lineage(self, branch_name: str) -> List[gordion.Repository]:
+  #   found: List[gordion.Repository] = []
 
-    # Add this repo if it is not the correct branch, and any of it's offspring have changes.
-    if not self.repo.is_branch(branch_name):
-      for _, child in self.children.items():
-        if child.lineage_has_changes_staged():
-          found.append(self.repo)
-          break
+  #   # Add this repo if it is not the correct branch, and any of it's offspring have changes.
+  #   if not self.repo.is_branch(branch_name):
+  #     for _, child in self.children.items():
+  #       if child.lineage_has_changes_staged():
+  #         found.append(self.repo)
+  #         break
 
-    # Recurse
-    for _, child in self.children.items():
-      found.extend(child.find_repos_with_wrong_branch_for_lineage(branch_name))
+  #   # Recurse
+  #   for _, child in self.children.items():
+  #     found.extend(child.find_repos_with_wrong_branch_for_lineage(branch_name))
 
-    def make_unique_by_path(objects):
-      unique_objects = {}
-      for obj in objects:
-        unique_objects[obj.repo.path] = obj
-      return list(unique_objects.values())
+  #   def make_unique_by_path(objects):
+  #     unique_objects = {}
+  #     for obj in objects:
+  #       unique_objects[obj.repo.path] = obj
+  #     return list(unique_objects.values())
 
-    return make_unique_by_path(found)
+  #   return make_unique_by_path(found)
 
   def find_referencers(self, other):
     referencers: List[gordion.Tree] = []

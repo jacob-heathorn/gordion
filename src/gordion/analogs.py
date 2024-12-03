@@ -61,6 +61,27 @@ class Analogs:
     if len(bad_nodes) > 0:
       raise gordion.exception.WrongBranchRepositoryDirty(branch_name, bad_nodes)
 
+  def verify_lineage_is_branch(self, branch_name: str):
+    """
+    Raises an error if any ancestor of a repository with added changes is not the correct branch.
+    """
+
+    bad_nodes: Dict[str, gordion.Tree] = {}
+
+    # For each node, if it has staged changes...
+    for _, node in self.nodes.items():
+      if node.repo.has_staged_changes():
+        # Collect all parents with the wrong branch.
+        for _, parent in node.parents1.items():
+          if not parent.repo.is_branch(branch_name):
+            bad_nodes[parent.repo.path] = parent.repo
+
+    if len(bad_nodes) > 0:
+      raise gordion.exception.WrongBranchRepositoryLineage(branch_name, list(bad_nodes.values()))
+
+  # =================================================================================================
+  # The Analogs
+
   def add(self, branch_name: str, pathspec: str):
     """
     Analog for: git add

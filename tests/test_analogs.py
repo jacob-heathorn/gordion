@@ -60,3 +60,33 @@ def test_verify_changes_are_branch(tree_a: gordion.Tree):
     analogs.verify_changes_are_branch(tree_a.repo.get_branch_name())
   expected = gordion.exception.WrongBranchRepositoryDirty(tree_a.repo.get_branch_name(), [repo_b])
   assert str(context.value) == str(expected)
+
+
+def test_verify_lineage_is_branch(tree_a: gordion.Tree):
+  """
+  verify_lineage_is_branch() will throw an error if any ancestor repositories of a repository with
+  staged changes, does not checkout the correct branch.
+  """
+
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+
+  # Checkout a new branch on demo_b
+  new_branch = repo_b.handle.create_head("new_branch")
+  new_branch.checkout()
+
+  # Make the demo_d dirty by adding an empty file and stage the changes.
+  touchfile = os.path.join(repo_d.path, 'touch.txt')
+  with open(touchfile, 'w'):
+    pass
+  repo_d.add(".")
+  assert repo_d.has_staged_changes()
+
+  # Verify error when adding from root. A and D are the same branch and D has changes, but
+  # committing would require a change to B, which doesn't checkout the same branch. Therefore we
+  # expect an error.
+  analogs = gordion.Analogs(tree_a)
+  with pytest.raises(gordion.exception.WrongBranchRepositoryLineage) as context:
+    analogs.verify_lineage_is_branch(tree_a.repo.get_branch_name())
+  expected = gordion.exception.WrongBranchRepositoryLineage(tree_a.repo.get_branch_name(), [repo_b])
+  assert str(context.value) == str(expected)

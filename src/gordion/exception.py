@@ -179,6 +179,16 @@ class WrongBranchRepositoryDirty(Exception):
     super().__init__(self.message)
 
 
+class WrongBranchRepositoryLineage(Exception):
+  def __init__(self, expected_branch: str, wrong_branch_repos: List[gordion.Repository]):
+
+    self.message = "Committing the staged changes will incure changes on the following"
+    self.message += f" repsitories, which need to checkout branch <{expected_branch}>."
+    for repo in wrong_branch_repos:
+      self.message += f"\n* {repo.name} is {repo.get_branch_name()}"
+    super().__init__(self.message)
+
+
 class TraceError(Exception):
   def __init__(self):
     self.message = "Could not trace repository tree! See \"gor status\" for more information."
