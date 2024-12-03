@@ -1,6 +1,6 @@
 import gordion
 import os
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from dataclasses import dataclass
 
 
@@ -339,17 +339,20 @@ class Tree:
           full = False
     return full
 
-  # TODO return list of repositories that have the wrong branch.
-  def verify_changes_are_branch(self, branch_name: str) -> bool:
+  def get_wrong_branch_repos(self, branch_name: str) -> Dict[str, gordion.Repository]:
+    """
+    Returns a dictionary of repositories that have changes on the wrong branch.
+    """
+    found: Dict[str, gordion.Repository] = {}
+
     if self.repo.is_dirty():
       if not self.repo.is_branch(branch_name):
-        return False
+        found[self.repo.path] = self.repo
 
     for _, child in self.children.items():
-      if not child.verify_changes_are_branch(branch_name):
-        return False
+      found.update(child.get_wrong_branch_repos(branch_name))
 
-    return True
+    return found
 
   def lineage_has_changes_staged(self) -> bool:
     if self.repo.handle.is_dirty(index=True, working_tree=False, untracked_files=False):
@@ -362,8 +365,6 @@ class Tree:
     return False
 
   def find_repos_with_wrong_branch_for_lineage(self, branch_name: str) -> List[gordion.Repository]:
-
-    # Use dictionary to ensure uniqueness
     found: List[gordion.Repository] = []
 
     # Add this repo if it is not the correct branch, and any of it's offspring have changes.
@@ -460,9 +461,9 @@ class Tree:
   def add(self, branch_name: str, pathspec: str):
     if self.trace():
       # First make sure branch names are correct.
-      if not self.verify_changes_are_branch(branch_name):
-        print("TODO error not all changes are on this branch See 'gor status'")
-        return
+      wrong_branch_repos = list(self.get_wrong_branch_repos(branch_name).values())
+      if len(wrong_branch_repos) > 0:
+        raise gordion.exception.WrongBranchRepositoryDirty(branch_name, wrong_branch_repos)
 
       # Add this.
       self.repo.add(branch_name, pathspec)

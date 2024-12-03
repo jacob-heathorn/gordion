@@ -1,5 +1,6 @@
 import os
 import gordion
+from typing import List
 
 
 class UpdateError(Exception):
@@ -166,4 +167,13 @@ class DanglingDependenciesNotEmpty(Exception):
         f"Directory<{dangling_dependencies_path}> is not empty after moving it's repositories. "
         f"Manually delete it."
     )
+    super().__init__(self.message)
+
+
+class WrongBranchRepositoryDirty(Exception):
+  def __init__(self, expected_branch: str, wrong_branch_repos: List[gordion.Repository]):
+
+    self.message = f"All branches need to match <{expected_branch}>. But..."
+    for repo in wrong_branch_repos:
+      self.message += f"\n* {repo.name} is {repo.get_branch_name()}"
     super().__init__(self.message)

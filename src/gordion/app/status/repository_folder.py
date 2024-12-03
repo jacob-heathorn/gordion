@@ -80,7 +80,7 @@ class RepositoryFolder(Folder):
       errors.append("URL CONFLICTED")
 
     # Branch header.
-    branch_header = self._get_branch_name()
+    branch_header = self.repo.get_branch_name()
     branch_header = self._color_branch(branch_header)
     branch_suggestion = self._get_branch_suggestion()
     branch_warnings = self._get_branch_warnings(branch_suggestion)
@@ -111,12 +111,6 @@ class RepositoryFolder(Folder):
     if errors_header:
       display_name += " " + errors_header
     return display_name
-
-  def _get_branch_name(self):
-    if self.repo.handle.head.is_detached:
-      return "DETACHED HEAD"
-    else:
-      return self.repo.handle.active_branch.name
 
   def _color_branch(self, branch_name: str):
     # Case1: Root branch is checked out.

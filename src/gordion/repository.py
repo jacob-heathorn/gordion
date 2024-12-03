@@ -438,6 +438,12 @@ class Repository:
       resolved_tag = tag + " (BAD TAG)"
     return resolved_tag
 
+  def get_branch_name(self):
+    if self.handle.head.is_detached:
+      return "DETACHED HEAD"
+    else:
+      return self.handle.active_branch.name
+
   # =================================================================================================
   # Git Command Analogs
 
