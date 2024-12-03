@@ -45,7 +45,7 @@ def get_tag_incoherent_listings(folder, root_listings) -> List[gordion.Tree.List
   return []
 
 
-def terminal_status(root: gordion.Tree, verbose: bool) -> str:
+def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   """
   Returns a status string indicating the status of each repository in the tree, which looks cute in
   a terminal.

@@ -92,9 +92,12 @@ def test_child_mismatch(tree_a):
   repo_b.yeditor.save()
 
   # Verify.
+  b_commit = repo_b.handle.head.commit.hexsha
+  expected = NOMINAL_STATUS.replace(green(f':{b_commit[0:7]}'),
+                                    green(f':{b_commit[0:7]}') + f"\n│   │   {red('M')} gordion.yaml\n│   │  ")
   d_commit = repo_d.handle.head.commit.hexsha
-  expected = NOMINAL_STATUS.replace(green(f':{d_commit[0:7]}'),
-                                    red(f':{d_commit[0:7]}') + " " + red('(TAG INCOHERENCE)'))
+  expected = expected.replace(green(f':{d_commit[0:7]}'),
+                              red(f':{d_commit[0:7]}') + " " + red('(TAG INCOHERENCE)'))
   b_commit = repo_b.handle.head.commit.hexsha
   expected = expected.replace(green(f':{b_commit[0:7]}'),
                               green(f':{b_commit[0:7]}') + yellow('-dirty'))
@@ -106,6 +109,8 @@ def test_child_mismatch(tree_a):
     expected_header += red(listing_str + "\n")
   expected = expected_header + "\n" + expected
 
+  print(f"\nexpected:\n {expected}")
+  print(f"\nactual:\n {gordion.app.status.terminal_status(tree_a)}")
   assert expected == gordion.app.status.terminal_status(tree_a)
 
 
@@ -123,7 +128,8 @@ def test_conflicted(tree_a):
   # demoC commit is dirty.
   c_commit = repo_c.handle.head.commit.hexsha
   expected = NOMINAL_STATUS.replace(green(f':{c_commit[0:7]}'),
-                                    green(f':{c_commit[0:7]}') + yellow("-dirty"))
+                                    green(f':{c_commit[0:7]}') +
+                                    yellow("-dirty") + f"\n│   │   {red('M')} gordion.yaml\n│   │  ")
   # demoB is NAME_CONFLICTED. There are two listings that have demoB's URL, but they have different
   # names.
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
