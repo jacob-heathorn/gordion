@@ -47,3 +47,15 @@ class Analogs:
             raise gordion.exception.TraceError()
         else:
           raise gordion.exception.TraceError()
+
+  def verify_changes_are_branch(self, branch_name: str):
+    """
+    Raises an error if any repository in the tree has changes, but does not check out the provided
+    <branch_name>
+    """
+    bad_nodes = []
+    for _, node in self.nodes.items():
+      if node.repo.is_dirty():
+        if not node.repo.is_branch(branch_name):
+          bad_nodes.append(node.repo)
+    raise gordion.exception.WrongBranchRepositoryDirty(branch_name, bad_nodes)

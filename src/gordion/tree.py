@@ -343,29 +343,6 @@ class Tree:
           full = False
     return full
 
-  def get_wrong_branch_repos(self, branch_name: str) -> Dict[str, gordion.Repository]:
-    """
-    Returns a dictionary of repositories that have changes on the wrong branch.
-    """
-    found: Dict[str, gordion.Repository] = {}
-
-    if self.repo.is_dirty():
-      if not self.repo.is_branch(branch_name):
-        found[self.repo.path] = self.repo
-
-    for _, child in self.children.items():
-      found.update(child.get_wrong_branch_repos(branch_name))
-
-    return found
-
-  def verify_changes_are_branch(self, branch_name: str):
-    """
-    Raises an error if any repository in the tree has changes, but does not check out the provided <branch_name>
-    """
-    wrong_branch_repos = list(self.get_wrong_branch_repos(branch_name).values())
-    if len(wrong_branch_repos) > 0:
-      raise gordion.exception.WrongBranchRepositoryDirty(branch_name, wrong_branch_repos)
-
   def lineage_has_changes_staged(self) -> bool:
     if self.repo.handle.is_dirty(index=True, working_tree=False, untracked_files=False):
       return True
