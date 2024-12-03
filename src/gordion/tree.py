@@ -446,36 +446,3 @@ class Tree:
       print("TODO error could not trace reposiotry tree. See 'gor status'")
 
     return self.committed
-
-  def restore(self, pathspec: str, staged: bool):
-    if self.trace():
-      # Restore this.
-      self.repo.restore(pathspec, staged)
-
-      # Add all children.
-      for _, child in self.children.items():
-        child.restore(pathspec, staged)
-
-    else:
-      print("TODO error couild not trace reposiotry tree. See 'gor status'")
-
-  def clean(self, force: bool, dirs: bool, extra: bool):
-    self.repo.clean(force, dirs, extra)
-    if self.repo.yeditor.exists():
-      assert self.repo.yeditor.yaml_data
-      for child_name, child_info in self.repo.yeditor.yaml_data['repositories'].items():
-        child_url = child_info['url']
-        child_tag = child_info['tag']
-        child = gordion.Workspace().get_repository_or_throw(child_name)
-
-        if not gordion.utils.compare_urls(child.url, child_url):
-          raise gordion.UpdateWorkingRepositoryWrongUrlError(
-              child.path, child.url, child_url)
-
-        # Recurse into it's children only if tag is correct.
-        child_listed_commit = child.verify_tag_nothrow(child_tag)
-        if child_listed_commit and child.handle.head.commit == child_listed_commit:
-          child_tree = gordion.Tree(child)
-          child_tree.clean(force, dirs, extra)
-        else:
-          child.clean(force, dirs, extra)

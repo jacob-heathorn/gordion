@@ -63,9 +63,23 @@ class Analogs:
 
   def add(self, branch_name: str, pathspec: str):
     """
-    Analog for: git add <pathspec>
+    Analog for: git add
     """
 
     self.verify_changes_are_branch(branch_name)
     for _, node in self.nodes.items():
       node.repo.add(pathspec)
+
+  def restore(self, pathspec: str, staged: bool):
+    """
+    Analog for: git restore
+    """
+    for _, node in self.nodes.items():
+      node.repo.restore(pathspec, staged)
+
+  def clean(self, force: bool, dirs: bool, extra: bool):
+    """
+    Analog for: git clean
+    """
+    for _, node in self.nodes.items():
+      node.repo.clean(force, dirs, extra)

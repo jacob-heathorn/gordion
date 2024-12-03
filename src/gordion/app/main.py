@@ -96,7 +96,7 @@ def main(argv=None):
     # Clean
     if args.command == 'clean':
       root = gordion.Tree.find(os.getcwd())
-      root.clean(args.force, args.dirs, args.extra)
+      gordion.Analogs(root).clean(args.force, args.dirs, args.extra)
 
     # Add
     if args.command == 'add':
@@ -107,7 +107,7 @@ def main(argv=None):
     # Restore
     if args.command == 'restore':
       root = gordion.Tree.find(os.getcwd())
-      root.restore(args.pathspec, args.staged)
+      gordion.Analogs(root).restore(args.pathspec, args.staged)
 
     # Commit
     if args.command == 'commit':
