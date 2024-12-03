@@ -354,6 +354,14 @@ class Tree:
 
     return found
 
+  def verify_changes_are_branch(self, branch_name: str):
+    """
+    Raises an error if any repository in the tree has changes, but does not check out the provided <branch_name>
+    """
+    wrong_branch_repos = list(self.get_wrong_branch_repos(branch_name).values())
+    if len(wrong_branch_repos) > 0:
+      raise gordion.exception.WrongBranchRepositoryDirty(branch_name, wrong_branch_repos)
+
   def lineage_has_changes_staged(self) -> bool:
     if self.repo.handle.is_dirty(index=True, working_tree=False, untracked_files=False):
       return True
@@ -460,10 +468,7 @@ class Tree:
 
   def add(self, branch_name: str, pathspec: str):
     if self.trace():
-      # First make sure branch names are correct.
-      wrong_branch_repos = list(self.get_wrong_branch_repos(branch_name).values())
-      if len(wrong_branch_repos) > 0:
-        raise gordion.exception.WrongBranchRepositoryDirty(branch_name, wrong_branch_repos)
+      self.verify_changes_are_branch(branch_name)
 
       # Add this.
       self.repo.add(branch_name, pathspec)

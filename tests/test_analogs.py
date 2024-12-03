@@ -8,7 +8,12 @@ import pytest
 # =================================================================================================
 # Tests
 
-def test_add_child_wrong_branch(tree_a: gordion.Tree):
+# TODO here.
+def test_add_cannot_trace(tree_a: gordion.Tree):
+  pass
+
+
+def test_verify_changes_are_branch(tree_a: gordion.Tree):
   """
   Verifies add will raise an error if a repository branch does not match the root branch.
   """
@@ -27,6 +32,6 @@ def test_add_child_wrong_branch(tree_a: gordion.Tree):
 
   # Verify error when adding from root.
   with pytest.raises(gordion.exception.WrongBranchRepositoryDirty) as context:
-    tree_a.add(tree_a.repo.handle.active_branch.name, ".")
+    tree_a.verify_changes_are_branch(tree_a.repo.get_branch_name())
   expected = gordion.exception.WrongBranchRepositoryDirty(tree_a.repo.get_branch_name(), [repo_b])
   assert str(context.value) == str(expected)
