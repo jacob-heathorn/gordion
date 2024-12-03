@@ -3,6 +3,7 @@ from .utils import extract_repo_details, is_related_path, find_ancestor_dir
 from .utils import print_exception, singleton
 from .repository import Repository
 from .tree import Tree
+from .analogs import Analogs
 from .cache import Cache
 from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError

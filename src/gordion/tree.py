@@ -18,6 +18,10 @@ class Tree:
     # TODO encapsulate
     self.committed = False
 
+    # TODO reuse
+    self.children1: dict[str, Tree] = {}
+    self.parents1: dict[str, Tree] = {}
+
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """
     Updates this repository and it's children.

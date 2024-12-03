@@ -177,3 +177,8 @@ class WrongBranchRepositoryDirty(Exception):
     for repo in wrong_branch_repos:
       self.message += f"\n* {repo.name} is {repo.get_branch_name()}"
     super().__init__(self.message)
+
+
+class TraceError(Exception):
+  def __init__(self):
+    self.message = "Could not trace repository tree! See \"gor status\" for more information."
