@@ -17,6 +17,7 @@ class Tree:
     self.workspace = gordion.Workspace()
     # TODO encapsulate
     self.committed = False
+    self.gordion_updates_message = ""
 
     # TODO reuse
     self.children1: dict[str, Tree] = {}
@@ -394,55 +395,55 @@ class Tree:
 
     return make_unique_by_path(referencers)
 
-  def commit(self, branch_name: str, message: str) -> bool:
+  # def commit(self, branch_name: str, message: str) -> bool:
 
-    if self.trace():
-      # First make sure branch names are correct.
-      if not self.verify_changes_are_branch(branch_name):
-        print("TODO error not all changes are on this branch See 'gor status'")
-        return
+  #   if self.trace():
+  #     # First make sure branch names are correct.
+  #     if not self.verify_changes_are_branch(branch_name):
+  #       print("TODO error not all changes are on this branch See 'gor status'")
+  #       return
 
-      # Now make sure lineage is correct branch.
-      # TODO a referencer cannot have unadded changes to the gordion file
-      found = self.find_repos_with_wrong_branch_for_lineage(branch_name)
-      if len(found) > 0:
-        for repo in found:
-          print(f"{repo.name} has needs to checkout branch due to lineage.")
+  #     # Now make sure lineage is correct branch.
+  #     # TODO a referencer cannot have unadded changes to the gordion file
+  #     found = self.find_repos_with_wrong_branch_for_lineage(branch_name)
+  #     if len(found) > 0:
+  #       for repo in found:
+  #         print(f"{repo.name} has needs to checkout branch due to lineage.")
 
-      # Recurse into children.
-      for _, child in self.children.items():
-        child.commit(branch_name, message)
+  #     # Recurse into children.
+  #     for _, child in self.children.items():
+  #       child.commit(branch_name, message)
 
-        # If the child committed, update it's referencers
-        if child.committed:
-          commit = child.repo.handle.head.commit
-          root = self._root()
-          referencers = root.find_referencers(child)
-          for referencer in referencers:
-            # Update gordion.yaml.
-            if not referencer.repo.yeditor.read_repository_tag(child.repo.name) == commit.hexsha:
-              referencer.repo.yeditor.write_repository_tag(child.repo.name, commit.hexsha)
-              # Add changes to referencer.
-              referencer.repo.add(branch_name, "gordion.yaml")
-              # Commit referencer.
-              # Only double newline first time.
-              if referencer.committed:
-                full_message = referencer.repo.handle.head.commit.message
-              else:
-                full_message = message
-              full_message += f"\n\n* Bump {child.repo.name} to {commit.hexsha}"
+  #       # If the child committed, update it's referencers
+  #       if child.committed:
+  #         commit = child.repo.handle.head.commit
+  #         root = self._root()
+  #         referencers = root.find_referencers(child)
+  #         for referencer in referencers:
+  #           # Update gordion.yaml.
+  #           if not referencer.repo.yeditor.read_repository_tag(child.repo.name) == commit.hexsha:
+  #             referencer.repo.yeditor.write_repository_tag(child.repo.name, commit.hexsha)
+  #             # Add changes to referencer.
+  #             referencer.repo.add(branch_name, "gordion.yaml")
+  #             # Commit referencer.
+  #             # Only double newline first time.
+  #             if referencer.committed:
+  #               full_message = referencer.repo.handle.head.commit.message
+  #             else:
+  #               full_message = message
+  #             full_message += f"\n\n* Bump {child.repo.name} to {commit.hexsha}"
 
-              referencer.repo.commit(message=full_message, amend=referencer.committed)
-              referencer.committed = True
+  #             referencer.repo.commit(message=full_message, amend=referencer.committed)
+  #             referencer.committed = True
 
-      # Commit this one if it has staged changes.
-      if self.repo.has_staged_changes():
-        if self.committed:
-          message = referencer.repo.head.commit.message
-        self.repo.commit(message=message, amend=self.committed)
-        self.committed = True
+  #     # Commit this one if it has staged changes.
+  #     if self.repo.has_staged_changes():
+  #       if self.committed:
+  #         message = referencer.repo.head.commit.message
+  #       self.repo.commit(message=message, amend=self.committed)
+  #       self.committed = True
 
-    else:
-      print("TODO error could not trace reposiotry tree. See 'gor status'")
+  #   else:
+  #     print("TODO error could not trace reposiotry tree. See 'gor status'")
 
-    return self.committed
+  #   return self.committed

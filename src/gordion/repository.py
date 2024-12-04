@@ -484,14 +484,14 @@ class Repository:
       if output:
         print(output)
 
-  def commit(self, message: str, amend: bool) -> git.Commit:
+  def commit(self, message: str, amend: bool = False):
     """
     Does 'git commit'
     """
     if amend:
-      return self.handle.git.commit("-m", message, "--amend")
+      self.handle.git.commit("-m", message, "--amend")
     else:
-      return self.handle.git.commit("-m", message)
+      self.handle.git.commit("-m", message)
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     """

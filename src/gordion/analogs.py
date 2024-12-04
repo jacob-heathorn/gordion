@@ -79,6 +79,15 @@ class Analogs:
     if len(bad_nodes) > 0:
       raise gordion.exception.WrongBranchRepositoryLineage(branch_name, list(bad_nodes.values()))
 
+  def has_staged_changes(self) -> bool:
+    """
+    Returns true if any repo in the tree has staged changes.
+    """
+    for _, node in self.nodes.items():
+      if node.repo.has_staged_changes():
+        return True
+    return False
+
   # =================================================================================================
   # The Analogs
 
@@ -104,3 +113,31 @@ class Analogs:
     """
     for _, node in self.nodes.items():
       node.repo.clean(force, dirs, extra)
+
+  # TODO rename header
+  def commit(self, branch_name: str, message: str):
+    """
+    Analog for: git commit
+    """
+    self.verify_changes_are_branch(branch_name)
+    self.verify_lineage_is_branch(branch_name)
+
+    # TODO a referencer cannot have unadded changes to the gordion file
+    while self.has_staged_changes():
+      for _, node in self.nodes.items():
+        if node.repo.has_staged_changes():
+          # Commit this node.
+          full_message = message + "\n"
+          full_message += node.gordion_updates_message
+          node.repo.commit(full_message, node.committed)
+          node.committed = True
+
+          # Modify this node's parents' gordion.yaml files and stage the change.
+          commit = node.repo.handle.head.commit
+          for _, parent in node.parents1.items():
+            if not parent.repo.yeditor.read_repository_tag(node.repo.name) == commit.hexsha:
+              # Update the parent's gordion.yaml file.
+              parent.repo.yeditor.write_repository_tag(node.repo.name, commit.hexsha)
+              # Add the change.
+              parent.repo.add("gordion.yaml")
+              parent.gordion_updates_message += f"\n* Bump {node.repo.name} to {commit.hexsha}"

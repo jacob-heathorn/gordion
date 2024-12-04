@@ -112,11 +112,8 @@ def main(argv=None):
     # Commit
     if args.command == 'commit':
       root = gordion.Tree.find(os.getcwd())
-      # TODO force branch or error.
-      branch_name = None
-      if root.repo.handle.active_branch:
-        branch_name = root.repo.handle.active_branch.name
-      root.commit(branch_name, args.message)
+      branch_name = root.repo.get_branch_name_or_throw()
+      gordion.Analogs(root).commit(branch_name, args.message)
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)
