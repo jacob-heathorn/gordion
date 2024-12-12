@@ -109,8 +109,6 @@ def test_child_mismatch(tree_a):
     expected_header += red(listing_str + "\n")
   expected = expected_header + "\n" + expected
 
-  print(f"\nexpected:\n {expected}")
-  print(f"\nactual:\n {gordion.app.status.terminal_status(tree_a)}")
   assert expected == gordion.app.status.terminal_status(tree_a)
 
 
