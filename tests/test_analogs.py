@@ -131,3 +131,32 @@ def test_add_restore_clean(tree_a: gordion.Tree):
   analogs.clean(force=True, dirs=True, extra=True)
   assert repo_a.is_dirty() is False
   assert repo_d.is_dirty() is False
+
+
+def test_commit(tree_a: gordion.Tree):
+  """Verifies git commit analog"""
+  repo_a = tree_a.repo
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  repo_c = gordion.Workspace().get_repository('gordion_demo_c')
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+
+  # Add a touchfile to two different repositories.
+  touchfile = os.path.join(repo_d.path, 'touch.txt')
+  with open(touchfile, 'w'):
+    pass
+
+  # Gordion add.
+  analogs = gordion.Analogs(tree_a)
+  analogs.add(repo_d.handle.active_branch.name, ".")
+
+  # Gordion commit.
+  analogs.commit(repo_d.handle.active_branch.name, "test_commit")
+
+  # Verify commit messages.
+  assert repo_d.handle.head.commit.message == "test_commit\n"
+  b_c_message = f"test_commit\n\n* Bump gordion_demo_d to {repo_d.handle.head.commit.hexsha}\n"
+  assert repo_c.handle.head.commit.message == b_c_message
+  assert repo_b.handle.head.commit.message == b_c_message
+  a_message = f"test_commit\n\n* Bump gordion_demo_c to {repo_c.handle.head.commit.hexsha}\n"
+  a_message += f"* Bump gordion_demo_b to {repo_b.handle.head.commit.hexsha}\n"
+  assert repo_a.handle.head.commit.message == a_message
