@@ -34,6 +34,7 @@ class Repository:
     """
     Ensures the repository exists at <path> with <url> and clones it with <url> if not.
     """
+    gordion.Cache().ensure_mirror(url)
     repo = gordion.Repository.registry().get(path, None)  # type: ignore[attr-defined]
     if repo:
       if gordion.utils.compare_urls(url, repo.url):
