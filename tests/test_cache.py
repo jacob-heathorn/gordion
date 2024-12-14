@@ -1,6 +1,5 @@
 import os
 import gordion
-import pytest
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
