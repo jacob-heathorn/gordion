@@ -90,3 +90,44 @@ def test_verify_lineage_is_branch(tree_a: gordion.Tree):
     analogs.verify_lineage_is_branch(tree_a.repo.get_branch_name())
   expected = gordion.exception.WrongBranchRepositoryLineage(tree_a.repo.get_branch_name(), [repo_b])
   assert str(context.value) == str(expected)
+
+
+def test_add_restore_clean(tree_a: gordion.Tree):
+  """Verifies git add analog"""
+
+  repo_a = tree_a.repo
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+
+  # Verify control
+  assert repo_a.has_staged_changes() is False
+  assert repo_d.has_staged_changes() is False
+  assert repo_a.is_dirty() is False
+  assert repo_d.is_dirty() is False
+
+  # Add a touchfile to two different repositories.
+  touchfile = os.path.join(repo_a.path, 'touch.txt')
+  with open(touchfile, 'w'):
+    pass
+  touchfile = os.path.join(repo_d.path, 'touch.txt')
+  with open(touchfile, 'w'):
+    pass
+
+  # Gordion add.
+  analogs = gordion.Analogs(tree_a)
+  analogs.add(repo_a.handle.active_branch.name, ".")
+
+  # Verify files are staged in repos A and D
+  assert repo_a.has_staged_changes() is True
+  assert repo_d.has_staged_changes() is True
+
+  # Restore staged and verify.
+  analogs.restore(".", staged=True)
+  assert repo_a.has_staged_changes() is False
+  assert repo_d.has_staged_changes() is False
+  assert repo_a.is_dirty() is True
+  assert repo_d.is_dirty() is True
+
+  # Clean touchfiles.
+  analogs.clean(force=True, dirs=True, extra=True)
+  assert repo_a.is_dirty() is False
+  assert repo_d.is_dirty() is False
