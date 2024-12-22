@@ -5,11 +5,14 @@ from dataclasses import dataclass, field
 
 class Analogs:
   """
-  Wraps a repository object and provides git analogs
+  Provides git analogs to a gordion repository and it's children.
   """
 
   @dataclass
   class Node:
+    """
+    Wraps a repository object and adds necessary fields for git analog operations.
+    """
     repo: gordion.Repository
     committed: bool = False
     gordion_updates_message: str = ""
