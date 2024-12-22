@@ -34,7 +34,7 @@ class Analogs:
 
     # Register it's children.
     if node.repo.yeditor.exists():
-      assert node.repo.yeditor.yaml_data  # TODO proper error.
+      assert node.repo.yeditor.yaml_data
       for child_name, child_info in node.repo.yeditor.yaml_data['repositories'].items():
         child_url = child_info['url']
         child_tag = child_info['tag']
@@ -129,8 +129,7 @@ class Analogs:
     for _, node in self.nodes.items():
       node.repo.clean(force, dirs, extra)
 
-  # TODO rename header
-  def commit(self, branch_name: str, message: str):
+  def commit(self, branch_name: str, header: str):
     """
     Analog for: git commit
     """
@@ -142,9 +141,9 @@ class Analogs:
       for _, node in self.nodes.items():
         if node.repo.has_staged_changes():
           # Commit this node.
-          full_message = message + "\n"
-          full_message += node.gordion_updates_message
-          node.repo.commit(full_message, node.committed)
+          message = header + "\n"
+          message += node.gordion_updates_message
+          node.repo.commit(message, node.committed)
           node.committed = True
 
           # Modify this node's parents' gordion.yaml files and stage the change.
