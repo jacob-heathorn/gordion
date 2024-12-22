@@ -9,11 +9,11 @@ import os
 # Tests
 
 
-def test_trace(tree_a):
+def test_trace(tree_a: gordion.Tree):
   """
   Verifies nominal trace behavior.
   """
-  analogs = gordion.Analogs(tree_a)
+  analogs = gordion.Analogs(tree_a.repo)
   assert analogs.nodes[gordion.Workspace().get_repository('gordion_demo_a').path] is not None
   assert analogs.nodes[gordion.Workspace().get_repository('gordion_demo_b').path] is not None
   assert analogs.nodes[gordion.Workspace().get_repository('gordion_demo_c').path] is not None
@@ -31,7 +31,7 @@ def test_trace_error(tree_a: gordion.Tree):
 
   # Verify the analogs object throws trace error.
   with pytest.raises(gordion.exception.TraceError) as context:
-    gordion.Analogs(tree_a)
+    gordion.Analogs(tree_a.repo)
   expected = gordion.exception.TraceError()
   assert str(context.value) == str(expected)
 
@@ -55,7 +55,7 @@ def test_verify_changes_are_branch(tree_a: gordion.Tree):
   assert repo_b.is_dirty()
 
   # Verify error when adding from root.
-  analogs = gordion.Analogs(tree_a)
+  analogs = gordion.Analogs(tree_a.repo)
   with pytest.raises(gordion.exception.WrongBranchRepositoryDirty) as context:
     analogs.verify_changes_are_branch(tree_a.repo.get_branch_name())
   expected = gordion.exception.WrongBranchRepositoryDirty(tree_a.repo.get_branch_name(), [repo_b])
@@ -85,7 +85,7 @@ def test_verify_lineage_is_branch(tree_a: gordion.Tree):
   # Verify error when adding from root. A and D are the same branch and D has changes, but
   # committing would require a change to B, which doesn't checkout the same branch. Therefore we
   # expect an error.
-  analogs = gordion.Analogs(tree_a)
+  analogs = gordion.Analogs(tree_a.repo)
   with pytest.raises(gordion.exception.WrongBranchRepositoryLineage) as context:
     analogs.verify_lineage_is_branch(tree_a.repo.get_branch_name())
   expected = gordion.exception.WrongBranchRepositoryLineage(tree_a.repo.get_branch_name(), [repo_b])
@@ -113,7 +113,7 @@ def test_add_restore_clean(tree_a: gordion.Tree):
     pass
 
   # Gordion add.
-  analogs = gordion.Analogs(tree_a)
+  analogs = gordion.Analogs(tree_a.repo)
   analogs.add(repo_a.handle.active_branch.name, ".")
 
   # Verify files are staged in repos A and D
@@ -146,7 +146,7 @@ def test_commit(tree_a: gordion.Tree):
     pass
 
   # Gordion add.
-  analogs = gordion.Analogs(tree_a)
+  analogs = gordion.Analogs(tree_a.repo)
   analogs.add(repo_d.handle.active_branch.name, ".")
 
   # Gordion commit.
