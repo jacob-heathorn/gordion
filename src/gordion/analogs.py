@@ -1,5 +1,6 @@
 import gordion
 from typing import Dict
+from dataclasses import dataclass, field
 
 
 class Analogs:
@@ -7,20 +8,32 @@ class Analogs:
   Wraps a tree object and provides git analogs
   """
 
+  # TODO repo instead of tree?
+  @dataclass
+  class Node:
+    tree: gordion.Tree
+    committed: bool = False
+    gordion_updates_message: str = ""
+    children: Dict[str, 'Analogs.Node'] = field(default_factory=dict)
+    parents: Dict[str, 'Analogs.Node'] = field(default_factory=dict)
+
   def __init__(self, root: gordion.Tree):
-    self.root: gordion.Tree = root
-    self.nodes: Dict[str, gordion.Tree] = {}
+    self.root = Analogs.Node(root)
+    self.nodes: Dict[str, Analogs.Node] = {}
     self.trace(root)
 
-  def trace(self, node: gordion.Tree):
+  def trace(self, _tree: gordion.Tree):
+
     # Register this node if necessary.
-    if not self.nodes.get(node.repo.path):
-      self.nodes[node.repo.path] = node
+    node = self.nodes.get(_tree.repo.path)
+    if not node:
+      node = Analogs.Node(tree=_tree)
+      self.nodes[node.tree.repo.path] = node
 
     # Register it's children.
-    if node.repo.yeditor.exists():
-      assert node.repo.yeditor.yaml_data  # TODO proper error.
-      for child_name, child_info in node.repo.yeditor.yaml_data['repositories'].items():
+    if node.tree.repo.yeditor.exists():
+      assert node.tree.repo.yeditor.yaml_data  # TODO proper error.
+      for child_name, child_info in node.tree.repo.yeditor.yaml_data['repositories'].items():
         child_url = child_info['url']
         child_tag = child_info['tag']
         child_repo = gordion.Workspace().get_repository(child_name)
@@ -32,15 +45,15 @@ class Analogs:
               # Get the child if it already exists, otherwise create it.
               child = self.nodes.get(child_repo.path)
               if not child:
-                child = gordion.Tree(child_repo)
-                self.nodes[child.repo.path] = child
+                child = Analogs.Node(tree=gordion.Tree(child_repo))
+                self.nodes[child.tree.repo.path] = child
 
               # Register parent/child relationship.
-              node.children1[child.repo.path] = child
-              child.parents1[node.repo.path] = node
+              node.children[child.tree.repo.path] = child
+              child.parents[node.tree.repo.path] = node
 
               # Recurse.
-              self.trace(child)
+              self.trace(child.tree)
             else:
               raise gordion.exception.TraceError()
           else:
@@ -55,9 +68,9 @@ class Analogs:
     """
     bad_nodes = []
     for _, node in self.nodes.items():
-      if node.repo.is_dirty():
-        if not node.repo.is_branch(branch_name):
-          bad_nodes.append(node.repo)
+      if node.tree.repo.is_dirty():
+        if not node.tree.repo.is_branch(branch_name):
+          bad_nodes.append(node.tree.repo)
     if len(bad_nodes) > 0:
       raise gordion.exception.WrongBranchRepositoryDirty(branch_name, bad_nodes)
 
@@ -70,11 +83,11 @@ class Analogs:
 
     # For each node, if it has staged changes...
     for _, node in self.nodes.items():
-      if node.repo.has_staged_changes():
+      if node.tree.repo.has_staged_changes():
         # Collect all parents with the wrong branch.
-        for _, parent in node.parents1.items():
-          if not parent.repo.is_branch(branch_name):
-            bad_nodes[parent.repo.path] = parent.repo
+        for _, parent in node.parents.items():
+          if not parent.tree.repo.is_branch(branch_name):
+            bad_nodes[parent.tree.repo.path] = parent.tree.repo
 
     if len(bad_nodes) > 0:
       raise gordion.exception.WrongBranchRepositoryLineage(branch_name, list(bad_nodes.values()))
@@ -84,7 +97,7 @@ class Analogs:
     Returns true if any repo in the tree has staged changes.
     """
     for _, node in self.nodes.items():
-      if node.repo.has_staged_changes():
+      if node.tree.repo.has_staged_changes():
         return True
     return False
 
@@ -98,21 +111,21 @@ class Analogs:
 
     self.verify_changes_are_branch(branch_name)
     for _, node in self.nodes.items():
-      node.repo.add(pathspec)
+      node.tree.repo.add(pathspec)
 
   def restore(self, pathspec: str, staged: bool):
     """
     Analog for: git restore
     """
     for _, node in self.nodes.items():
-      node.repo.restore(pathspec, staged)
+      node.tree.repo.restore(pathspec, staged)
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     """
     Analog for: git clean
     """
     for _, node in self.nodes.items():
-      node.repo.clean(force, dirs, extra)
+      node.tree.repo.clean(force, dirs, extra)
 
   # TODO rename header
   def commit(self, branch_name: str, message: str):
@@ -125,19 +138,20 @@ class Analogs:
     # TODO a referencer cannot have unadded changes to the gordion file
     while self.has_staged_changes():
       for _, node in self.nodes.items():
-        if node.repo.has_staged_changes():
+        if node.tree.repo.has_staged_changes():
           # Commit this node.
           full_message = message + "\n"
           full_message += node.gordion_updates_message
-          node.repo.commit(full_message, node.committed)
+          node.tree.repo.commit(full_message, node.committed)
           node.committed = True
 
           # Modify this node's parents' gordion.yaml files and stage the change.
-          commit = node.repo.handle.head.commit
-          for _, parent in node.parents1.items():
-            if not parent.repo.yeditor.read_repository_tag(node.repo.name) == commit.hexsha:
+          commit = node.tree.repo.handle.head.commit
+          for _, parent in node.parents.items():
+            if not parent.tree.repo.yeditor.read_repository_tag(
+                    node.tree.repo.name) == commit.hexsha:
               # Update the parent's gordion.yaml file.
-              parent.repo.yeditor.write_repository_tag(node.repo.name, commit.hexsha)
+              parent.tree.repo.yeditor.write_repository_tag(node.tree.repo.name, commit.hexsha)
               # Add the change.
-              parent.repo.add("gordion.yaml")
-              parent.gordion_updates_message += f"\n* Bump {node.repo.name} to {commit.hexsha}"
+              parent.tree.repo.add("gordion.yaml")
+              parent.gordion_updates_message += f"\n* Bump {node.tree.repo.name} to {commit.hexsha}"

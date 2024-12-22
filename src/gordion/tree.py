@@ -14,13 +14,6 @@ class Tree:
     self.repo: gordion.Repository = repo
     self.parent: Tree = parent
     self.workspace = gordion.Workspace()
-    # TODO encapsulate
-    self.committed = False
-    self.gordion_updates_message = ""
-
-    # TODO reuse
-    self.children1: dict[str, Tree] = {}
-    self.parents1: dict[str, Tree] = {}
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
     """

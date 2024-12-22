@@ -17,7 +17,7 @@ import pytest
 # =================================================================================================
 # Tests
 
-def test_same_repo_different_tag(tree_a):
+def test_same_repo_different_tag(tree_a: gordion.Tree):
   """
   Verifies update will error if two of the same repository reference have different tags.
   """
