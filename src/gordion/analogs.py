@@ -94,10 +94,10 @@ class Analogs:
     # For each node, if it has staged changes...
     for _, node in self.nodes.items():
       if node.repo.has_staged_changes():
-        # Collect all parents with the wrong branch.
-        for _, parent in node.parents.items():
-          if not parent.repo.is_branch(branch_name):
-            bad_nodes[parent.repo.path] = parent.repo
+        # Collect all ancestors with the wrong branch.
+        for _, ancestor in Analogs.lineage(node).items():
+          if not ancestor.repo.is_branch(branch_name):
+            bad_nodes[ancestor.repo.path] = ancestor.repo
 
     if len(bad_nodes) > 0:
       raise gordion.exception.WrongBranchRepositoryLineage(branch_name, list(bad_nodes.values()))
