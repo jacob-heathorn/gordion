@@ -92,33 +92,33 @@ def test_verify_lineage_is_branch(tree_a: gordion.Tree):
   assert str(context.value) == str(expected)
 
 
-# def test_verify_lineage_does_not_have_unstaged_gordion_changes(tree_a: gordion.Tree):
-#   """
-#   verify_lineage_does_not_have_unstaged_gordion_changes() will throw an error if any ancestor
-#   repositories of a repository with staged changes has unstaged changes in it's gordion.yaml file.
-#   """
+def test_verify_lineage_does_not_have_unstaged_gordion_changes(tree_a: gordion.Tree):
+  """
+  verify_lineage_does_not_have_unstaged_gordion_changes() will throw an error if any ancestor
+  repositories of a repository with staged changes has unstaged changes in it's gordion.yaml file.
+  """
 
-#   repo_a = gordion.Workspace().get_repository('gordion_demo_a')
-#   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
-#   repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+  repo_a = gordion.Workspace().get_repository('gordion_demo_a')
+  repo_b = gordion.Workspace().get_repository('gordion_demo_b')
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
 
-#   # Make demo_d dirty by adding an empty file and stage the changes.
-#   touchfile = os.path.join(repo_d.path, 'touch.txt')
-#   with open(touchfile, 'w'):
-#     pass
-#   repo_d.add(".")
-#   assert repo_d.has_staged_changes()
+  # Make demo_d dirty by adding an empty file and stage the changes.
+  touchfile = os.path.join(repo_d.path, 'touch.txt')
+  with open(touchfile, 'w'):
+    pass
+  repo_d.add(".")
+  assert repo_d.has_staged_changes()
 
-#   # Modify demo_a gordion.yaml file by shortening it's demo_b commit hexsha. (same value)
-#   repo_a.yeditor.write_repository_tag('gordion_demo_b', repo_b.handle.head.commit.hexsha[0:7])
-#   assert repo_a.is_dirty()
+  # Modify demo_a gordion.yaml file by shortening it's demo_b commit hexsha. (same value)
+  repo_a.yeditor.write_repository_tag('gordion_demo_b', repo_b.handle.head.commit.hexsha[0:7])
+  assert repo_a.is_dirty()
 
-#   # Verify error when committing from root.
-#   analogs = gordion.Analogs(tree_a.repo)
-#   with pytest.raises(gordion.exception.UnstagedGordionChangesInLineage) as context:
-#     analogs.verify_lineage_does_not_have_unstaged_gordion_changes()
-#   expected = gordion.exception.UnstagedGordionChangesInLineage()
-#   assert str(context.value) == str(expected)
+  # Verify error when committing from root.
+  analogs = gordion.Analogs(tree_a.repo)
+  with pytest.raises(gordion.exception.UnstagedGordionChangesInLineage) as context:
+    analogs.verify_lineage_does_not_have_unstaged_gordion_changes()
+  expected = gordion.exception.UnstagedGordionChangesInLineage()
+  assert str(context.value) == str(expected)
 
 
 def test_add_restore_clean(tree_a: gordion.Tree):
