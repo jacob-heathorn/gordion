@@ -19,6 +19,14 @@ class Analogs:
     children: Dict[str, 'Analogs.Node'] = field(default_factory=dict)
     parents: Dict[str, 'Analogs.Node'] = field(default_factory=dict)
 
+  @staticmethod
+  def lineage(node: Node) -> Dict[str, 'Analogs.Node']:
+    lineage: Dict[str, 'Analogs.Node'] = {}
+    for _, parent in node.parents.items():
+      lineage[parent.repo.path] = parent
+      lineage.update(Analogs.lineage(parent))
+    return lineage
+
   def __init__(self, root: gordion.Repository):
     self.root = Analogs.Node(root)
     self.nodes: Dict[str, Analogs.Node] = {}
@@ -94,6 +102,21 @@ class Analogs:
     if len(bad_nodes) > 0:
       raise gordion.exception.WrongBranchRepositoryLineage(branch_name, list(bad_nodes.values()))
 
+  def verify_lineage_does_not_have_unstaged_gordion_changes(self):
+    """
+    Raises an error if any ancestor of a repository with staged changes has unstaged changes in it's
+    gordion file.
+    """
+
+    # An ancestor to a repository with staged changes cannot have unstaged changes in it's gordion
+    # file because we will automatically be modifying it and committing it during this command.
+    for _, node in self.nodes.items():
+      if node.repo.has_staged_changes():
+        for _, ancestor in Analogs.lineage(node).items():
+          diff = ancestor.repo.handle.git.diff('--', 'gordion.yaml')
+          if bool(diff):
+            raise gordion.exception.UnstagedGordionChangesInLineage()
+
   def has_staged_changes(self) -> bool:
     """
     Returns true if any repo in the heirarchy has staged changes.
@@ -135,8 +158,8 @@ class Analogs:
     """
     self.verify_changes_are_branch(branch_name)
     self.verify_lineage_is_branch(branch_name)
+    self.verify_lineage_does_not_have_unstaged_gordion_changes()
 
-    # TODO a referencer cannot have unadded changes to the gordion file
     while self.has_staged_changes():
       for _, node in self.nodes.items():
         if node.repo.has_staged_changes():

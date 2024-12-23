@@ -96,24 +96,24 @@ def main(argv=None):
     # Clean
     if args.command == 'clean':
       root = gordion.Tree.find(os.getcwd())
-      gordion.Analogs(root).clean(args.force, args.dirs, args.extra)
+      gordion.Analogs(root.repo).clean(args.force, args.dirs, args.extra)
 
     # Add
     if args.command == 'add':
       root = gordion.Tree.find(os.getcwd())
       branch_name = root.repo.get_branch_name_or_throw()
-      gordion.Analogs(root).add(branch_name, args.pathspec)
+      gordion.Analogs(root.repo).add(branch_name, args.pathspec)
 
     # Restore
     if args.command == 'restore':
       root = gordion.Tree.find(os.getcwd())
-      gordion.Analogs(root).restore(args.pathspec, args.staged)
+      gordion.Analogs(root.repo).restore(args.pathspec, args.staged)
 
     # Commit
     if args.command == 'commit':
       root = gordion.Tree.find(os.getcwd())
       branch_name = root.repo.get_branch_name_or_throw()
-      gordion.Analogs(root).commit(branch_name, args.message)
+      gordion.Analogs(root.repo).commit(branch_name, args.message)
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)

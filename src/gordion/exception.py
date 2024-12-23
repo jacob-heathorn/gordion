@@ -192,3 +192,11 @@ class WrongBranchRepositoryLineage(Exception):
 class TraceError(Exception):
   def __init__(self):
     self.message = "Could not trace repository tree! See \"gor status\" for more information."
+
+
+class UnstagedGordionChangesInLineage(Exception):
+  def __init__(self):
+    self.message = "Repositorie(s) have unstaged changes in their gordion.yaml files, which is"
+    self.message += " preventing commit propogation. If we were to continue, we would need to"
+    self.message += " add changes to these gordion files and commit them."
+    super().__init__(self.message)
