@@ -58,6 +58,32 @@ def main(argv=None):
   parser_commit = subparsers.add_parser('commit', help='Git commit in all repositories')
   parser_commit.add_argument('-m', '--message', type=str, required=True, help='<message>')
 
+  # Push parser
+  parser_push = subparsers.add_parser('push', help='Git push in all repositories')
+  parser_push.add_argument(
+      '-u', '--set-upstream',
+      action='store_true',
+      help='Set upstream branch'
+  )
+  parser_push.add_argument(
+      '-d', '--delete',
+      action='store_true',
+      help='delete refs'
+  )
+  parser_push.add_argument(
+      'remote',
+      type=str,
+      nargs='?',  # Makes this argument optional
+      help='The name of the remote (e.g., origin)'
+  )
+  parser_push.add_argument(
+      'branch',
+      type=str,
+      nargs='?',  # Makes this argument optional
+      help='The name of the branch to push'
+  )
+  parser_push.add_argument('-f', '--force', action='store_true', help='force updates')
+
   args = parser.parse_args()
 
   try:
@@ -114,6 +140,19 @@ def main(argv=None):
       root = gordion.Tree.find(os.getcwd())
       branch_name = root.repo.get_branch_name_or_throw()
       gordion.Analogs(root.repo).commit(branch_name, args.message)
+
+    # Push
+    if args.command == 'push':
+      root = gordion.Tree.find(os.getcwd())
+      if not args.branch:
+        args.branch = root.repo.get_branch_name_or_throw()
+      gordion.Analogs(
+          root.repo).push(
+          args.set_upstream,
+          args.delete,
+          args.remote,
+          args.branch,
+          args.force)
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=True)

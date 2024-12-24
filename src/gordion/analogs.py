@@ -1,6 +1,7 @@
 import gordion
 from typing import Dict
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 class Analogs:
@@ -179,3 +180,12 @@ class Analogs:
               # Add the change.
               parent.repo.add("gordion.yaml")
               parent.gordion_updates_message += f"\n* Bump {node.repo.name} to {commit.hexsha}"
+
+  def push(self, set_upstream: bool, delete: bool, remote: Optional[str], branch: str, force: bool):
+    """
+    Analog for: git push
+    """
+
+    for _, node in self.nodes.items():
+      if branch in [branch.name for branch in node.repo.handle.branches]:
+        node.repo.push(set_upstream, delete, remote, branch, force)

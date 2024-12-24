@@ -514,3 +514,24 @@ class Repository:
     output = self.handle.git.clean(args)
     if output:
       print(f"{self.name}: {output}")
+
+  def push(self, set_upstream: bool, delete: bool, remote: Optional[str], branch: str, force: bool):
+    """
+    Does 'git restore'
+    """
+    args = []
+    if set_upstream:
+      args.append('--set-upstream')
+      args.append(remote)
+      args.append(branch)
+    if delete:
+      args.append('--delete')
+      args.append(remote)
+      args.append(branch)
+
+    if force:
+      args.append('--force')
+
+    output = self.handle.git.push(args)
+    if output:
+      print(output)
