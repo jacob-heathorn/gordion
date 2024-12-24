@@ -13,7 +13,6 @@ class Tree:
   def __init__(self, repo: gordion.Repository, parent=None) -> None:
     self.repo: gordion.Repository = repo
     self.parent: Tree = parent
-    self.children: dict[str, Tree] = {}
     self.workspace = gordion.Workspace()
 
   def update(self, tag: str, branch_name: str, force: bool = False) -> None:
@@ -41,7 +40,6 @@ class Tree:
     Updates the children repository listed in this repositorie's yaml.
     """
     root = self._root()
-    self.children = {}
 
     # Open the gordion yaml file for this repository if it exists.
     if self.repo.yeditor.exists():
@@ -116,7 +114,6 @@ class Tree:
         assert child_repo
         child = Tree(child_repo, self)
         child.update(child_tag, branch_name, force)
-        self.children[child_name] = child
 
   def _root(self):
     """

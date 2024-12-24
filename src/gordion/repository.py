@@ -34,6 +34,7 @@ class Repository:
     """
     Ensures the repository exists at <path> with <url> and clones it with <url> if not.
     """
+    gordion.Cache().ensure_mirror(url)
     repo = gordion.Repository.registry().get(path, None)  # type: ignore[attr-defined]
     if repo:
       if gordion.utils.compare_urls(url, repo.url):
@@ -437,3 +438,102 @@ class Repository:
     else:
       resolved_tag = tag + " (BAD TAG)"
     return resolved_tag
+
+  def get_branch_name(self):
+    if self.handle.head.is_detached:
+      return "DETACHED HEAD"
+    else:
+      return self.handle.active_branch.name
+
+  def get_branch_name_or_throw(self):
+    branch_name = self.get_branch_name()
+    if branch_name == "DETACHED HEAD":
+      raise Exception(f"{self.name} is DETACHED HEAD")
+    return branch_name
+
+  # =================================================================================================
+  # Git Command Analogs
+
+  def is_branch(self, branch_name: str) -> bool:
+    return bool(self.handle.active_branch) and self.handle.active_branch.name == branch_name
+
+  def is_dirty(self) -> bool:
+    return self.handle.is_dirty(untracked_files=True)
+
+  def has_staged_changes(self) -> bool:
+    return self.handle.is_dirty(index=True, working_tree=False, untracked_files=False)
+
+  def add(self, pathspec: str):
+    """
+    Does 'git add'
+    """
+    if self.handle.is_dirty(untracked_files=True):
+      output = self.handle.git.add(pathspec)
+      if output:
+        print(output)
+
+  def restore(self, pathspec: str, staged: bool):
+    """
+    Does 'git restore'
+    """
+    args = [pathspec]
+    if staged:
+      args.append("--staged")
+
+    if self.handle.is_dirty(untracked_files=True):
+      output = self.handle.git.restore(args)
+      if output:
+        print(output)
+
+  def commit(self, message: str, amend: bool = False):
+    """
+    Does 'git commit'
+    """
+    if amend:
+      self.handle.git.commit("-m", message, "--amend")
+    else:
+      self.handle.git.commit("-m", message)
+
+  def clean(self, force: bool, dirs: bool, extra: bool):
+    """
+    Does 'git clean'
+    """
+    args = ""
+    if force:
+      args += "f"
+
+    if dirs:
+      args += "d"
+
+    if extra:
+      args += "x"
+
+    if args:
+      args = "-" + args
+
+    output = self.handle.git.clean(args)
+    if output:
+      print(f"{self.name}: {output}")
+
+  def push(self, set_upstream: bool, delete: bool, remote: Optional[str], branch: str, force: bool):
+    """
+    Does 'git restore'
+    """
+    args = []
+    if set_upstream:
+      args.append('--set-upstream')
+      if remote is not None:
+        args.append(remote)
+      args.append(branch)
+    if delete:
+      args.append('--delete')
+      if remote is not None:
+        args.append(remote)
+      args.append(branch)
+
+    if force:
+      args.append('--force')
+
+    output = self.handle.git.push(args)
+    if output:
+      print(output)

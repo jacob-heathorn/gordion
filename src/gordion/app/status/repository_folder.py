@@ -10,7 +10,7 @@ class RepositoryFolder(Folder):
   repository can print information about the repository in pretty colors.
   """
 
-  def __init__(self, repo: gordion.Repository, root: gordion.Tree) -> None:
+  def __init__(self, repo: gordion.Repository, root: gordion.Tree, verbose: bool) -> None:
     super().__init__(repo.path)
     self.repo = repo
     self.root: gordion.Tree = root
@@ -19,6 +19,7 @@ class RepositoryFolder(Folder):
     self.has_duplicate = False
     self.incoherent_tag = False
     self.correct_tag = False
+    self.verbose = verbose
 
   def is_correct_path(self) -> bool:
     if self.workspace.is_dependency(self.repo.path):
@@ -79,7 +80,7 @@ class RepositoryFolder(Folder):
       errors.append("URL CONFLICTED")
 
     # Branch header.
-    branch_header = self._get_branch_name()
+    branch_header = self.repo.get_branch_name()
     branch_header = self._color_branch(branch_header)
     branch_suggestion = self._get_branch_suggestion()
     branch_warnings = self._get_branch_warnings(branch_suggestion)
@@ -110,12 +111,6 @@ class RepositoryFolder(Folder):
     if errors_header:
       display_name += " " + errors_header
     return display_name
-
-  def _get_branch_name(self):
-    if self.repo.handle.head.is_detached:
-      return "DETACHED HEAD"
-    else:
-      return self.repo.handle.active_branch.name
 
   def _color_branch(self, branch_name: str):
     # Case1: Root branch is checked out.
@@ -260,3 +255,10 @@ class RepositoryFolder(Folder):
     if not self.repo.handle.head.is_detached:
       return self.repo.handle.active_branch.name == self.repo.default_branch_name
     return False
+
+  @gordion.utils.override(Folder)
+  def _get_git_status(self) -> str:
+    if self.verbose:
+      return self.repo.handle.git.status()
+    else:
+      return self.repo.handle.git.status('-s')

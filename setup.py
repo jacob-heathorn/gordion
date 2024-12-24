@@ -24,6 +24,7 @@ setuptools.setup(
         'types-PyYAML'
     ],
     python_requires='>=3.8',
-    entry_points={'console_scripts': ('gordion = gordion.app.main:main',)},
+    entry_points={'console_scripts': ('gordion = gordion.app.main:main',
+                                      'gor = gordion.app.main:main')},
     zip_safe=False
 )

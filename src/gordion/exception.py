@@ -1,5 +1,6 @@
 import os
 import gordion
+from typing import List
 
 
 class UpdateError(Exception):
@@ -166,4 +167,36 @@ class DanglingDependenciesNotEmpty(Exception):
         f"Directory<{dangling_dependencies_path}> is not empty after moving it's repositories. "
         f"Manually delete it."
     )
+    super().__init__(self.message)
+
+
+class WrongBranchRepositoryDirty(Exception):
+  def __init__(self, expected_branch: str, wrong_branch_repos: List[gordion.Repository]):
+
+    self.message = f"All branches need to match <{expected_branch}>. But..."
+    for repo in wrong_branch_repos:
+      self.message += f"\n* {repo.name} is {repo.get_branch_name()}"
+    super().__init__(self.message)
+
+
+class WrongBranchRepositoryLineage(Exception):
+  def __init__(self, expected_branch: str, wrong_branch_repos: List[gordion.Repository]):
+
+    self.message = "Committing the staged changes will incure changes on the following"
+    self.message += f" repsitories, which need to checkout branch <{expected_branch}>."
+    for repo in wrong_branch_repos:
+      self.message += f"\n* {repo.name} is {repo.get_branch_name()}"
+    super().__init__(self.message)
+
+
+class TraceError(Exception):
+  def __init__(self):
+    self.message = "Could not trace repository tree! See \"gor status\" for more information."
+
+
+class UnstagedGordionChangesInLineage(Exception):
+  def __init__(self):
+    self.message = "Repositorie(s) have unstaged changes in their gordion.yaml files, which is"
+    self.message += " preventing commit propogation. If we were to continue, we would need to"
+    self.message += " add changes to these gordion files and commit them."
     super().__init__(self.message)

@@ -192,27 +192,27 @@ def override(interface_class):
 
 
 def red(str):
-  return '\033[31m' + str + '\033[0m'
+  return '\033[31m' + str + '\033[m'
 
 
 def bold_red(str):
-  return '\033[1;31m' + str + '\033[0m'
+  return '\033[1;31m' + str + '\033[m'
 
 
 def green(str):
-  return "\033[32m" + str + "\033[0m"
+  return "\033[32m" + str + "\033[m"
 
 
 def bold_green(str):
-  return "\033[1;32m" + str + "\033[0m"
+  return "\033[1;32m" + str + "\033[m"
 
 
 def bold_blue(str):
-  return "\033[1;34m" + str + "\033[0m"
+  return "\033[1;34m" + str + "\033[m"
 
 
 def yellow(str):
-  return '\033[93m' + str + "\033[0m"
+  return '\033[93m' + str + "\033[m"
 
 
 def hyperlink(link, text):

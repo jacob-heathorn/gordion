@@ -23,8 +23,17 @@ class Folder:
     """
     status_string = ""
 
-    status_string = ''.join(self._get_symbol_row())
+    symbol_row = ''.join(self._get_symbol_row())
+    status_string = symbol_row
     status_string += self._get_display_name()
+
+    git_status = self._get_git_status()
+    if git_status:
+      symbol_row = symbol_row.replace("├──", "│  ")
+      symbol_row = symbol_row.replace("└──", "   ")
+      for line in git_status.splitlines():
+        status_string += "\n" + symbol_row + line
+      status_string += "\n" + symbol_row
 
     for child in self.children:
       child_status = child.terminal_status()
@@ -66,3 +75,6 @@ class Folder:
 
   def _get_display_name(self) -> str:
     return gordion.utils.bold_blue(self.name)
+
+  def _get_git_status(self) -> str:
+    return ""
