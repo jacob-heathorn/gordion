@@ -189,3 +189,28 @@ def test_commit(tree_a: gordion.Tree):
   a_message = f"test_commit\n\n* Bump gordion_demo_c to {repo_c.handle.head.commit.hexsha}\n"
   a_message += f"* Bump gordion_demo_b to {repo_b.handle.head.commit.hexsha}\n"
   assert repo_a.handle.head.commit.message == a_message
+
+
+def test_push(tree_a: gordion.Tree):
+  """Verifies git push analog"""
+  repo_a = tree_a.repo
+  repo_d = gordion.Workspace().get_repository('gordion_demo_d')
+
+  # Checkout new branch on a and d.
+  repo_a.handle.create_head("test_push").checkout()
+  repo_d.handle.create_head("test_push").checkout()
+
+  # gor push -u origin test_push.
+  analogs = gordion.Analogs(tree_a.repo)
+  analogs.push(set_upstream=True, delete=False, remote='origin', branch='test_push', force=False)
+
+  # Verify new remote branches.
+  for ref in repo_a.handle.remotes['origin'].refs:
+    print(ref.name)
+  assert any(ref.name == "origin/test_push" for ref in repo_a.handle.remotes['origin'].refs)
+  assert any(ref.name == "origin/test_push" for ref in repo_d.handle.remotes['origin'].refs)
+
+  # gor delete the remote branches.
+  analogs.push(set_upstream=False, delete=True, remote='origin', branch='test_push', force=False)
+  assert not any(ref.name == "origin/test_push" for ref in repo_a.handle.remotes['origin'].refs)
+  assert not any(ref.name == "origin/test_push" for ref in repo_d.handle.remotes['origin'].refs)

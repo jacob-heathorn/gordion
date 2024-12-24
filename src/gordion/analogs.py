@@ -187,5 +187,5 @@ class Analogs:
     """
 
     for _, node in self.nodes.items():
-      if branch in [branch.name for branch in node.repo.handle.branches]:
+      if branch in [branch.name for branch in node.repo.handle.branches]:  # type: ignore
         node.repo.push(set_upstream, delete, remote, branch, force)

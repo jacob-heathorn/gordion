@@ -522,11 +522,13 @@ class Repository:
     args = []
     if set_upstream:
       args.append('--set-upstream')
-      args.append(remote)
+      if remote is not None:
+        args.append(remote)
       args.append(branch)
     if delete:
       args.append('--delete')
-      args.append(remote)
+      if remote is not None:
+        args.append(remote)
       args.append(branch)
 
     if force:
