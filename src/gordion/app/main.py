@@ -22,9 +22,9 @@ def main(argv=None):
   parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
   parser.add_argument(
       '-g',
-      '--generate-toml',
+      '--generate-pyproject-toml',
       type=str,
-      help='Expand gordion env variables in .in.toml file')
+      help='Expand gordion env variables in pyproject.in.toml file')
   parser.add_argument('-o', '--output', type=str, help='Output file after expansion')
   parser.add_argument('--force', action='store_true', help='Update the gordion tree')
 
@@ -113,8 +113,8 @@ def main(argv=None):
       print(repo.path)
 
     # Expand file.
-    if args.generate_toml:
-      gordion.app.generate_pyproject_toml(args.generate_toml)
+    if args.generate_pyproject_toml:
+      gordion.app.generate_pyproject_toml(args.generate_pyproject_toml)
 
     # Git Analogs
     #
