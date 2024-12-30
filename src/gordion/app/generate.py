@@ -44,14 +44,6 @@ def generate_pyproject_toml(package: str):
   # Replace all matches
   content = re.sub(pattern, replacer, content)
 
-  # # Find all occurrences and store them in a list of tuples (full_match, name)
-  # matches = re.findall(pattern, content)
-
-  # # Process each captured name and replace the corresponding placeholder in the content
-  # for name in matches:
-  #   repo = workspace.get_repository_or_throw(name)
-  #   content = re.sub(f"<gordion:path:{name}>", repo.path, content)
-
   # Read output file if it exists.
   if os.path.isfile(ofile):
     with open(ofile, 'r') as f:
