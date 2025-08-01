@@ -4,6 +4,10 @@
 curl -L https://nixos.org/nix/install | sh
 ```
 
+For cloning with https
+* Generate a new token with access to `Contents`
+* When it asks for username, use token as password
+
 
 # Testing
 Just a single test file:
