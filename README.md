@@ -1,4 +1,9 @@
-tox -- test/test_repository.py -s --no-cov
+# Setup
+```
+# Install nix
+curl -L https://nixos.org/nix/install | sh
+```
+
 
 # Testing
 Just a single test file:
