@@ -8,6 +8,8 @@ For cloning with https
 * Generate a new token with access to `Contents`
 * When it asks for username, use token as password
 
+`git config --global color.ui always`
+
 
 # Testing
 Just a single test file:
