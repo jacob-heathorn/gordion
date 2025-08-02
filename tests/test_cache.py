@@ -70,13 +70,13 @@ def test_trim_orphaned_cache():
   assert not os.path.exists(orphaned_cache)
 
 
-def test_trim_keeps_valid_cache():
+def test_trim_keeps_valid_cache(repository_a):
   """
   Test that cache.trim() keeps workspace caches that belong to valid workspaces.
   """
   # Get current workspace and its cache
   workspace = gordion.Workspace()
-  workspace.setup(REPOS_DIR)
+  workspace.setup(repository_a.path)
 
   # The workspace cache should exist after setup
   assert os.path.exists(workspace.dependencies_path)

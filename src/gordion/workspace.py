@@ -14,18 +14,24 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
+    self.root_repository: Optional[gordion.Repository] = None
 
   def repos(self) -> Dict[str, gordion.Repository]:
     return gordion.Repository.registry()  # type: ignore[attr-defined]
 
-  def setup(self, subpath, force=False):
+  def setup(self, subpath):
     """
-    User must call this function once with a path somewhere inside a workspace.
+    User must call this function once with a path somewhere inside a gordion repository.
     """
-    if force:
-      self.path = subpath
-    else:
-      self.path = Workspace.find_root(subpath)
+    # Check if the path is inside a gordion repository
+    repo_root = gordion.utils.get_repository_root(subpath)
+    if not repo_root:
+      raise Exception(f"Path '{subpath}' is not inside a git repository")
+    
+    if not gordion.Repository.is_gordion(repo_root):
+      raise Exception(f"Path '{subpath}' is not inside a gordion repository (no gordion.yaml found)")
+    
+    self.path = Workspace.find_root(subpath)
 
     # Create a sanitized workspace identifier for cache directory
     workspace_id = gordion.Cache.path_to_cache_folder(self.path)
@@ -37,6 +43,9 @@ class Workspace:
       os.makedirs(self.dependencies_path, exist_ok=True)
 
     self.discover_repositories()
+    
+    # Store the root repository
+    self.root_repository = gordion.Repository(repo_root)
 
   @staticmethod
   def find_root(subpath: str) -> str:

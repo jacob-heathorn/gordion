@@ -7,17 +7,15 @@ assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-# Initialize workspace.
+# Create repos directory if it doesn't exist
 if not os.path.exists(REPOS_DIR):
   os.mkdir(REPOS_DIR)
-workspace = gordion.Workspace()
-workspace.setup(subpath=REPOS_DIR, force=True)
 
 
 # =================================================================================================
 # Fixtures
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def repository_a():
   """
   Creates the gordion.Repository interface for gordion_demo_a only once for the lifetime of this
@@ -28,6 +26,10 @@ def repository_a():
 
   # Create the gordion.Repository interface.
   repo = gordion.Repository.ensure(path, url)
+  
+  # Initialize workspace with the repository path
+  workspace = gordion.Workspace()
+  workspace.setup(subpath=path)
 
   yield repo
 
