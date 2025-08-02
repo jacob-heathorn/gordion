@@ -61,8 +61,8 @@ def tree_a(repository_a):
         shutil.move(repo.path, cache_path)
         gordion.Repository(cache_path)
 
-  # Rediscover repositories to update the registry
-  workspace.discover_repositories()
+  # Refresh the tree
+  tree_a = gordion.Tree.find(tree_a.repo.path)
 
   yield tree_a
 
@@ -100,8 +100,8 @@ def tree_a_local(repository_a):
         shutil.move(repo.path, new_path)
         gordion.Repository(new_path)
   
-  # Rediscover repositories to update the registry
-  workspace.discover_repositories()
+  # Refresh the tree
+  tree_a = gordion.Tree.find(tree_a.repo.path)
   
   yield tree_a
 
