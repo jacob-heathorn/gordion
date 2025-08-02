@@ -148,17 +148,10 @@ def test_get_repository_from_cache(tree_a):
   Verifies that get_repository can find repositories in the cache.
   """
   workspace = gordion.Workspace()
-  
+
   # The tree_a fixture should have dependencies in the cache
   # Verify we can find them by name
-  for repo_name in ['gordion_demo_b', 'gordion_demo_c', 'gordion_demo_d']:
-    repo = workspace.get_repository(repo_name)
+  for repo_name in ['gordion_demo_a', 'gordion_demo_b', 'gordion_demo_c', 'gordion_demo_d']:
+    repo = workspace.get_repository_or_throw(repo_name)
     assert repo is not None, f"Could not find {repo_name}"
-    
-    # Check if it's in the cache (dependency)
-    if workspace.is_dependency(repo.path):
-      # Test that get_repository_or_throw also works
-      repo2 = workspace.get_repository_or_throw(repo_name)
-      assert repo2 is not None
-      assert repo2.path == repo.path
-      assert repo2.name == repo_name
+    assert repo.name == repo_name
