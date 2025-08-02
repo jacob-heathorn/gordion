@@ -45,6 +45,37 @@ def get_tag_incoherent_listings(folder, root_listings) -> List[gordion.Tree.List
   return []
 
 
+def is_cache_desynced(workspace: gordion.Workspace, root: gordion.Tree) -> bool:
+  """
+  Check if the cache is out of sync with what's expected.
+  """
+  # Get all expected repositories from the tree
+  expected_listings, _ = root.listings(name=None, url=None)
+  
+  for listing in expected_listings:
+    # Skip the root repository itself
+    if listing.name == root.repo.name:
+      continue
+      
+    repo = workspace.get_repository(listing.name)
+    
+    # Check if repository exists
+    if not repo:
+      return True
+    
+    # Check if it's in the cache (dependency)
+    if workspace.is_dependency(repo.path):
+      # Check if the commit matches
+      try:
+        expected_commit = repo.verify_tag(listing.tag)
+        if repo.handle.head.commit.hexsha != expected_commit.hexsha:
+          return True
+      except:
+        return True
+  
+  return False
+
+
 def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   """
   Returns a status string indicating the status of each repository in the tree, which looks cute in
@@ -53,7 +84,13 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
 
   # Add workspace and root repository folders.
   workspace = gordion.Workspace()
-  folders: List[Folder] = [Folder(workspace.path)]
+  
+  # Check if cache is desynced
+  cache_desynced = is_cache_desynced(workspace, root)
+  
+  # Create workspace folder
+  workspace_folder = Folder(workspace.path)
+  folders: List[Folder] = [workspace_folder]
 
   # Trace the mainline tree.
   not_found_listings = []
@@ -175,4 +212,15 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   if error_header:
     error_header += "\n"
 
-  return error_header + display_folders[0].terminal_status()
+  # Get the workspace folder status
+  workspace_status = display_folders[0].terminal_status()
+  
+  # If cache is desynced, append the message to the first line (workspace folder)
+  if cache_desynced:
+    lines = workspace_status.splitlines()
+    if lines:
+      # Append the red (cache desynced) message to the first line
+      lines[0] += gordion.utils.red("  (out of sync)")
+      workspace_status = "\n".join(lines)
+  
+  return error_header + workspace_status
