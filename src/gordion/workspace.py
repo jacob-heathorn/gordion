@@ -3,6 +3,7 @@ import gordion
 from pathlib import Path
 from typing import Optional, Dict, Tuple
 import shutil
+import re
 
 
 @gordion.utils.singleton
@@ -25,7 +26,17 @@ class Workspace:
       self.path = subpath
     else:
       self.path = Workspace.find_root(subpath)
-    self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
+    
+    # Create a sanitized workspace identifier for cache directory
+    # Replace path separators and special characters with underscores
+    workspace_id = re.sub(r'[^\w\-]', '_', self.path.strip('/'))
+    cache_base = os.path.join(gordion.cache.CACHE_DIR, 'workspaces')
+    self.dependencies_path = os.path.normpath(os.path.join(cache_base, workspace_id))
+    
+    # Create the cache directory if it doesn't exist
+    if not os.path.exists(self.dependencies_path):
+      os.makedirs(self.dependencies_path, exist_ok=True)
+    
     self.discover_repositories()
 
   @staticmethod
@@ -99,18 +110,24 @@ class Workspace:
     """
     gordion.Repository.reset_registry()  # type: ignore[attr-defined]
 
-    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-        full_dirpath = os.path.join(dirpath, dirname)
+    # Discover repositories in both workspace and dependencies cache
+    paths_to_walk = [self.path]
+    if os.path.exists(self.dependencies_path):
+      paths_to_walk.append(self.dependencies_path)
+    
+    for base_path in paths_to_walk:
+      for dirpath, dirnames, _ in os.walk(base_path, topdown=True):
+        # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+        for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+          full_dirpath = os.path.join(dirpath, dirname)
 
-        if gordion.Repository.exists(full_dirpath):
-          # Register it.
-          gordion.Repository(full_dirpath)
+          if gordion.Repository.exists(full_dirpath):
+            # Register it.
+            gordion.Repository(full_dirpath)
 
-          # Remove the current directory's name from dirnames so os.walk will skip its
-          # subdirectories
-          dirnames.remove(dirname)
+            # Remove the current directory's name from dirnames so os.walk will skip its
+            # subdirectories
+            dirnames.remove(dirname)
 
   def delete_empty_parent_folders(self, path):
     """
@@ -173,40 +190,3 @@ class Workspace:
     for path in paths:
       gordion.Repository.safe_delete(path)
 
-  def unify_dependencies(self):
-    """
-    Looks for a .dependencies folder that is below the root, and unifies with the folder at the
-    root.
-    """
-    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-        full_dirpath = os.path.join(dirpath, dirname)
-        if dirname == ".dependencies" and full_dirpath != self.dependencies_path:
-          # Found a dangling .dependencies folder, merge it.
-          print(f"Merging dangling .dependencies: {full_dirpath} ...")
-          self._safe_merge_dangling_dependencies(full_dirpath)
-
-          # Remove the current directory's name from dirnames so os.walk will skip its
-          # subdirectories
-          dirnames.remove(dirname)
-
-  def _safe_merge_dangling_dependencies(self, other_dependencies_path):
-    for dirpath, dirnames, _ in os.walk(other_dependencies_path, topdown=True):
-      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-        full_dirpath = os.path.join(dirpath, dirname)
-        # Move repositories
-        if gordion.Repository.exists(full_dirpath):
-          destination = os.path.join(self.dependencies_path, dirname)
-          gordion.Repository.safe_move(full_dirpath, destination)
-
-          # Remove the current directory's name from dirnames so os.walk will skip its
-          # subdirectories
-          dirnames.remove(dirname)
-
-    if os.listdir(other_dependencies_path):
-      raise gordion.DanglingDependenciesNotEmpty(other_dependencies_path)
-    else:
-      print(f"Deleting empty folder: {other_dependencies_path}")
-      shutil.rmtree(other_dependencies_path)

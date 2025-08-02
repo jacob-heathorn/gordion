@@ -19,10 +19,7 @@ class Tree:
     """
     Updates this repository and it's children.
     """
-    # First check/fix dangling .dependencies folders
     root = self._root()
-    if self is root:
-      self.workspace.unify_dependencies()
 
     # Check for duplicate tag first. We have to do this here because the repo needs to veriy and
     # compare commits.

@@ -7,7 +7,7 @@ from .analogs import Analogs
 from .cache import Cache
 from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
-from .exception import UpdateRepoIsDirtyError, DanglingDependenciesNotEmpty
+from .exception import UpdateRepoIsDirtyError
 from .exception import UpdateSameRepoDifferentTagError, UnsafeRemoveDirty
 from .exception import NotARepositoryError, DanglingGordionRepositoryError
 from .exception import UpdateDifferentNameSameUrlError

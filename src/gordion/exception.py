@@ -161,13 +161,6 @@ class DanglingCommitError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
-class DanglingDependenciesNotEmpty(Exception):
-  def __init__(self, dangling_dependencies_path):
-    self.message = (
-        f"Directory<{dangling_dependencies_path}> is not empty after moving it's repositories. "
-        f"Manually delete it."
-    )
-    super().__init__(self.message)
 
 
 class WrongBranchRepositoryDirty(Exception):
