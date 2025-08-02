@@ -13,11 +13,27 @@ class Repository:
 
   """
 
+  def __new__(cls, path: str) -> 'Repository':
+    """
+    Ensures singleton behavior - returns existing instance if already registered.
+    """
+    normalized_path = os.path.normpath(path)
+    existing = cls.registry().get(normalized_path, None)  # type: ignore[attr-defined]
+    if existing is not None:
+      return existing
+    # Create new instance
+    instance = super().__new__(cls)
+    return instance
+
   def __init__(self, path: str) -> None:
     """
     The constructor is only meant to be called for a repository that already exists on path. If one
     needs to or might need to be created, use the ensure() method.
     """
+    # Skip initialization if already initialized
+    if hasattr(self, 'path'):
+      return
+      
     self.path = os.path.normpath(path)
     self.name = os.path.basename(self.path)
     assert gordion.Repository.exists(path)

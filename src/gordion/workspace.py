@@ -116,7 +116,11 @@ class Workspace:
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
-    gordion.Repository.reset_registry()  # type: ignore[attr-defined]
+    # Track which paths we've seen during discovery
+    discovered_paths = set()
+    
+    # Get current registry to track what needs to be removed
+    current_registry = gordion.Repository.registry().copy()  # type: ignore[attr-defined]
 
     # Discover repositories in both workspace and dependencies cache
     paths_to_walk = [self.path]
@@ -130,12 +134,21 @@ class Workspace:
           full_dirpath = os.path.join(dirpath, dirname)
 
           if gordion.Repository.exists(full_dirpath):
-            # Register it.
-            gordion.Repository(full_dirpath)
+            normalized_path = os.path.normpath(full_dirpath)
+            discovered_paths.add(normalized_path)
+            
+            # Only create new instance if not already in registry
+            if normalized_path not in current_registry:
+              gordion.Repository(full_dirpath)
 
             # Remove the current directory's name from dirnames so os.walk will skip its
             # subdirectories
             dirnames.remove(dirname)
+    
+    # Remove repositories that no longer exist on disk
+    for path in current_registry:
+      if path not in discovered_paths:
+        gordion.Repository.unregister(path)  # type: ignore[attr-defined]
 
   def delete_empty_parent_folders(self, path):
     """
