@@ -31,6 +31,9 @@ class Tree:
 
     if self is root:
       self.workspace.trim_repositories()
+      # Trim orphaned workspace caches
+      cache = gordion.Cache()
+      cache.trim()
 
   def _update_children(self, branch_name: str, force: bool):
     """

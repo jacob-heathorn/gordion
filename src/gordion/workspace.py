@@ -28,8 +28,7 @@ class Workspace:
       self.path = Workspace.find_root(subpath)
 
     # Create a sanitized workspace identifier for cache directory
-    # Replace path separators and special characters with underscores
-    workspace_id = re.sub(r'[^\w\-]', '_', self.path.strip('/'))
+    workspace_id = gordion.Cache.path_to_cache_folder(self.path)
     cache_base = os.path.join(gordion.cache.CACHE_DIR, 'workspaces')
     self.dependencies_path = os.path.normpath(os.path.join(cache_base, workspace_id))
 
