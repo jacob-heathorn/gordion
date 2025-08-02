@@ -422,3 +422,5 @@ def test_cache_out_of_sync_wrong_commit(tree_a):
   lines = status.splitlines()
   assert bold_blue('repos') in lines[0]
   assert red("  (out of sync)") in lines[0]
+
+
