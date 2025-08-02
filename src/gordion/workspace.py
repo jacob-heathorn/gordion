@@ -26,17 +26,17 @@ class Workspace:
       self.path = subpath
     else:
       self.path = Workspace.find_root(subpath)
-    
+
     # Create a sanitized workspace identifier for cache directory
     # Replace path separators and special characters with underscores
     workspace_id = re.sub(r'[^\w\-]', '_', self.path.strip('/'))
     cache_base = os.path.join(gordion.cache.CACHE_DIR, 'workspaces')
     self.dependencies_path = os.path.normpath(os.path.join(cache_base, workspace_id))
-    
+
     # Create the cache directory if it doesn't exist
     if not os.path.exists(self.dependencies_path):
       os.makedirs(self.dependencies_path, exist_ok=True)
-    
+
     self.discover_repositories()
 
   @staticmethod
@@ -114,7 +114,7 @@ class Workspace:
     paths_to_walk = [self.path]
     if os.path.exists(self.dependencies_path):
       paths_to_walk.append(self.dependencies_path)
-    
+
     for base_path in paths_to_walk:
       for dirpath, dirnames, _ in os.walk(base_path, topdown=True):
         # Create a copy of dirnames for iteration to avoid modifying the list while iterating
@@ -189,4 +189,3 @@ class Workspace:
 
     for path in paths:
       gordion.Repository.safe_delete(path)
-

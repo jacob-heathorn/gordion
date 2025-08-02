@@ -90,9 +90,10 @@ def test_unsafe_remove_dirty(tree_a):
     pass
 
   assert repo_c.handle.is_dirty(untracked_files=True)
-  
+
   with pytest.raises(gordion.UnsafeRemoveDirty) as context:
-    tree_a.update('55f619c7af1cdc3ed13487c3aab050b492e655eb', 'test_unsafe_remove_dirty', force=True)
+    tree_a.update('55f619c7af1cdc3ed13487c3aab050b492e655eb', 'test_unsafe_remove_dirty',
+                  force=True)
 
   expected = gordion.UnsafeRemoveDirty(repo_c.path)
   assert str(context.value) == str(expected)

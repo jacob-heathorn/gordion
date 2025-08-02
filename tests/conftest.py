@@ -1,7 +1,6 @@
 import os
 import gordion
 import pytest
-import shutil
 
 assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
 
@@ -47,10 +46,10 @@ def tree_a(repository_a):
   # Set the target branch/commit.
   tree_a = gordion.Tree(repository_a)
   tree_a.update(tag, branch_name, force=True)
-  
+
   # Ensure dependencies are in cache, not in workspace
   workspace = gordion.Workspace()
-  
+
   # Move reposities to the cache.
   for name in ['gordion_demo_b', 'gordion_demo_c', 'gordion_demo_d']:
     repo = workspace.get_repository(name)
@@ -83,10 +82,10 @@ def tree_a_local(repository_a):
   # Set the target branch/commit.
   tree_a = gordion.Tree(repository_a)
   tree_a.update(tag, branch_name, force=True)
-  
+
   # Move dependencies from cache to local workspace root
   workspace = gordion.Workspace()
-  
+
   # Move each dependency repository from cache to workspace root
   for name in ['gordion_demo_b', 'gordion_demo_c', 'gordion_demo_d']:
     repo = workspace.get_repository(name)
@@ -94,7 +93,7 @@ def tree_a_local(repository_a):
       new_path = os.path.join(REPOS_DIR, name)
       if not os.path.exists(new_path):
         gordion.Repository.safe_move(repo.path, new_path)
-  
+
   yield tree_a
 
   # Cleanup.

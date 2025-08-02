@@ -141,5 +141,3 @@ def test_trim_repositories_not_listed(tree_a):
   assert gordion.Repository.exists(not_listed_path)
   gordion.Workspace().trim_repositories()
   assert not gordion.Repository.exists(not_listed_path)
-
-

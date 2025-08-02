@@ -12,7 +12,7 @@ def set_parent(folder, folders):
       f.add_child(folder)
 
 
-def find_folder_by_path(folders, path) -> Optional[Folder]:
+def find_folder_by_path(folders: List[Folder], path: str) -> Optional[Folder]:
   for folder in folders:
     if folder.path == path:
       return folder
@@ -53,7 +53,7 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
 
   # Add workspace and root repository folders.
   workspace = gordion.Workspace()
-  folders = [Folder(workspace.path)]
+  folders: List[Folder] = [Folder(workspace.path)]
 
   # Trace the mainline tree.
   not_found_listings = []
@@ -142,15 +142,15 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
       error_header += gordion.utils.red(listing_str + "\n")
 
   # Filter out folders that are in the dependencies cache
-  display_folders = []
-  for folder in folders:
+  display_folders: List[Folder] = []
+  for folder in folders:  # type: ignore[assignment]
     # Only include folders that are within the workspace path
     if folder.path.startswith(workspace.path):
       display_folders.append(folder)
-  
+
   # Add intermediary folders for display folders only
   intermediary_folders: List[Folder] = []
-  workspace_folder = display_folders[0]
+  workspace_folder: Folder = display_folders[0]
   for folder in display_folders[1:]:  # type: ignore[assignment]
     relative_path = os.path.relpath(folder.path, workspace_folder.path)
     relative_path_parts = relative_path.strip(os.sep).split(os.sep)

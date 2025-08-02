@@ -161,8 +161,6 @@ class DanglingCommitError(UpdateError):
     super().__init__(target_path, reason, suggestion)
 
 
-
-
 class WrongBranchRepositoryDirty(Exception):
   def __init__(self, expected_branch: str, wrong_branch_repos: List[gordion.Repository]):
 
