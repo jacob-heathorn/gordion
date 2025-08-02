@@ -58,12 +58,7 @@ def tree_a(repository_a):
       # Repository is in workspace, move it back to cache
       cache_path = os.path.join(workspace.dependencies_path, name)
       if not os.path.exists(cache_path):
-        shutil.move(repo.path, cache_path)
-        gordion.Repository(cache_path)
-
-  # Refresh the tree
-  workspace.discover_repositories()
-  tree_a = gordion.Tree.find(tree_a.repo.path)
+        gordion.Repository.safe_move(repo.path, cache_path)
 
   yield tree_a
 
@@ -98,11 +93,7 @@ def tree_a_local(repository_a):
     if repo and workspace.is_dependency(repo.path):
       new_path = os.path.join(REPOS_DIR, name)
       if not os.path.exists(new_path):
-        shutil.move(repo.path, new_path)
-  
-  # Refresh the tree
-  workspace.discover_repositories()
-  tree_a = gordion.Tree.find(tree_a.repo.path)
+        gordion.Repository.safe_move(repo.path, new_path)
   
   yield tree_a
 
