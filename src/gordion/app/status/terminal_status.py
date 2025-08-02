@@ -141,10 +141,17 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
       listing_str = gordion.Tree.format_listing_tag(listing)
       error_header += gordion.utils.red(listing_str + "\n")
 
-  # Add intermediary folders.
+  # Filter out folders that are in the dependencies cache
+  display_folders = []
+  for folder in folders:
+    # Only include folders that are within the workspace path
+    if folder.path.startswith(workspace.path):
+      display_folders.append(folder)
+  
+  # Add intermediary folders for display folders only
   intermediary_folders: List[Folder] = []
-  workspace_folder = folders[0]
-  for folder in folders[1:]:  # type: ignore[assignment]
+  workspace_folder = display_folders[0]
+  for folder in display_folders[1:]:  # type: ignore[assignment]
     relative_path = os.path.relpath(folder.path, workspace_folder.path)
     relative_path_parts = relative_path.strip(os.sep).split(os.sep)
     current_path = workspace_folder.path
@@ -153,19 +160,19 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
     for part in relative_path_parts:
       current_path = os.path.join(current_path, part)
       # Add new folder if it does not exist
-      if not any(folder.path == current_path for folder in folders):
+      if not any(folder.path == current_path for folder in display_folders):
         if not any(folder.path == current_path for folder in intermediary_folders):
           intermediary_folders.append(Folder(current_path))
-  folders.extend(intermediary_folders)
+  display_folders.extend(intermediary_folders)
 
   # 2) Alphabetize the list based on path.
-  folders = sorted(folders, key=lambda folder: folder.path)
+  display_folders = sorted(display_folders, key=lambda folder: folder.path)
 
   # 3) Set the heirarchy of folders.
-  for folder in folders[1:]:  # type: ignore[assignment]
-    set_parent(folder, folders)
+  for folder in display_folders[1:]:  # type: ignore[assignment]
+    set_parent(folder, display_folders)
 
   if error_header:
     error_header += "\n"
 
-  return error_header + folders[0].terminal_status()
+  return error_header + display_folders[0].terminal_status()

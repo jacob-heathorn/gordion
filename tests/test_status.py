@@ -13,7 +13,7 @@ import shutil
 # Fixtures
 
 @pytest.fixture
-def tree_a(tree_a):
+def tree_a(tree_a_local):
   """
   This puts tree_a session object back into a well-known state for each test case.
   """
@@ -24,17 +24,17 @@ def tree_a(tree_a):
   branch_name = 'test_status'
 
   # Set the target branch/commit.
-  tree_a.update(tag, branch_name, force=True)
+  tree_a_local.update(tag, branch_name, force=True)
 
-  yield tree_a
+  yield tree_a_local
 
 
 @pytest.fixture
 def tmp1():
   """
-  Creates a tmp1 folder in the REPOS_DIR/.dependencies and then deletes it.
+  Creates a tmp1 folder in the REPOS_DIR and then deletes it.
   """
-  tmp1 = os.path.join(REPOS_DIR, '.dependencies', 'tmp1')
+  tmp1 = os.path.join(REPOS_DIR, 'tmp1')
   os.mkdir(tmp1)
 
   yield tmp1
@@ -48,11 +48,10 @@ def tmp1():
 
 NOMINAL_STATUS = \
     f"""{bold_blue('repos')}
-├──{bold_blue('.dependencies')}
-│   ├──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')}
-│   ├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
-│   └──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}
-└──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}"""
+├──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}
+├──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')}
+├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
+└──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}"""
 
 
 def test_nominal_status(tree_a):
@@ -94,7 +93,7 @@ def test_child_mismatch(tree_a):
   # Verify.
   b_commit = repo_b.handle.head.commit.hexsha
   expected = NOMINAL_STATUS.replace(green(f':{b_commit[0:7]}'),
-                                    green(f':{b_commit[0:7]}') + f"\n│   │   {red('M')} gordion.yaml\n│   │  ")
+                                    green(f':{b_commit[0:7]}') + f"\n│   {red('M')} gordion.yaml\n│  ")
   d_commit = repo_d.handle.head.commit.hexsha
   expected = expected.replace(green(f':{d_commit[0:7]}'),
                               red(f':{d_commit[0:7]}') + " " + red('(TAG INCOHERENCE)'))
@@ -127,7 +126,7 @@ def test_conflicted(tree_a):
   c_commit = repo_c.handle.head.commit.hexsha
   expected = NOMINAL_STATUS.replace(green(f':{c_commit[0:7]}'),
                                     green(f':{c_commit[0:7]}') +
-                                    yellow("-dirty") + f"\n│   │   {red('M')} gordion.yaml\n│   │  ")
+                                    yellow("-dirty") + f"\n│   {red('M')} gordion.yaml\n│  ")
   # demoB is NAME_CONFLICTED. There are two listings that have demoB's URL, but they have different
   # names.
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
@@ -189,12 +188,11 @@ def test_duplicate(tree_a, tmp1):
 # flake8: noqa
 EXPECTED_WRONG_PATH_STATUS = \
     f"""{bold_blue('repos')}
-├──{bold_blue('.dependencies')}
-│   ├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
-│   ├──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}
-│   └──{bold_blue('tmp1')}
-│       └──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')} {red("(WRONG PATH)")}
-└──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}"""
+├──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}
+├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
+├──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}
+└──{bold_blue('tmp1')}
+    └──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')}"""
 
 
 def test_wrong_path(tree_a, tmp1):
