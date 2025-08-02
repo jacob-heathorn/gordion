@@ -51,18 +51,18 @@ def is_cache_desynced(workspace: gordion.Workspace, root: gordion.Tree) -> bool:
   """
   # Get all expected repositories from the tree
   expected_listings, _ = root.listings(name=None, url=None)
-  
+
   for listing in expected_listings:
     # Skip the root repository itself
     if listing.name == root.repo.name:
       continue
-      
+
     repo = workspace.get_repository(listing.name)
-    
+
     # Check if repository exists
     if not repo:
       return True
-    
+
     # Check if it's in the cache (dependency)
     if workspace.is_dependency(repo.path):
       # Check if the commit matches
@@ -70,9 +70,9 @@ def is_cache_desynced(workspace: gordion.Workspace, root: gordion.Tree) -> bool:
         expected_commit = repo.verify_tag(listing.tag)
         if repo.handle.head.commit.hexsha != expected_commit.hexsha:
           return True
-      except:
+      except Exception:
         return True
-  
+
   return False
 
 
@@ -84,10 +84,10 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
 
   # Add workspace and root repository folders.
   workspace = gordion.Workspace()
-  
+
   # Check if cache is desynced
   cache_desynced = is_cache_desynced(workspace, root)
-  
+
   # Create workspace folder
   workspace_folder = Folder(workspace.path)
   folders: List[Folder] = [workspace_folder]
@@ -187,11 +187,11 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
 
   # Add intermediary folders for display folders only
   intermediary_folders: List[Folder] = []
-  workspace_folder: Folder = display_folders[0]
+  display_workspace_folder: Folder = display_folders[0]
   for folder in display_folders[1:]:  # type: ignore[assignment]
-    relative_path = os.path.relpath(folder.path, workspace_folder.path)
+    relative_path = os.path.relpath(folder.path, display_workspace_folder.path)
     relative_path_parts = relative_path.strip(os.sep).split(os.sep)
-    current_path = workspace_folder.path
+    current_path = display_workspace_folder.path
 
     # Loop over each part of the path
     for part in relative_path_parts:
@@ -214,7 +214,7 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
 
   # Get the workspace folder status
   workspace_status = display_folders[0].terminal_status()
-  
+
   # If cache is desynced, append the message to the first line (workspace folder)
   if cache_desynced:
     lines = workspace_status.splitlines()
@@ -222,5 +222,5 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
       # Append the red (cache desynced) message to the first line
       lines[0] += gordion.utils.red("  (out of sync)")
       workspace_status = "\n".join(lines)
-  
+
   return error_header + workspace_status
