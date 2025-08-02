@@ -62,6 +62,7 @@ def tree_a(repository_a):
         gordion.Repository(cache_path)
 
   # Refresh the tree
+  workspace.discover_repositories()
   tree_a = gordion.Tree.find(tree_a.repo.path)
 
   yield tree_a
@@ -98,9 +99,9 @@ def tree_a_local(repository_a):
       new_path = os.path.join(REPOS_DIR, name)
       if not os.path.exists(new_path):
         shutil.move(repo.path, new_path)
-        gordion.Repository(new_path)
   
   # Refresh the tree
+  workspace.discover_repositories()
   tree_a = gordion.Tree.find(tree_a.repo.path)
   
   yield tree_a
