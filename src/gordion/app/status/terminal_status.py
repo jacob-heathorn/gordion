@@ -228,7 +228,8 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   # Get the workspace folder status
   workspace_status = display_folders[0].terminal_status()
 
-  # If cache is desynced or there are dirty cached repositories, append the message to the first line (workspace folder)
+  # If cache is desynced or there are dirty cached repositories, append the message to the first
+  # line (workspace folder)
   if cache_desynced or len(dirty_cached_repos) > 0:
     lines = workspace_status.splitlines()
     if lines:

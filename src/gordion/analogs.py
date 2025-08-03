@@ -134,19 +134,19 @@ class Analogs:
     """
     workspace = gordion.Workspace()
     cached_repos: Dict[str, gordion.Repository] = {}
-    
+
     # For each node with staged changes...
     for _, node in self.nodes.items():
       if node.repo.has_staged_changes():
         # Check if the node itself is cached
         if workspace.is_dependency(node.repo.path):
           cached_repos[node.repo.path] = node.repo
-        
+
         # Check all ancestors for cached repositories
         for _, ancestor in Analogs.lineage(node).items():
           if workspace.is_dependency(ancestor.repo.path):
             cached_repos[ancestor.repo.path] = ancestor.repo
-    
+
     if len(cached_repos) > 0:
       raise gordion.exception.CommitCachedRepositoriesError(list(cached_repos.values()))
 
