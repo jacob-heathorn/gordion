@@ -92,6 +92,11 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   workspace_folder = Folder(workspace.path)
   folders: List[Folder] = [workspace_folder]
 
+  # If verbose mode, also create the dependencies cache folder
+  if verbose and os.path.exists(workspace.dependencies_path):
+    cache_folder = Folder(workspace.dependencies_path)
+    folders.append(cache_folder)
+
   # Trace the mainline tree.
   not_found_listings = []
   all_tag_incoherent_listings: List[gordion.Tree.Listing] = []
@@ -191,28 +196,52 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
       listing_str = gordion.Tree.format_listing_tag(listing)
       error_header += gordion.utils.red(listing_str + "\n")
 
-  # Filter out folders that are in the dependencies cache
+  # Filter out folders that are in the dependencies cache (unless verbose mode)
   display_folders: List[Folder] = []
-  for folder in folders:  # type: ignore[assignment]
-    # Only include folders that are within the workspace path
-    if folder.path.startswith(workspace.path):
-      display_folders.append(folder)
+  if verbose:
+    # In verbose mode, include all folders (including cache dependencies)
+    display_folders = folders.copy()
+  else:
+    # Normal mode: only include folders within the workspace path
+    for folder in folders:  # type: ignore[assignment]
+      if folder.path.startswith(workspace.path):
+        display_folders.append(folder)
 
   # Add intermediary folders for display folders only
   intermediary_folders: List[Folder] = []
-  display_workspace_folder: Folder = display_folders[0]
-  for folder in display_folders[1:]:  # type: ignore[assignment]
-    relative_path = os.path.relpath(folder.path, display_workspace_folder.path)
-    relative_path_parts = relative_path.strip(os.sep).split(os.sep)
-    current_path = display_workspace_folder.path
+  # Find root folders (folders without a parent in the list)
+  root_folders = []
+  for folder in display_folders:
+    is_root = True
+    for other in display_folders:
+      if folder != other and folder.path.startswith(other.path + os.sep):
+        is_root = False
+        break
+    if is_root:
+      root_folders.append(folder)
 
-    # Loop over each part of the path
-    for part in relative_path_parts:
-      current_path = os.path.join(current_path, part)
-      # Add new folder if it does not exist
-      if not any(folder.path == current_path for folder in display_folders):
-        if not any(folder.path == current_path for folder in intermediary_folders):
-          intermediary_folders.append(Folder(current_path))
+  # For each non-root folder, add intermediary folders between it and its root
+  for folder in display_folders:  # type: ignore[assignment]
+    if folder not in root_folders:
+      # Find the root folder for this folder
+      root_folder = None
+      for root in root_folders:
+        if folder.path.startswith(root.path + os.sep):
+          root_folder = root
+          break
+
+      if root_folder:
+        relative_path = os.path.relpath(folder.path, root_folder.path)
+        relative_path_parts = relative_path.strip(os.sep).split(os.sep)
+        current_path = root_folder.path
+
+        # Loop over each part of the path
+        for part in relative_path_parts:
+          current_path = os.path.join(current_path, part)
+          # Add new folder if it does not exist
+          if not any(f.path == current_path for f in display_folders):
+            if not any(f.path == current_path for f in intermediary_folders):
+              intermediary_folders.append(Folder(current_path))
   display_folders.extend(intermediary_folders)
 
   # 2) Alphabetize the list based on path.
@@ -225,16 +254,39 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   if error_header:
     error_header += "\n"
 
-  # Get the workspace folder status
-  workspace_status = display_folders[0].terminal_status()
+  # Build the complete status from all root folders
+  status_parts = []
 
-  # If cache is desynced or there are dirty cached repositories, append the message to the first
-  # line (workspace folder)
-  if cache_desynced or len(dirty_cached_repos) > 0:
-    lines = workspace_status.splitlines()
-    if lines:
-      # Append the red (out of sync) message to the first line
-      lines[0] += gordion.utils.red("  (out of sync)")
-      workspace_status = "\n".join(lines)
+  # In verbose mode, show cache folder first if it exists
+  if verbose:
+    for folder in display_folders:
+      if folder.path == workspace.dependencies_path:
+        status_parts.append(folder.terminal_status())
+        break
 
-  return error_header + workspace_status
+  # Find and show the workspace folder
+  workspace_folder_found = False
+  for folder in display_folders:
+    if folder.path == workspace.path:
+      workspace_status = folder.terminal_status()
+
+      # If cache is desynced or there are dirty cached repositories, append the message
+      if cache_desynced or len(dirty_cached_repos) > 0:
+        lines = workspace_status.splitlines()
+        if lines:
+          # Append the red (out of sync) message to the first line
+          lines[0] += gordion.utils.red("  (out of sync)")
+          workspace_status = "\n".join(lines)
+
+      status_parts.append(workspace_status)
+      workspace_folder_found = True
+      break
+
+  # If workspace folder not found, fall back to first folder
+  if not workspace_folder_found and display_folders:
+    status_parts.append(display_folders[0].terminal_status())
+
+  # Join all parts with newlines
+  full_status = "\n".join(status_parts) if status_parts else ""
+
+  return error_header + full_status
