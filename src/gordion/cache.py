@@ -20,26 +20,29 @@ class Cache:
   @staticmethod
   def path_to_cache_folder(path: str) -> str:
     """
-    Converts a filesystem path to a cache folder name using URL-safe encoding.
+    Converts a filesystem path to a cache folder name using base64 encoding.
     """
-    import urllib.parse
+    import base64
     # Convert to absolute path first
     abs_path = os.path.abspath(path)
-    # Use URL encoding which is reversible and filesystem-safe
-    # Replace % with _ to avoid issues with some filesystems
-    encoded = urllib.parse.quote(abs_path, safe='')
-    return encoded.replace('%', '_')
+    # Use base64 encoding which is reversible and filesystem-safe
+    # Replace / with _ to make it filesystem safe
+    encoded = base64.urlsafe_b64encode(abs_path.encode('utf-8')).decode('ascii')
+    return encoded.rstrip('=')  # Remove padding
 
   @staticmethod
   def cache_folder_to_path(cache_folder: str) -> str:
     """
     Converts a cache folder name back to the original filesystem path.
     """
-    import urllib.parse
-    # Restore % characters
-    encoded = cache_folder.replace('_', '%')
-    # Decode from URL encoding
-    return urllib.parse.unquote(encoded)
+    import base64
+    # Add back padding if needed
+    padding = 4 - (len(cache_folder) % 4)
+    if padding != 4:
+      cache_folder += '=' * padding
+    # Decode from base64
+    decoded = base64.urlsafe_b64decode(cache_folder.encode('ascii'))
+    return decoded.decode('utf-8')
 
   def clean(self):
     shutil.rmtree(CACHE_DIR)
@@ -81,23 +84,11 @@ class Cache:
         continue
 
       try:
-        # Convert cache folder name back to original workspace path
-        workspace_path = Cache.cache_folder_to_path(cache_folder_name)
+        # Convert cache folder name back to original repository path
+        repository_path = Cache.cache_folder_to_path(cache_folder_name)
 
-        # Check if the workspace path exists and contains a gordion repository
-        workspace_has_gordion_repo = False
-        if os.path.exists(workspace_path) and os.path.isdir(workspace_path):
-          # Look for any subdirectory with gordion.yaml
-          for item in os.listdir(workspace_path):
-            item_path = os.path.join(workspace_path, item)
-            if os.path.isdir(item_path):
-              gordion_yaml = os.path.join(item_path, 'gordion.yaml')
-              if os.path.exists(gordion_yaml) and os.path.isfile(gordion_yaml):
-                workspace_has_gordion_repo = True
-                break
-
-        # If workspace doesn't exist or has no gordion repository, remove the cache
-        if not workspace_has_gordion_repo:
+        # Check if the repository path exists and is a gordion repository
+        if not os.path.exists(repository_path) or not gordion.Repository.is_gordion(repository_path):
           print(f"Removing orphaned workspace cache: {workspace_cache_path}")
           shutil.rmtree(workspace_cache_path)
       except Exception as e:

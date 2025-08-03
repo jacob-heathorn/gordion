@@ -33,19 +33,19 @@ class Workspace:
       )
     self.path = Workspace.find_root(subpath)
 
-    # Create a sanitized workspace identifier for cache directory
-    workspace_id = gordion.Cache.path_to_cache_folder(self.path)
+    # Store the root repository first
+    self.root_repository = gordion.Repository(repo_root)
+
+    # Create a sanitized identifier for cache directory based on root repository
+    repository_id = gordion.Cache.path_to_cache_folder(self.root_repository.path)
     cache_base = os.path.join(gordion.cache.CACHE_DIR, 'workspaces')
-    self.dependencies_path = os.path.normpath(os.path.join(cache_base, workspace_id))
+    self.dependencies_path = os.path.normpath(os.path.join(cache_base, repository_id))
 
     # Create the cache directory if it doesn't exist
     if not os.path.exists(self.dependencies_path):
       os.makedirs(self.dependencies_path, exist_ok=True)
 
     self.discover_repositories()
-
-    # Store the root repository
-    self.root_repository = gordion.Repository(repo_root)
 
   @staticmethod
   def find_root(subpath: str) -> str:
