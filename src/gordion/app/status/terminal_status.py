@@ -76,10 +76,15 @@ def is_cache_desynced(workspace: gordion.Workspace, root: gordion.Tree) -> bool:
   return False
 
 
-def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
+def terminal_status(root: gordion.Tree, verbose: bool = False, show_cache: bool = False) -> str:
   """
   Returns a status string indicating the status of each repository in the tree, which looks cute in
   a terminal.
+
+  Args:
+    root: The root tree to display status for
+    verbose: Whether to show verbose output (git status for each repo)
+    show_cache: Whether to show the cache dependencies directory
   """
 
   # Add workspace and root repository folders.
@@ -92,8 +97,8 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   workspace_folder = Folder(workspace.path)
   folders: List[Folder] = [workspace_folder]
 
-  # If verbose mode, also create the dependencies cache folder
-  if verbose and os.path.exists(workspace.dependencies_path):
+  # If show_cache is enabled, also create the dependencies cache folder
+  if show_cache and os.path.exists(workspace.dependencies_path):
     cache_folder = Folder(workspace.dependencies_path)
     folders.append(cache_folder)
 
@@ -196,10 +201,10 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
       listing_str = gordion.Tree.format_listing_tag(listing)
       error_header += gordion.utils.red(listing_str + "\n")
 
-  # Filter out folders that are in the dependencies cache (unless verbose mode)
+  # Filter out folders that are in the dependencies cache (unless show_cache is enabled)
   display_folders: List[Folder] = []
-  if verbose:
-    # In verbose mode, include all folders (including cache dependencies)
+  if show_cache:
+    # When show_cache is enabled, include all folders (including cache dependencies)
     display_folders = folders.copy()
   else:
     # Normal mode: only include folders within the workspace path
@@ -211,9 +216,9 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   intermediary_folders: List[Folder] = []
   # Find root folders (folders without a parent in the list)
   root_folders = []
-  for folder in display_folders:
+  for folder in display_folders:  # type: ignore[assignment]
     is_root = True
-    for other in display_folders:
+    for other in display_folders:  # type: ignore[assignment]
       if folder != other and folder.path.startswith(other.path + os.sep):
         is_root = False
         break
@@ -225,15 +230,15 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
     if folder not in root_folders:
       # Find the root folder for this folder
       root_folder = None
-      for root in root_folders:
-        if folder.path.startswith(root.path + os.sep):
+      for root in root_folders:  # type: ignore[assignment]
+        if folder.path.startswith(root.path + os.sep):  # type: ignore[attr-defined]
           root_folder = root
           break
 
       if root_folder:
-        relative_path = os.path.relpath(folder.path, root_folder.path)
+        relative_path = os.path.relpath(folder.path, root_folder.path)  # type: ignore[attr-defined]
         relative_path_parts = relative_path.strip(os.sep).split(os.sep)
-        current_path = root_folder.path
+        current_path = root_folder.path  # type: ignore[attr-defined]
 
         # Loop over each part of the path
         for part in relative_path_parts:
@@ -257,16 +262,16 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   # Build the complete status from all root folders
   status_parts = []
 
-  # In verbose mode, show cache folder first if it exists
-  if verbose:
-    for folder in display_folders:
+  # If show_cache is enabled, show cache folder first if it exists
+  if show_cache:
+    for folder in display_folders:  # type: ignore[assignment]
       if folder.path == workspace.dependencies_path:
         status_parts.append(folder.terminal_status())
         break
 
   # Find and show the workspace folder
   workspace_folder_found = False
-  for folder in display_folders:
+  for folder in display_folders:  # type: ignore[assignment]
     if folder.path == workspace.path:
       workspace_status = folder.terminal_status()
 

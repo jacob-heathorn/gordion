@@ -457,3 +457,35 @@ def test_dirty_cached_repository(tree_a):
   os.remove(test_file)
 
 
+def test_status_show_cache_flag(tree_a):
+  """
+  Verifies that the --cache (-c) flag shows the dependencies cache directory.
+  """
+  workspace = gordion.Workspace()
+  
+  # Regular status (without cache flag)
+  regular_status = gordion.app.status.terminal_status(tree_a, verbose=False, show_cache=False)
+  
+  # Status with cache flag
+  cache_status = gordion.app.status.terminal_status(tree_a, verbose=False, show_cache=True)
+  
+  # The cache status should be longer (includes cache directory)
+  assert len(cache_status) > len(regular_status)
+  
+  # The cache status should contain the encoded cache directory name
+  # The cache directory appears as a base64 encoded name in the output
+  import base64
+  encoded_name = base64.b64encode(workspace.path.encode()).decode().replace('/', '')
+  assert encoded_name in cache_status
+  
+  # The regular status should NOT contain the encoded cache directory
+  assert encoded_name not in regular_status
+  
+  # Verify cached repositories appear when cache flag is set
+  repo_b = workspace.get_repository('gordion_demo_b')
+  if workspace.is_dependency(repo_b.path):
+    assert repo_b.name in cache_status
+    # In regular status, cached repos should not appear
+    assert repo_b.path not in regular_status
+
+

@@ -32,6 +32,8 @@ def main(argv=None):
   subparsers = parser.add_subparsers(dest='command', help='Git analog commands')
   parser_status = subparsers.add_parser('status', help='Show the gordion status')
   parser_status.add_argument('-v', '--verbose', action='store_true', help='verbose')
+  parser_status.add_argument('-c', '--cache', action='store_true',
+                             help='show cache dependencies directory')
 
   # Clean parser
   parser_clean = subparsers.add_parser('clean', help='Git clean in all repositories')
@@ -121,7 +123,7 @@ def main(argv=None):
     # Status
     if args.command == 'status':
       root = gordion.Tree.find(os.getcwd())
-      print(gordion.app.status.terminal_status(root, args.verbose))
+      print(gordion.app.status.terminal_status(root, args.verbose, args.cache))
 
     # Clean
     if args.command == 'clean':
