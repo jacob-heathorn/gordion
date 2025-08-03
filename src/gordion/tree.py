@@ -21,6 +21,17 @@ class Tree:
     """
     root = self._root()
 
+    # Clean dirty cached repositories before updating (only at root level)
+    if self is root:
+      workspace = gordion.Workspace()
+      for _, repo in workspace.repos().items():
+        if workspace.is_dependency(repo.path) and repo.handle.is_dirty(untracked_files=True):
+          print(f"Cleaning dirty cached repository: {repo.path}")
+          # Reset any staged or modified files
+          repo.handle.git.reset('--hard', 'HEAD')
+          # Remove any untracked files
+          repo.handle.git.clean('-fd')
+
     # Check for duplicate tag first. We have to do this here because the repo needs to veriy and
     # compare commits.
     root._check_same_repo_different_tag(self.repo)
