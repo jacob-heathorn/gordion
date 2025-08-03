@@ -150,8 +150,9 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   # Dirty cached repositories header.
   if len(dirty_cached_repos) > 0:
     error_header += gordion.utils.bold_red("\nDirty Cached Repositories:\n")
+    error_header += gordion.utils.red("(Changes not allowed in cached repositories!)\n")
     for repo in dirty_cached_repos:
-      error_header += gordion.utils.red(f"* {repo.path} - Changes not allowed in cached repositories!\n")
+      error_header += gordion.utils.red(f"* {repo.path}\n")
 
   # NOT FOUND. List all repositories that were not found by the root trace.
   if len(not_found_listings) > 0:

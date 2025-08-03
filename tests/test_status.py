@@ -438,7 +438,8 @@ def test_dirty_cached_repository(tree_a):
   
   # Verify the error header and message are shown
   assert bold_red("\nDirty Cached Repositories:\n") in status
-  assert red(f"* {repo_b.path} - Changes not allowed in cached repositories!\n") in status
+  assert red("(Changes not allowed in cached repositories!)\n") in status
+  assert red(f"* {repo_b.path}\n") in status
   
   # Verify (out of sync) appears next to the workspace folder
   assert red("  (out of sync)") in status
