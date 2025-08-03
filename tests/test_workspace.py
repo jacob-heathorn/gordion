@@ -5,7 +5,6 @@ import gordion
 import pytest
 from conftest import REPOS_DIR
 import shutil
-import git
 
 
 # NOTE: We assume this gordion source code repository is cloned without another gordion repostory in
@@ -26,7 +25,7 @@ def tmp1():
 
   yield tmp1
 
-  shutil.rmtree(tmp1, ignore_errors=True)
+  shutil.rmtree(tmp1)
   gordion.Workspace().discover_repositories()
 
 
@@ -36,13 +35,17 @@ def mock_dependencies():
   Creates a .dependencies folder in the REPOS_DIR and then deletes it.
   """
   mock_dependencies = gordion.Workspace().dependencies_path
-  shutil.rmtree(mock_dependencies, ignore_errors=True)
-  os.mkdir(mock_dependencies)
+  if os.path.exists(mock_dependencies):
+    shutil.rmtree(mock_dependencies)
+    gordion.Workspace().discover_repositories()
+  
+  os.makedirs(mock_dependencies)
 
   yield mock_dependencies
 
-  shutil.rmtree(mock_dependencies, ignore_errors=True)
-  gordion.Workspace().discover_repositories()
+  if os.path.exists(mock_dependencies):
+    shutil.rmtree(mock_dependencies)
+    gordion.Workspace().discover_repositories()
 
 
 # =================================================================================================
@@ -110,18 +113,9 @@ def test_trim_repositories_duplicate(repository_a, mock_dependencies):
   If a dependency is a duplicate of a working, it is trimmed.
   """
   duplicate_path = os.path.join(mock_dependencies, repository_a.name)
-  # Use git clone to create a proper duplicate repository
-  repository_a.handle.git.clone(repository_a.path, duplicate_path)
-  
-  # Fix the remote URL to match the original
-  dup_handle = git.Repo(duplicate_path)
-  dup_handle.remotes.origin.set_url(repository_a.url)
-  
-  dup_repo = gordion.Repository(duplicate_path)
+  # Use Repository.clone to create a proper duplicate repository
+  gordion.Repository.clone(duplicate_path, repository_a.url)
   assert gordion.Repository.exists(duplicate_path)
-  
-  # Rediscover repositories to ensure the duplicate is found
-  gordion.Workspace().discover_repositories()
   
   gordion.Workspace().trim_repositories()
   assert not gordion.Repository.exists(duplicate_path)
