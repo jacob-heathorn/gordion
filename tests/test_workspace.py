@@ -38,7 +38,7 @@ def mock_dependencies():
   if os.path.exists(mock_dependencies):
     shutil.rmtree(mock_dependencies)
     gordion.Workspace().discover_repositories()
-  
+
   os.makedirs(mock_dependencies)
 
   yield mock_dependencies
@@ -116,7 +116,7 @@ def test_trim_repositories_duplicate(repository_a, mock_dependencies):
   # Use Repository.clone to create a proper duplicate repository
   gordion.Repository.clone(duplicate_path, repository_a.url)
   assert gordion.Repository.exists(duplicate_path)
-  
+
   gordion.Workspace().trim_repositories()
   assert not gordion.Repository.exists(duplicate_path)
 

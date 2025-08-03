@@ -26,12 +26,12 @@ def workspace():
 
   # Create the gordion.Repository interface.
   repo = gordion.Repository.ensure(path, url)
-  
+
   # Initialize workspace with the repository path
   workspace = gordion.Workspace()
   workspace.setup(subpath=path)
 
-  assert repo.path ==  workspace.root_repository.path
+  assert repo.path == workspace.root_repository.path
   yield workspace
 
 
@@ -42,14 +42,14 @@ def repository_a(workspace):
   Inherits from workspace_session to reuse the setup.
   """
   repo = workspace.root_repository
-  
+
   # Ensure we're on develop branch at the latest commit
   if 'develop' in repo.handle.heads:
     develop_branch = repo.handle.heads['develop']
     develop_branch.checkout()
     # Pull latest changes to ensure we're at tip
     repo.handle.git.reset('--hard', 'origin/develop')
-  
+
   yield repo
 
 

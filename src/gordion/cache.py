@@ -83,7 +83,7 @@ class Cache:
       try:
         # Convert cache folder name back to original workspace path
         workspace_path = Cache.cache_folder_to_path(cache_folder_name)
-        
+
         # Check if the workspace path exists and contains a gordion repository
         workspace_has_gordion_repo = False
         if os.path.exists(workspace_path) and os.path.isdir(workspace_path):
@@ -95,7 +95,7 @@ class Cache:
               if os.path.exists(gordion_yaml) and os.path.isfile(gordion_yaml):
                 workspace_has_gordion_repo = True
                 break
-        
+
         # If workspace doesn't exist or has no gordion repository, remove the cache
         if not workspace_has_gordion_repo:
           print(f"Removing orphaned workspace cache: {workspace_cache_path}")

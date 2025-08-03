@@ -33,7 +33,7 @@ class Repository:
     # Skip initialization if already initialized
     if hasattr(self, 'path'):
       return
-      
+
     self.path = os.path.normpath(path)
     self.name = os.path.basename(self.path)
     assert gordion.Repository.exists(path)

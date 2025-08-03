@@ -379,8 +379,8 @@ def test_cache_out_of_sync_missing_repo(tree_a):
   repo_b = workspace.get_repository('gordion_demo_b')
   assert workspace.is_dependency(repo_b.path), f"Expected {repo_b.path} to be in cache"
   
-  shutil.rmtree(repo_b.path)
-  workspace.discover_repositories()
+  # Use safe_delete to properly remove the repository
+  gordion.Repository.safe_delete(repo_b.path, force=True)
   
   # The status should show (out of sync) next to repos folder
   status = gordion.app.status.terminal_status(tree_a)
