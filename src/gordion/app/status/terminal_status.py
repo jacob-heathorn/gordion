@@ -134,12 +134,24 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
           if folder:
             folder.has_duplicate = True
 
+  # DIRTY CACHED REPOSITORIES. Find any cached repository that has uncommitted changes.
+  dirty_cached_repos: List[gordion.Repository] = []
+  for _, repo in workspace.repos().items():
+    if workspace.is_dependency(repo.path) and repo.handle.is_dirty(untracked_files=True):
+      dirty_cached_repos.append(repo)
+
   # Duplicates header.
   error_header = ""
   if len(duplicates) > 0:
     error_header += gordion.utils.bold_red("\nDuplicates:\n")
     for duplicate in duplicates:
       error_header += gordion.utils.red(f"* {duplicate.path} ({duplicate.url})\n")
+
+  # Dirty cached repositories header.
+  if len(dirty_cached_repos) > 0:
+    error_header += gordion.utils.bold_red("\nDirty Cached Repositories:\n")
+    for repo in dirty_cached_repos:
+      error_header += gordion.utils.red(f"* {repo.path} - Changes not allowed in cached repositories!\n")
 
   # NOT FOUND. List all repositories that were not found by the root trace.
   if len(not_found_listings) > 0:
@@ -215,11 +227,11 @@ def terminal_status(root: gordion.Tree, verbose: bool = False) -> str:
   # Get the workspace folder status
   workspace_status = display_folders[0].terminal_status()
 
-  # If cache is desynced, append the message to the first line (workspace folder)
-  if cache_desynced:
+  # If cache is desynced or there are dirty cached repositories, append the message to the first line (workspace folder)
+  if cache_desynced or len(dirty_cached_repos) > 0:
     lines = workspace_status.splitlines()
     if lines:
-      # Append the red (cache desynced) message to the first line
+      # Append the red (out of sync) message to the first line
       lines[0] += gordion.utils.red("  (out of sync)")
       workspace_status = "\n".join(lines)
 

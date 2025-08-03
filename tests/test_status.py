@@ -417,10 +417,42 @@ def test_cache_out_of_sync_wrong_commit(tree_a):
   # The status should show (out of sync) next to repos folder
   status = gordion.app.status.terminal_status(tree_a)
   assert red("  (out of sync)") in status
+
+
+def test_dirty_cached_repository(tree_a):
+  """
+  Verifies that an error is shown when a cached repository has uncommitted changes.
+  """
+  # Make changes in a cached repository
+  workspace = gordion.Workspace()
+  repo_b = workspace.get_repository('gordion_demo_b')
+  assert workspace.is_dependency(repo_b.path), f"Expected {repo_b.path} to be in cache"
   
-  # For wrong commit, there should be no error header, so it should be on the first line
+  # Create a new file to make the repository dirty
+  test_file = os.path.join(repo_b.path, 'test_dirty.txt')
+  with open(test_file, 'w') as f:
+    f.write('This should not be allowed in cached repositories!')
+  
+  # The status should show the dirty cached repository error
+  status = gordion.app.status.terminal_status(tree_a)
+  
+  # Verify the error header and message are shown
+  assert bold_red("\nDirty Cached Repositories:\n") in status
+  assert red(f"* {repo_b.path} - Changes not allowed in cached repositories!\n") in status
+  
+  # Verify (out of sync) appears next to the workspace folder
+  assert red("  (out of sync)") in status
+  # Find the line with the workspace folder - it should be after the error header
   lines = status.splitlines()
-  assert bold_blue('repos') in lines[0]
-  assert red("  (out of sync)") in lines[0]
+  workspace_line = None
+  for line in lines:
+    if bold_blue('repos') in line:
+      workspace_line = line
+      break
+  assert workspace_line is not None, "Could not find workspace folder line"
+  assert red("  (out of sync)") in workspace_line
+  
+  # Clean up
+  os.remove(test_file)
 
 
