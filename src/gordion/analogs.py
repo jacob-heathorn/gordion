@@ -129,15 +129,26 @@ class Analogs:
 
   def verify_no_cached_repositories(self):
     """
-    Raises an error if any repository in the hierarchy is in the cache.
+    Raises an error if any repository that would be affected by a commit is in the cache.
+    This includes repositories with staged changes and their ancestors.
     """
     workspace = gordion.Workspace()
-    cached_repos = []
+    cached_repos: Dict[str, gordion.Repository] = {}
+    
+    # For each node with staged changes...
     for _, node in self.nodes.items():
-      if workspace.is_dependency(node.repo.path):
-        cached_repos.append(node.repo)
+      if node.repo.has_staged_changes():
+        # Check if the node itself is cached
+        if workspace.is_dependency(node.repo.path):
+          cached_repos[node.repo.path] = node.repo
+        
+        # Check all ancestors for cached repositories
+        for _, ancestor in Analogs.lineage(node).items():
+          if workspace.is_dependency(ancestor.repo.path):
+            cached_repos[ancestor.repo.path] = ancestor.repo
+    
     if len(cached_repos) > 0:
-      raise gordion.exception.CommitCachedRepositoriesError(cached_repos)
+      raise gordion.exception.CommitCachedRepositoriesError(list(cached_repos.values()))
 
   # =================================================================================================
   # The Analogs

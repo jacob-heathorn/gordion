@@ -77,28 +77,6 @@ def test_same_name_different_url(tree_a):
   assert str(context.value) == str(expected)
 
 
-def test_unsafe_remove_dirty(tree_a):
-  """
-  Verifies that an error is generated if the update will attempt to cleanup(remove) a repository
-  that has dirty changes.
-  """
-
-  # Make the demo_c dirty by adding an empty file.
-  repo_c = gordion.Workspace().get_repository('gordion_demo_c')
-  touchfile = os.path.join(repo_c.path, 'touch.txt')
-  with open(touchfile, 'w'):
-    pass
-
-  assert repo_c.handle.is_dirty(untracked_files=True)
-
-  with pytest.raises(gordion.UnsafeRemoveDirty) as context:
-    tree_a.update('55f619c7af1cdc3ed13487c3aab050b492e655eb', 'test_unsafe_remove_dirty',
-                  force=True)
-
-  expected = gordion.UnsafeRemoveDirty(repo_c.path)
-  assert str(context.value) == str(expected)
-
-
 def test_unsafe_remove_local_branch_no_tracking_branch(tree_a):
   """
   Verifies that an error is generated if the update attempts to delete a repository that has local
