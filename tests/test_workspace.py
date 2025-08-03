@@ -5,6 +5,7 @@ import gordion
 import pytest
 from conftest import REPOS_DIR
 import shutil
+import git
 
 
 # NOTE: We assume this gordion source code repository is cloned without another gordion repostory in
@@ -109,9 +110,19 @@ def test_trim_repositories_duplicate(repository_a, mock_dependencies):
   If a dependency is a duplicate of a working, it is trimmed.
   """
   duplicate_path = os.path.join(mock_dependencies, repository_a.name)
-  shutil.copytree(repository_a.path, duplicate_path)
-  gordion.Repository(duplicate_path)
+  # Use git clone to create a proper duplicate repository
+  repository_a.handle.git.clone(repository_a.path, duplicate_path)
+  
+  # Fix the remote URL to match the original
+  dup_handle = git.Repo(duplicate_path)
+  dup_handle.remotes.origin.set_url(repository_a.url)
+  
+  dup_repo = gordion.Repository(duplicate_path)
   assert gordion.Repository.exists(duplicate_path)
+  
+  # Rediscover repositories to ensure the duplicate is found
+  gordion.Workspace().discover_repositories()
+  
   gordion.Workspace().trim_repositories()
   assert not gordion.Repository.exists(duplicate_path)
 

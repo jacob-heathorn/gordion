@@ -3,7 +3,6 @@ import gordion
 from pathlib import Path
 from typing import Optional, Dict, Tuple
 import shutil
-import re
 
 
 @gordion.utils.singleton
@@ -27,10 +26,11 @@ class Workspace:
     repo_root = gordion.utils.get_repository_root(subpath)
     if not repo_root:
       raise Exception(f"Path '{subpath}' is not inside a git repository")
-    
+
     if not gordion.Repository.is_gordion(repo_root):
-      raise Exception(f"Path '{subpath}' is not inside a gordion repository (no gordion.yaml found)")
-    
+      raise Exception(
+          f"Path '{subpath}' is not inside a gordion repository (no gordion.yaml found)"
+      )
     self.path = Workspace.find_root(subpath)
 
     # Create a sanitized workspace identifier for cache directory
@@ -43,7 +43,7 @@ class Workspace:
       os.makedirs(self.dependencies_path, exist_ok=True)
 
     self.discover_repositories()
-    
+
     # Store the root repository
     self.root_repository = gordion.Repository(repo_root)
 
@@ -118,7 +118,7 @@ class Workspace:
     """
     # Track which paths we've seen during discovery
     discovered_paths = set()
-    
+
     # Get current registry to track what needs to be removed
     current_registry = gordion.Repository.registry().copy()  # type: ignore[attr-defined]
 
@@ -136,7 +136,7 @@ class Workspace:
           if gordion.Repository.exists(full_dirpath):
             normalized_path = os.path.normpath(full_dirpath)
             discovered_paths.add(normalized_path)
-            
+
             # Only create new instance if not already in registry
             if normalized_path not in current_registry:
               gordion.Repository(full_dirpath)
@@ -144,7 +144,7 @@ class Workspace:
             # Remove the current directory's name from dirnames so os.walk will skip its
             # subdirectories
             dirnames.remove(dirname)
-    
+
     # Remove repositories that no longer exist on disk
     for path in current_registry:
       if path not in discovered_paths:

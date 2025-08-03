@@ -16,7 +16,7 @@ if not os.path.exists(REPOS_DIR):
 # Fixtures
 
 @pytest.fixture(scope='session')
-def repository_a():
+def repository_a_session():
   """
   Creates the gordion.Repository interface for gordion_demo_a only once for the lifetime of this
   session. This is important so the "fetch_once" doesn't fetch every test case, which saves time.
@@ -35,7 +35,25 @@ def repository_a():
 
 
 @pytest.fixture
-def tree_a(repository_a):
+def repository_a(repository_a_session):
+  """
+  Function-scoped fixture that ensures repository_a is at the tip of develop branch.
+  Inherits from repository_a_session to reuse the setup.
+  """
+  repo = repository_a_session
+  
+  # Ensure we're on develop branch at the latest commit
+  if 'develop' in repo.handle.heads:
+    develop_branch = repo.handle.heads['develop']
+    develop_branch.checkout()
+    # Pull latest changes to ensure we're at tip
+    repo.handle.git.reset('--hard', 'origin/develop')
+  
+  yield repo
+
+
+@pytest.fixture
+def tree_a(repository_a_session):
   """
   This puts the gordion.Tree session object back into a well-known state for each test case.
   """
@@ -46,7 +64,7 @@ def tree_a(repository_a):
   branch_name = 'develop'
 
   # Set the target branch/commit.
-  tree_a = gordion.Tree(repository_a)
+  tree_a = gordion.Tree(repository_a_session)
   tree_a.update(tag, branch_name, force=True)
 
   # Ensure dependencies are in cache, not in workspace
@@ -71,7 +89,7 @@ def tree_a(repository_a):
 
 
 @pytest.fixture
-def tree_a_local(repository_a):
+def tree_a_local(repository_a_session):
   """
   This creates a tree_a but ensures all repositories are in the local workspace.
   """
@@ -82,7 +100,7 @@ def tree_a_local(repository_a):
   branch_name = 'develop'
 
   # Set the target branch/commit.
-  tree_a = gordion.Tree(repository_a)
+  tree_a = gordion.Tree(repository_a_session)
   tree_a.update(tag, branch_name, force=True)
 
   # Move dependencies from cache to local workspace root

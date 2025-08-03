@@ -76,7 +76,6 @@ def test_trim_keeps_valid_cache(repository_a):
   """
   # Get current workspace and its cache
   workspace = gordion.Workspace()
-  workspace.setup(repository_a.path)
 
   # The workspace cache should exist after setup
   assert os.path.exists(workspace.dependencies_path)
