@@ -70,17 +70,17 @@ class Cache:
 
   def trim(self):
     """
-    Removes workspace cache directories that don't belong to real directories
+    Removes dependency cache directories that don't belong to real directories
     containing a gordion repository.
     """
-    workspaces_dir = os.path.join(CACHE_DIR, 'workspaces')
-    if not os.path.exists(workspaces_dir):
+    dependencies_dir = os.path.join(CACHE_DIR, 'dependencies')
+    if not os.path.exists(dependencies_dir):
       return
 
-    # List all workspace cache directories
-    for cache_folder_name in os.listdir(workspaces_dir):
-      workspace_cache_path = os.path.join(workspaces_dir, cache_folder_name)
-      if not os.path.isdir(workspace_cache_path):
+    # List all dependency cache directories
+    for cache_folder_name in os.listdir(dependencies_dir):
+      dependency_cache_path = os.path.join(dependencies_dir, cache_folder_name)
+      if not os.path.isdir(dependency_cache_path):
         continue
 
       try:
@@ -89,9 +89,9 @@ class Cache:
 
         # Check if the repository path exists and is a gordion repository
         if not os.path.exists(repository_path) or not gordion.Repository.is_gordion(repository_path):
-          print(f"Removing orphaned workspace cache: {workspace_cache_path}")
-          shutil.rmtree(workspace_cache_path)
+          print(f"Removing orphaned dependency cache: {dependency_cache_path}")
+          shutil.rmtree(dependency_cache_path)
       except Exception as e:
         # If we can't decode the cache folder name, it's probably invalid
-        print(f"Removing invalid workspace cache: {workspace_cache_path} (error: {e})")
-        shutil.rmtree(workspace_cache_path)
+        print(f"Removing invalid dependency cache: {dependency_cache_path} (error: {e})")
+        shutil.rmtree(dependency_cache_path)

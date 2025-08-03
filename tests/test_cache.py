@@ -47,13 +47,13 @@ def test_mirror():
 
 def test_trim_orphaned_cache():
   """
-  Test that cache.trim() removes orphaned workspace caches.
+  Test that cache.trim() removes orphaned dependency caches.
   """
   cache = gordion.Cache()
-  workspaces_dir = os.path.join(gordion.cache.CACHE_DIR, 'workspaces')
+  dependencies_dir = os.path.join(gordion.cache.CACHE_DIR, 'dependencies')
 
   # Create a fake orphaned cache directory
-  orphaned_cache = os.path.join(workspaces_dir, 'fake_orphaned_workspace_12345')
+  orphaned_cache = os.path.join(dependencies_dir, 'fake_orphaned_dependency_12345')
   os.makedirs(orphaned_cache, exist_ok=True)
 
   # Create a test file in the orphaned cache
@@ -72,7 +72,7 @@ def test_trim_orphaned_cache():
 
 def test_trim_keeps_valid_cache(repository_a):
   """
-  Test that cache.trim() keeps workspace caches that belong to valid workspaces.
+  Test that cache.trim() keeps dependency caches that belong to valid repositories.
   """
   # Get current workspace and its cache
   workspace = gordion.Workspace()

@@ -38,7 +38,7 @@ class Workspace:
 
     # Create a sanitized identifier for cache directory based on root repository
     repository_id = gordion.Cache.path_to_cache_folder(self.root_repository.path)
-    cache_base = os.path.join(gordion.cache.CACHE_DIR, 'workspaces')
+    cache_base = os.path.join(gordion.cache.CACHE_DIR, 'dependencies')
     self.dependencies_path = os.path.normpath(os.path.join(cache_base, repository_id))
 
     # Create the cache directory if it doesn't exist
