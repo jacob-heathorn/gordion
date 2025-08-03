@@ -88,7 +88,9 @@ class Cache:
         repository_path = Cache.cache_folder_to_path(cache_folder_name)
 
         # Check if the repository path exists and is a gordion repository
-        if not os.path.exists(repository_path) or not gordion.Repository.is_gordion(repository_path):
+        repo_exists = os.path.exists(repository_path)
+        is_gordion = gordion.Repository.is_gordion(repository_path) if repo_exists else False
+        if not repo_exists or not is_gordion:
           print(f"Removing orphaned dependency cache: {dependency_cache_path}")
           shutil.rmtree(dependency_cache_path)
       except Exception as e:
