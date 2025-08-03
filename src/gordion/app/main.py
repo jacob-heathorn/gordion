@@ -101,7 +101,7 @@ def main(argv=None):
       branch = None
       if not root.repo.handle.head.is_detached:
         branch = root.repo.handle.active_branch.name
-      root.update(root.repo.handle.head.commit.hexsha, branch, force=True)
+      root.update(root.repo.handle.head.commit.hexsha, branch, force=False)
 
     # Print the workspace path.
     if args.workspace:
@@ -159,7 +159,7 @@ def main(argv=None):
           args.force)
 
   except Exception as e:
-    gordion.utils.print_exception(e=e, trace=True)
+    gordion.utils.print_exception(e=e, trace=False)
     sys.exit(1)
 
   if PROFILE:
