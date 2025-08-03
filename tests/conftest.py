@@ -16,7 +16,7 @@ if not os.path.exists(REPOS_DIR):
 # Fixtures
 
 @pytest.fixture(scope='session')
-def repository_a_session():
+def workspace():
   """
   Creates the gordion.Repository interface for gordion_demo_a only once for the lifetime of this
   session. This is important so the "fetch_once" doesn't fetch every test case, which saves time.
@@ -31,16 +31,17 @@ def repository_a_session():
   workspace = gordion.Workspace()
   workspace.setup(subpath=path)
 
-  yield repo
+  assert repo.path ==  workspace.root_repository.path
+  yield workspace
 
 
 @pytest.fixture
-def repository_a(repository_a_session):
+def repository_a(workspace):
   """
   Function-scoped fixture that ensures repository_a is at the tip of develop branch.
-  Inherits from repository_a_session to reuse the setup.
+  Inherits from workspace_session to reuse the setup.
   """
-  repo = repository_a_session
+  repo = workspace.root_repository
   
   # Ensure we're on develop branch at the latest commit
   if 'develop' in repo.handle.heads:
@@ -53,7 +54,7 @@ def repository_a(repository_a_session):
 
 
 @pytest.fixture
-def tree_a(repository_a_session):
+def tree_a(workspace):
   """
   This puts the gordion.Tree session object back into a well-known state for each test case.
   """
@@ -64,11 +65,8 @@ def tree_a(repository_a_session):
   branch_name = 'develop'
 
   # Set the target branch/commit.
-  tree_a = gordion.Tree(repository_a_session)
+  tree_a = gordion.Tree(workspace.root_repository)
   tree_a.update(tag, branch_name, force=True)
-
-  # Ensure dependencies are in cache, not in workspace
-  workspace = gordion.Workspace()
 
   # Move reposities to the cache.
   for name in ['gordion_demo_b', 'gordion_demo_c', 'gordion_demo_d']:
@@ -89,7 +87,7 @@ def tree_a(repository_a_session):
 
 
 @pytest.fixture
-def tree_a_local(repository_a_session):
+def tree_a_local(workspace):
   """
   This creates a tree_a but ensures all repositories are in the local workspace.
   """
@@ -100,11 +98,8 @@ def tree_a_local(repository_a_session):
   branch_name = 'develop'
 
   # Set the target branch/commit.
-  tree_a = gordion.Tree(repository_a_session)
+  tree_a = gordion.Tree(workspace.root_repository)
   tree_a.update(tag, branch_name, force=True)
-
-  # Move dependencies from cache to local workspace root
-  workspace = gordion.Workspace()
 
   # Move each dependency repository from cache to workspace root
   for name in ['gordion_demo_b', 'gordion_demo_c', 'gordion_demo_d']:
