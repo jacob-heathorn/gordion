@@ -127,6 +127,18 @@ class Analogs:
         return True
     return False
 
+  def verify_no_cached_repositories(self):
+    """
+    Raises an error if any repository in the hierarchy is in the cache.
+    """
+    workspace = gordion.Workspace()
+    cached_repos = []
+    for _, node in self.nodes.items():
+      if workspace.is_dependency(node.repo.path):
+        cached_repos.append(node.repo)
+    if len(cached_repos) > 0:
+      raise gordion.exception.CommitCachedRepositoriesError(cached_repos)
+
   # =================================================================================================
   # The Analogs
 
@@ -157,6 +169,7 @@ class Analogs:
     """
     Analog for: git commit
     """
+    self.verify_no_cached_repositories()
     self.verify_changes_are_branch(branch_name)
     self.verify_lineage_is_branch(branch_name)
     self.verify_lineage_does_not_have_unstaged_gordion_changes()
