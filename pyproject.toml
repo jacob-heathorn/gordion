@@ -1,6 +1,6 @@
 [project]
 name = "gordion"
-version = "0.1.0"
+version = "1.0.0"
 description = "The place where the gordian knot is untied"
 authors = [
     {name = "Jacob Heathorn", email = "jacob.heathorn@gmail.com"}
