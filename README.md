@@ -114,24 +114,15 @@ git config --global color.ui always
 
 ## Testing
 
-Run all tests:
+Nox testing:
 ```bash
 nox -s tests
-```
-
-Run specific test files:
-```bash
+nox -s lint
 nox -s tests -- test/test_repository.py -s
 nox -s tests -- test/test_tree.py -s
 nox -s tests -- test/test_cache.py -s
 nox -s tests -- test/test_status.py -s
 nox -s tests -- test/test_workspace.py -s
-```
-
-## Linting
-
-```bash
-nox -s lint
 ```
 
 ## License
