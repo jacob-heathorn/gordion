@@ -75,24 +75,27 @@ When repository A depends on B and C, which both depend on D, Gordion ensures al
 ## Functional Description
 
 ### Workspace Definition
-The highest directory in a directory tree containing a gordion repository (one with a gordion.yaml) is a workspace. Every gordion repository under that directory level is part of the workspace. When you clone a new repository there, it becomes par of the workspace automatically.  There cannot exist duplicate repositories (by url or name) in a workspace.  All dependencies in a workspace must agree by tag.
+The highest directory in a directory tree containing a gordion repository (one with a gordion.yaml) defines a workspace. Every gordion repository under that directory level is part of the workspace. When you clone a new repository there, it automatically becomes part of the workspace. Duplicate repositories (by URL or name) cannot exist within a workspace. All dependencies in a workspace must agree on their tags.
 
-### Workspace context
-When you do `gor status`, it only shows you the dependencies for your current root repository.  So in the diamond dependency graph, if you are in repository B and do `gor status`, it will show you status for B and D.
+### Workspace Context
+When you run `gor status`, it only shows the dependencies for your current root repository. For example, in the diamond dependency graph above, if you are in repository B and run `gor status`, it will show you the status for B and D.
 
 ### Cached Repositories
-By default, `gor -u` will clone to a cache folder, which is hidden from the status command unless you use `-c`. The idea is that dependencies can be forgotten once they are hardened and working.  For dependencies that you are working on, or important components of your project, you move them to your workspace.
+By default, `gor -u` clones to a cache folder, which is hidden from the status command unless you use the `-c` flag. The idea is that stable dependencies can be forgotten once they are hardened and working. For dependencies that you are actively developing or important components of your project, you should move them to your workspace.
 
-It is not permitted to make changes to repositories in the cache, and `gor -u` will blow them away.
+Changes to repositories in the cache are not permitted, and `gor -u` will overwrite them.
 
-The cache is a little different than a workspace, because it is managed per-repository.  So if you are working in repo A, there is a cache associated with it. If you move to repo B, there is a separate cache associated with it, while repos A and B may share one workspace.  That's because if you work in B and it has a different version of D than B, when you move to C it won't complain because it manages it's own version of D. It's not until you move to A that they need to agree, or if they are in the workspace where D would be shared by B and C.
+The cache differs from a workspace because it is managed per-repository. If you are working in repo A, there is a cache associated with it. If you move to repo B, there is a separate cache associated with it, while repos A and B may share one workspace. This means if you work in B and it has a different version of D than C, when you move to C it won't complain because it manages its own version of D. Conflicts only arise when you move to A where they need to agree, or if they are in the workspace where D is automatically shared by B and C.
 
 ### Branching
-Versioning is stricly controlled by commits, to enforce the reproducible builds requirement, but the tool still tries to checkout branches. If the commit is on the default branch, it will go to that commit on the default branch. If you checkout a different branch from your root working repo, the tool will try to find commits on that branch. If it can't find on those, it will checkout the commit in a detatched HEAD state.
+Versioning is strictly controlled by commits to enforce reproducible builds, but the tool still attempts to check out branches. If the commit is on the default branch, it will check out that commit on the default branch. If you check out a different branch from your root working repository, the tool will try to find the commits on that branch. If it can't find them, it will check out the commit in a detached HEAD state.
 
 
 ### Add/Commit/Push
-If you make changes across multiple repositories in your dependency tree, you can `gor add`, `gor commit`, and `gor push` all of them together. With a caveat, all repos in the tree that will take changes need to be in the workspace not the cache.  The workspace is for repositories your actively developing, the cache is for dependencies you can essentially forget about.
+If you make changes across multiple repositories in your dependency tree, you can run `gor add`, `gor commit`, and `gor push` to manage all of them together. However, all repositories that will receive changes must be in the workspace, not the cache. The workspace is for repositories you're actively developing, while the cache is for dependencies you can essentially forget about.
+
+### Information Loss Protection
+`gor -u` guarantees no information can be lost. If the update needs to check out an earlier commit on a branch, it will only do so if there is already a remote branch that has saved the current commit. If the repository has uncommitted changes that would be lost by the update, the tool will error and notify you rather than proceeding (unless it's a cached dependency). In general, if the tool destroys information during an update that cannot be recovered by conventional git operations, then you've found a bug!
 
 
 # Development Setup
