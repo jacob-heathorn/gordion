@@ -1,6 +1,6 @@
 [project]
 name = "gordion"
-version = "1.0.1"
+version = "1.0.2"
 description = "Multi-repository management tool for managing complex dependencies"
 keywords = ["git", "repository", "management", "dependencies", "workspace"]
 authors = [
