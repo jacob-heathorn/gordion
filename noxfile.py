@@ -98,8 +98,6 @@ def build(session):
 @nox.session(name="publish-pypi")
 def publish(session):
     """Publish the package to PyPI."""
-    # Check if we're publishing to test PyPI
-    test_pypi = "--test" in session.posargs
 
     # Run tests first
     session.log("Running tests...")
@@ -117,27 +115,17 @@ def publish(session):
     session.install("twine>=5.0.0")
 
     # Publish
-    if test_pypi:
-        session.log("Publishing to TestPyPI...")
-        session.run(
-            "twine", "upload", "--repository", "testpypi", "dist/*",
-            external=True
-        )
-        session.log("\nPublished to TestPyPI!")
-        session.log("Test installation with:")
-        session.log("  pip install --index-url https://test.pypi.org/simple/ " +
-                    "--extra-index-url https://pypi.org/simple/ gordion")
-    else:
-        # Confirm before publishing to real PyPI
-        session.log("\n⚠️  About to publish to PyPI (production)!")
-        response = input("Are you sure? (yes/no): ")
-        if response.lower() != "yes":
-            session.error("Publishing cancelled.")
+    #
+    # Confirm before publishing to real PyPI
+    session.log("\n⚠️  About to publish to PyPI (production)!")
+    response = input("Are you sure? (yes/no): ")
+    if response.lower() != "yes":
+        session.error("Publishing cancelled.")
 
-        session.log("Publishing to PyPI...")
-        session.run(
-            "twine", "upload", "dist/*",
-            external=True
-        )
-        session.log("\n✨ Published to PyPI!")
-        session.log("Install with: pip install gordion")
+    session.log("Publishing to PyPI...")
+    session.run(
+        "twine", "upload", "dist/*",
+        external=True
+    )
+    session.log("\n✨ Published to PyPI!")
+    session.log("Install with: pip install gordion")
