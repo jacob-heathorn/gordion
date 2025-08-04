@@ -147,4 +147,6 @@ MIT License - see LICENSE file for details
 
 ## Contributing
 
+https://github.com/jacob-heathorn/gordion
+
 Contributions are welcome! Please feel free to submit a Pull Request.
