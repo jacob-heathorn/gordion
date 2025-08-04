@@ -1,7 +1,26 @@
-Ideas, concepts, inspiration, code snippets taken from the west
-(https://github.com/zephyrproject-rtos/west) repository.
+ACKNOWLEDGMENTS
 
-* Inspiration for structuring the repository code and using pipx taken from west.
-* Copied /tox.ini as a starting template.
-* Copied one of the the test files as a starting template.
+Gordion's design was inspired by the west tool (https://github.com/zephyrproject-rtos/west),
+a multi-repository management system for the Zephyr RTOS project.
 
+While west provides a solid foundation for managing multiple repositories, Gordion was created
+to address several architectural limitations:
+
+1. Deterministic version control: Gordion forces you to specify commits,
+   ensuring reproducible builds.
+
+2. Diamond dependency resolution: When multiple repositories depend on a common repository
+   (the "diamond problem"), Gordion ensures all versions are consistent by design.
+
+   Example - Repository A depends on B and C, which both depend on D:
+     A
+    / \
+   B   C
+    \ /
+     D
+
+3. Enhanced operational workflow: Gordion provides a more intuitive command structure
+   and workspace management system tailored for complex multi-repository projects.
+
+We thank the west project maintainers and contributors for their pioneering work in
+this problem space.

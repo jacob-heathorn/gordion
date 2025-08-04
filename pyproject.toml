@@ -1,0 +1,68 @@
+[project]
+name = "gordion"
+version = "1.0.0"
+description = "The place where the gordian knot is untied"
+authors = [
+    {name = "Jacob Heathorn", email = "jacob.heathorn@gmail.com"}
+]
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+]
+dependencies = [
+    "gitpython==3.1.43",
+    "PyYAML",
+    "types-PyYAML",
+]
+
+[project.scripts]
+gordion = "gordion.app.main:main"
+gor = "gordion.app.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gordion"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "README.md",
+    "LICENSE",
+    "noxfile.py",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=6.0",
+    "pytest-cov",
+    "debugpy",
+    "flake8",
+    "mypy",
+    "nox",
+    "uv",
+]
+
+[tool.pytest.ini_options]
+cache_dir = ".pycache"
+
+[tool.flake8]
+ignore = ["E126"]
+exclude = [".nox", "build", ".pycache"]
+max-line-length = 100
+indent-size = 2
+
+[tool.mypy]
+mypy_path = "src"
+ignore_missing_imports = true
+check_untyped_defs = true
+cache_dir = ".pycache"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

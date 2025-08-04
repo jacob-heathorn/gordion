@@ -1,8 +1,4 @@
-/build
-/src/gordion.egg-info
-/.tox
-/.mypy_cache
+/.nox
 .pycache
 .coverage
 /.direnv
-__pycache__

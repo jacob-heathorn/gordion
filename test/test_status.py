@@ -4,7 +4,7 @@ import gordion
 from gordion.utils import green, bold_green, bold_blue, red, bold_red, yellow
 from gordion.utils import replace_i
 import pytest
-from conftest import REPOS_DIR
+from test.conftest import REPOS_DIR
 import os
 import shutil
 
@@ -474,8 +474,10 @@ def test_status_show_cache_flag(tree_a):
   
   # The cache status should contain the encoded cache directory name
   # The cache directory appears as a base64 encoded name in the output
+  # The encoding is based on the root repository path, not the workspace path
   import base64
-  encoded_name = base64.b64encode(workspace.path.encode()).decode().replace('/', '')
+  root_repo_path = workspace.root_repository.path
+  encoded_name = base64.b64encode(root_repo_path.encode()).decode().replace('/', '').rstrip('=')
   assert encoded_name in cache_status
   
   # The regular status should NOT contain the encoded cache directory
