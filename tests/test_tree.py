@@ -177,3 +177,35 @@ def test_dangling_commit(tree_a):
 
   expected = gordion.DanglingCommitError(repo_b.path, empty_commit.hexsha)
   assert str(context.value) == str(expected)
+
+
+def test_tree_update_cleans_dirty_cached_repos(tree_a):
+    """
+    Verifies that tree.update() cleans dirty cached repositories.
+    """
+    # Get a cached repository
+    workspace = gordion.Workspace()
+    repo_b = workspace.get_repository('gordion_demo_b')
+    assert workspace.is_dependency(repo_b.path), f"Expected {repo_b.path} to be in cache"
+
+    # Make it dirty by adding an untracked file
+    test_file = os.path.join(repo_b.path, 'test_dirty.txt')
+    with open(test_file, 'w') as f:
+        f.write('This should be cleaned!')
+
+    # Also modify an existing file
+    readme_path = os.path.join(repo_b.path, 'README.md')
+    if os.path.exists(readme_path):
+        with open(readme_path, 'a') as f:
+            f.write('\n# Modified content')
+
+    # Verify the repository is dirty
+    assert repo_b.handle.is_dirty(untracked_files=True)
+    assert os.path.exists(test_file)
+
+    # Update the tree - this should clean the dirty cached repository
+    tree_a.update('082abea', 'test_status', force=True)
+
+    # Verify the repository is now clean
+    assert not repo_b.handle.is_dirty(untracked_files=True)
+    assert not os.path.exists(test_file)
