@@ -1,8 +1,9 @@
 # Gordion
 
-The place where the gordian knot was untied.
+A multi-repository management tool with a git-like command interface
 
-A multi-repository management tool with a git-like command interface.
+*The place where the gordian knot is untied*
+
 
 ## Features
 
