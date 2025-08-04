@@ -1,11 +1,6 @@
 import os
 import gordion
 
-assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
-
-REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
-SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-
 
 def test_repo_details():
   url = "https://github.com/username/repository.git"

@@ -9,8 +9,6 @@ nox.options.default_venv_backend = "uv"
 @nox.session
 def tests(session):
     """Run the pytest test suite."""
-    # Set environment variables for testing
-    session.env["TOXTEMPDIR"] = session.create_tmp()
 
     # Pass through SSH_AUTH_SOCK if available
     if "SSH_AUTH_SOCK" in os.environ:
