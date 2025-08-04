@@ -6,10 +6,14 @@ A multi-repository management tool with a git-like command interface.
 
 ## Features
 
-- **Deterministic Dependency Management**: Specify exact commits for reproducible builds
-- **Diamond Dependency Resolution**: Automatically resolves version conflicts when multiple repositories depend on a common repository
-- **Intuitive Git-like Commands**: Familiar commands like `gor add`, `gor commit`, `gor push` that work across all repositories
-- **Smart Workspace Management**: Automatically discovers and manages repositories in your workspace
+- **Deterministic Dependency Management**: Specify exact commits for reproducible builds across your entire dependency tree
+- **Diamond Dependency Resolution**: Forces exact version agreement across dependencies
+- **Workspace-Based Development**: Work on multiple repositories together with automatic discovery and shared dependencies
+- **Cache System**: Separate stable dependencies from actively developed code with per-repository caching
+- **Information Loss Protection**: Safeguards against losing uncommitted changes or unpushed commits during updates
+- **Git-like Interface**: Familiar commands (`gor add`, `gor commit`, `gor push`) that operate across all repositories
+- **Branch Awareness**: Intelligently follows branches when possible while maintaining commit-based versioning
+- **Contextual Operations**: Commands respect your current repository context, showing only relevant dependencies
 
 ## Installation
 
