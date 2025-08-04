@@ -1,0 +1,5 @@
+[flake8]
+ignore = E126
+exclude = .tox,build,.pycache,.nox
+max-line-length = 100
+indent-size = 2

@@ -2,9 +2,6 @@ import os
 import gordion
 import pytest
 
-# Support both tox and nox test runners
-import tempfile
-
 
 # For nox, create a temporary directory in .nox
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -27,7 +24,7 @@ def workspace():
     shutil.rmtree(NOX_TMP_DIR)
   os.makedirs(NOX_TMP_DIR, exist_ok=True)
   os.makedirs(REPOS_DIR, exist_ok=True)
-  
+
   path = os.path.join(REPOS_DIR, 'gordion_demo_a')
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
