@@ -1,16 +1,17 @@
 [project]
 name = "gordion"
 version = "1.0.0"
-description = "The place where the gordian knot is untied"
+description = "Multi-repository management tool for managing complex dependencies"
+keywords = ["git", "repository", "management", "dependencies", "workspace"]
 authors = [
     {name = "Jacob Heathorn", email = "jacob.heathorn@gmail.com"}
 ]
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = {text = "MIT"}
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
@@ -20,6 +21,9 @@ dependencies = [
     "PyYAML",
     "types-PyYAML",
 ]
+
+[project.urls]
+Homepage = "https://github.com/jacob-heathorn/gordion"
 
 [project.scripts]
 gordion = "gordion.app.main:main"
