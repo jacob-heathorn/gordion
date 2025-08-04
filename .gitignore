@@ -2,3 +2,4 @@
 .pycache
 .coverage
 /.direnv
+/dist

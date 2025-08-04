@@ -1,9 +1,13 @@
 """Nox configuration for running tests and linting."""
 import nox
 import os
+from pathlib import Path
 
 # Configure nox to use uv
 nox.options.default_venv_backend = "uv"
+
+# Set default sessions (exclude build and publish)
+nox.options.sessions = ["tests", "lint"]
 
 
 @nox.session
@@ -60,3 +64,68 @@ def lint(session):
         "--cache-dir=.pycache",
         "--package=gordion"
     )
+
+
+@nox.session
+def build(session):
+    """Build the package for distribution."""
+    import shutil
+
+    # Clean previous builds
+    if os.path.exists("dist"):
+        shutil.rmtree("dist")
+    # Clean egg-info directories
+    for path in Path("src").glob("*.egg-info"):
+        if path.exists():
+            shutil.rmtree(path)
+
+    # Install build tools with newer twine
+    session.install("build", "twine>=5.0.0")
+
+    # Build the package
+    session.run("python", "-m", "build")
+
+    # Check the package
+    session.run("twine", "check", "dist/*")
+    session.log("✓ Package validation passed")
+
+    # List the built files
+    session.log("Built packages:")
+    for file in sorted(os.listdir("dist")):
+        session.log(f"  - {file}")
+
+
+@nox.session(name="publish-pypi")
+def publish(session):
+    """Publish the package to PyPI."""
+
+    # Run tests first
+    session.log("Running tests...")
+    session.run("nox", "-s", "tests", external=True)
+
+    # Run lint
+    session.log("Running lint...")
+    session.run("nox", "-s", "lint", external=True)
+
+    # Build the package
+    session.log("Building package...")
+    session.run("nox", "-s", "build", external=True)
+
+    # Install twine if needed
+    session.install("twine>=5.0.0")
+
+    # Publish
+    #
+    # Confirm before publishing to real PyPI
+    session.log("\n⚠️  About to publish to PyPI (production)!")
+    response = input("Are you sure? (yes/no): ")
+    if response.lower() != "yes":
+        session.error("Publishing cancelled.")
+
+    session.log("Publishing to PyPI...")
+    session.run(
+        "twine", "upload", "dist/*",
+        external=True
+    )
+    session.log("\n✨ Published to PyPI!")
+    session.log("Install with: pip install gordion")
