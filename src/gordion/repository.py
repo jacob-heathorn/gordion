@@ -535,8 +535,11 @@ class Repository:
 
   def push(self, set_upstream: bool, delete: bool, remote: Optional[str], branch: str, force: bool):
     """
-    Does 'git restore'
+    Does 'git push'
     """
+    # Print progress message
+    print(f"Pushing {self.name}...")
+
     args = []
     if set_upstream:
       args.append('--set-upstream')

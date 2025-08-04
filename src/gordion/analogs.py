@@ -188,6 +188,9 @@ class Analogs:
     while self.has_staged_changes():
       for _, node in self.nodes.items():
         if node.repo.has_staged_changes():
+          # Print progress message
+          print(f"Committing {node.repo.name}...")
+
           # Commit this node.
           message = header + "\n"
           message += node.gordion_updates_message
