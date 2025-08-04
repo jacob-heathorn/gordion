@@ -46,7 +46,7 @@ def lint(session):
     session.run(
         "flake8",
         "--ignore=E126",
-        "--exclude=.tox,build,.pycache,.nox",
+        "--exclude=.nox,build,.pycache,.nox",
         "--max-line-length=100",
         "--indent-size=2",
         "."
