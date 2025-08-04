@@ -35,21 +35,30 @@ def tests(session):
 @nox.session
 def lint(session):
     """Run flake8 and mypy linting."""
+    # Set PYTHONPATH for mypy to find the package
+    session.env["PYTHONPATH"] = "src"
+
     # Install the package with its dependencies
     session.install("-e", ".")
 
     # Install lint dependencies
     session.install("flake8", "mypy")
 
-    # Run flake8
+    # Run flake8 with configuration
     session.run(
         "flake8",
+        "--ignore=E126",
+        "--exclude=.tox,build,.pycache,.nox",
+        "--max-line-length=100",
+        "--indent-size=2",
         "."
     )
 
-    # Run mypy
+    # Run mypy with configuration
     session.run(
         "mypy",
-        "--config-file=pyproject.toml",
+        "--ignore-missing-imports",
+        "--check-untyped-defs",
+        "--cache-dir=.pycache",
         "--package=gordion"
     )
