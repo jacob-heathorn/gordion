@@ -47,17 +47,17 @@
 We have nox sessions to automate the publishing process:
 
 ```bash
-# Build only (runs tests, lint, and builds the package)
+# Build only (builds the package)
 nox -s build
 
 # Publish to TestPyPI (for testing)
-nox -s publish -- --test
+nox -s publish-pypi -- --test
 
 # Publish to PyPI (production)
-nox -s publish
+nox -s publish-pypi
 ```
 
-The `publish` session will:
+The `publish-pypi` session will:
 1. Run all tests
 2. Run lint checks
 3. Build the package

@@ -70,7 +70,7 @@ def lint(session):
 def build(session):
     """Build the package for distribution."""
     import shutil
-    
+
     # Clean previous builds
     if os.path.exists("dist"):
         shutil.rmtree("dist")
@@ -78,46 +78,44 @@ def build(session):
     for path in Path("src").glob("*.egg-info"):
         if path.exists():
             shutil.rmtree(path)
-    
-    # Install build tools
-    session.install("build", "twine")
-    
+
+    # Install build tools with newer twine
+    session.install("build", "twine>=5.0.0")
+
     # Build the package
     session.run("python", "-m", "build")
-    
+
     # Check the package
-    session.run("twine", "check", "--strict", "dist/*", success_codes=[0, 1])
-    session.log("Note: 'license-file' warning can be ignored - it's a hatchling metadata field")
-    
+    session.run("twine", "check", "dist/*")
+    session.log("✓ Package validation passed")
+
     # List the built files
     session.log("Built packages:")
     for file in sorted(os.listdir("dist")):
         session.log(f"  - {file}")
 
 
-@nox.session
+@nox.session(name="publish-pypi")
 def publish(session):
     """Publish the package to PyPI."""
-    import sys
-    
-    # Run tests first
-    session.log("Running tests...")
-    session.notify("tests")
-    
-    # Run lint
-    session.log("Running lint...")
-    session.notify("lint")
-    
-    # Build the package
-    session.log("Building package...")
-    session.notify("build")
-    
     # Check if we're publishing to test PyPI
     test_pypi = "--test" in session.posargs
-    
+
+    # Run tests first
+    session.log("Running tests...")
+    session.run("nox", "-s", "tests", external=True)
+
+    # Run lint
+    session.log("Running lint...")
+    session.run("nox", "-s", "lint", external=True)
+
+    # Build the package
+    session.log("Building package...")
+    session.run("nox", "-s", "build", external=True)
+
     # Install twine if needed
-    session.install("twine")
-    
+    session.install("twine>=5.0.0")
+
     # Publish
     if test_pypi:
         session.log("Publishing to TestPyPI...")
@@ -127,14 +125,15 @@ def publish(session):
         )
         session.log("\nPublished to TestPyPI!")
         session.log("Test installation with:")
-        session.log("  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ gordion")
+        session.log("  pip install --index-url https://test.pypi.org/simple/ " +
+                    "--extra-index-url https://pypi.org/simple/ gordion")
     else:
         # Confirm before publishing to real PyPI
         session.log("\n⚠️  About to publish to PyPI (production)!")
         response = input("Are you sure? (yes/no): ")
         if response.lower() != "yes":
             session.error("Publishing cancelled.")
-        
+
         session.log("Publishing to PyPI...")
         session.run(
             "twine", "upload", "dist/*",
