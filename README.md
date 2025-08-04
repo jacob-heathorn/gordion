@@ -1,5 +1,7 @@
 # Gordion
 
+The place where the gordian knot was untied.
+
 A powerful multi-repository management tool that helps you manage complex dependencies across multiple Git repositories with ease.
 
 ## Features
@@ -12,7 +14,7 @@ A powerful multi-repository management tool that helps you manage complex depend
 ## Installation
 
 ```bash
-pip install gordion
+pipx install gordion
 ```
 
 ## Quick Start
