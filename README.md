@@ -4,7 +4,6 @@ A multi-repository management tool with a git-like command interface
 
 *The place where the gordian knot is untied*
 
-
 ## Features
 
 - **Deterministic Dependency Management**: Specify exact commits for reproducible builds across your entire dependency tree
@@ -111,6 +110,8 @@ gor commit -m "Update dependencies"
 gor push
 ```
 
+## Requirements
+This has only been tested on Ubuntu, but there is no reason it shouldn't work on other operating systems.
 
 # Development Setup
 
