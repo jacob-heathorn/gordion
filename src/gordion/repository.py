@@ -484,7 +484,9 @@ class Repository:
     Does 'git add'
     """
     if self.handle.is_dirty(untracked_files=True):
-      self.handle.git.add(pathspec)
+      # Use custom environment to ensure clean output
+      with self.handle.git.custom_environment(GIT_TERMINAL_PROMPT="0"):
+        self.handle.git.add(pathspec)
 
   def restore(self, pathspec: str, staged: bool):
     """
@@ -503,10 +505,12 @@ class Repository:
     """
     Does 'git commit'
     """
-    if amend:
-      self.handle.git.commit("-m", message, "--amend")
-    else:
-      self.handle.git.commit("-m", message)
+    # Use custom environment to ensure clean output
+    with self.handle.git.custom_environment(GIT_TERMINAL_PROMPT="0"):
+      if amend:
+        self.handle.git.commit("-m", message, "--amend")
+      else:
+        self.handle.git.commit("-m", message)
 
   def clean(self, force: bool, dirs: bool, extra: bool):
     """
@@ -548,6 +552,8 @@ class Repository:
     if force:
       args.append('--force')
 
-    output = self.handle.git.push(args)
-    if output:
-      print(output)
+    # Use custom environment to ensure clean output
+    with self.handle.git.custom_environment(GIT_TERMINAL_PROMPT="0"):
+      output = self.handle.git.push(args)
+      if output:
+        print(output)
