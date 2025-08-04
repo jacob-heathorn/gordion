@@ -3,7 +3,7 @@
 import os
 import gordion
 import pytest
-from conftest import REPOS_DIR
+from test.conftest import REPOS_DIR
 import shutil
 
 

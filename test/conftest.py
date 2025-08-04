@@ -2,9 +2,15 @@ import os
 import gordion
 import pytest
 
-assert 'TOXTEMPDIR' in os.environ, "you must run these tests using tox"
+# Support both tox and nox test runners
+import tempfile
 
-REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
+if 'TOXTEMPDIR' in os.environ:
+    REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
+else:
+    # For nox, create a temporary directory
+    temp_dir = tempfile.gettempdir()
+    REPOS_DIR = os.path.join(temp_dir, 'gordion_test_repos')
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 # Create repos directory if it doesn't exist

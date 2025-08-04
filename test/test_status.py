@@ -4,7 +4,7 @@ import gordion
 from gordion.utils import green, bold_green, bold_blue, red, bold_red, yellow
 from gordion.utils import replace_i
 import pytest
-from conftest import REPOS_DIR
+from test.conftest import REPOS_DIR
 import os
 import shutil
 
