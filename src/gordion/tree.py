@@ -19,10 +19,18 @@ class Tree:
     """
     Updates this repository and it's children.
     """
-    # First check/fix dangling .dependencies folders
     root = self._root()
+
+    # Clean dirty cached repositories before updating (only at root level)
     if self is root:
-      self.workspace.unify_dependencies()
+      workspace = gordion.Workspace()
+      for _, repo in workspace.repos().items():
+        if workspace.is_dependency(repo.path) and repo.handle.is_dirty(untracked_files=True):
+          print(f"Cleaning dirty cached repository: {repo.path}")
+          # Reset any staged or modified files
+          repo.handle.git.reset('--hard', 'HEAD')
+          # Remove any untracked files
+          repo.handle.git.clean('-fd')
 
     # Check for duplicate tag first. We have to do this here because the repo needs to veriy and
     # compare commits.
@@ -34,6 +42,9 @@ class Tree:
 
     if self is root:
       self.workspace.trim_repositories()
+      # Trim orphaned workspace caches
+      cache = gordion.Cache()
+      cache.trim()
 
   def _update_children(self, branch_name: str, force: bool):
     """

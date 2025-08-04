@@ -13,6 +13,23 @@ import shutil
 # Fixtures
 
 @pytest.fixture
+def tree_a_local(tree_a_local):
+  """
+  This puts tree_a session object back into a well-known state for each test case.
+  """
+  # Setup
+  #
+  # Set the object to a known commit and branch.
+  tag = '082abea'
+  branch_name = 'test_status'
+
+  # Set the target branch/commit.
+  tree_a_local.update(tag, branch_name, force=True)
+
+  yield tree_a_local
+
+
+@pytest.fixture
 def tree_a(tree_a):
   """
   This puts tree_a session object back into a well-known state for each test case.
@@ -32,9 +49,9 @@ def tree_a(tree_a):
 @pytest.fixture
 def tmp1():
   """
-  Creates a tmp1 folder in the REPOS_DIR/.dependencies and then deletes it.
+  Creates a tmp1 folder in the REPOS_DIR and then deletes it.
   """
-  tmp1 = os.path.join(REPOS_DIR, '.dependencies', 'tmp1')
+  tmp1 = os.path.join(REPOS_DIR, 'tmp1')
   os.mkdir(tmp1)
 
   yield tmp1
@@ -48,24 +65,23 @@ def tmp1():
 
 NOMINAL_STATUS = \
     f"""{bold_blue('repos')}
-├──{bold_blue('.dependencies')}
-│   ├──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')}
-│   ├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
-│   └──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}
-└──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}"""
+├──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}
+├──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')}
+├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
+└──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}"""
 
 
-def test_nominal_status(tree_a):
+def test_nominal_status(tree_a_local):
   """
   Verifies the nominal status string (all green).
   """
-  assert NOMINAL_STATUS == gordion.app.status.terminal_status(tree_a)
+  assert NOMINAL_STATUS == gordion.app.status.terminal_status(tree_a_local)
 
 
 # =================================================================================================
 # Tests for commit status
 
-def test_wrong_commit(tree_a):
+def test_wrong_commit(tree_a_local):
   """
   Verifies the commit will appear RED if it does not match the parent gordion.yaml file.
   """
@@ -77,10 +93,10 @@ def test_wrong_commit(tree_a):
   # Get the expected status string.
   demo_c_new_commit = repo_c.handle.head.commit.hexsha[:7]
   expected = NOMINAL_STATUS.replace(green(':1a8f7fe'), red(f":{demo_c_new_commit}"))
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_child_mismatch(tree_a):
+def test_child_mismatch(tree_a_local):
   """
   Verifies (TAG INCOHERENCE)
   """
@@ -94,7 +110,7 @@ def test_child_mismatch(tree_a):
   # Verify.
   b_commit = repo_b.handle.head.commit.hexsha
   expected = NOMINAL_STATUS.replace(green(f':{b_commit[0:7]}'),
-                                    green(f':{b_commit[0:7]}') + f"\n│   │   {red('M')} gordion.yaml\n│   │  ")
+                                    green(f':{b_commit[0:7]}') + f"\n│   {red('M')} gordion.yaml\n│  ")
   d_commit = repo_d.handle.head.commit.hexsha
   expected = expected.replace(green(f':{d_commit[0:7]}'),
                               red(f':{d_commit[0:7]}') + " " + red('(TAG INCOHERENCE)'))
@@ -103,22 +119,22 @@ def test_child_mismatch(tree_a):
                               green(f':{b_commit[0:7]}') + yellow('-dirty'))
 
   expected_header = bold_red("\nTag Incoherences:\n")
-  repo_b_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
+  repo_b_listings, _ = tree_a_local.listings(name='gordion_demo_d', url=None)
   for listing in repo_b_listings:
     listing_str = gordion.Tree.format_listing_tag(listing)
     expected_header += red(listing_str + "\n")
   expected = expected_header + "\n" + expected
 
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_conflicted(tree_a):
+def test_conflicted(tree_a_local):
   """
   Verifies NAME_CONFLICTED, URL_CONFLICTED, and NOT_FOUND.
   """
   # Change demoC's listing of "gordion_demo_d"s URL to "gordion_demo_b"s URL.
   repo_c = gordion.Workspace().get_repository('gordion_demo_c')
-  b_url = tree_a.repo.yeditor.yaml_data['repositories']['gordion_demo_b']['url']
+  b_url = tree_a_local.repo.yeditor.yaml_data['repositories']['gordion_demo_b']['url']
   repo_c.yeditor.yaml_data['repositories']['gordion_demo_d']['url'] = b_url
   repo_c.yeditor.save()
 
@@ -127,7 +143,7 @@ def test_conflicted(tree_a):
   c_commit = repo_c.handle.head.commit.hexsha
   expected = NOMINAL_STATUS.replace(green(f':{c_commit[0:7]}'),
                                     green(f':{c_commit[0:7]}') +
-                                    yellow("-dirty") + f"\n│   │   {red('M')} gordion.yaml\n│   │  ")
+                                    yellow("-dirty") + f"\n│   {red('M')} gordion.yaml\n│  ")
   # demoB is NAME_CONFLICTED. There are two listings that have demoB's URL, but they have different
   # names.
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
@@ -142,15 +158,15 @@ def test_conflicted(tree_a):
 
   # The Not Found will be the demoD listing with demoBs url.
   expected_header = bold_red("\nNot Found:\n")
-  not_found_listings, _ = tree_a.listings(name='gordion_demo_d', url=b_url)
+  not_found_listings, _ = tree_a_local.listings(name='gordion_demo_d', url=b_url)
   assert len(not_found_listings) == 1
   listing_str = gordion.Tree.format_listing_url(not_found_listings[0])
   expected_header += red(listing_str + "\n")
 
   # The URL Incoherences (all demoD, and demoB listings)
   expected_header += bold_red("\nURL Incoherences:\n")
-  repo_d_listings, _ = tree_a.listings(name='gordion_demo_d', url=None)
-  repo_b_listings, _ = tree_a.listings(name='gordion_demo_b', url=None)
+  repo_d_listings, _ = tree_a_local.listings(name='gordion_demo_d', url=None)
+  repo_b_listings, _ = tree_a_local.listings(name='gordion_demo_b', url=None)
   all_incoherences = []
   all_incoherences.extend(repo_d_listings)
   all_incoherences.extend(repo_b_listings)
@@ -159,10 +175,10 @@ def test_conflicted(tree_a):
     listing_str = gordion.Tree.format_listing_url(listing)
     expected_header += red(listing_str + "\n")
   expected = expected_header + "\n" + expected
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_duplicate(tree_a, tmp1):
+def test_duplicate(tree_a_local, tmp1):
   """
   Verifies HAS_DUPLICATE
   """
@@ -183,21 +199,20 @@ def test_duplicate(tree_a, tmp1):
   expected_header += red(f"* {repo_b.path} ({repo_b.url})\n")
   expected_header += red(f"* {duplciate.path} ({duplciate.url})\n")
   expected = expected_header + "\n" + expected
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
 # flake8: noqa
 EXPECTED_WRONG_PATH_STATUS = \
     f"""{bold_blue('repos')}
-├──{bold_blue('.dependencies')}
-│   ├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
-│   ├──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}
-│   └──{bold_blue('tmp1')}
-│       └──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')} {red("(WRONG PATH)")}
-└──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}"""
+├──{bold_green('gordion_demo_a*')} {green('test_status')}{green(':082abea')}
+├──{bold_green('gordion_demo_c')} {green('develop')}{green(':1a8f7fe')}
+├──{bold_green('gordion_demo_d')} {green('develop')}{green(':c516fff')}
+└──{bold_blue('tmp1')}
+    └──{bold_green('gordion_demo_b')} {green('develop')}{green(':fe4fd4d')}"""
 
 
-def test_wrong_path(tree_a, tmp1):
+def test_wrong_path(tree_a_local, tmp1):
   """
   Verifies WRONG_PATH
   """
@@ -209,7 +224,7 @@ def test_wrong_path(tree_a, tmp1):
   gordion.Repository.safe_delete(repo_b.path)
 
   # Verify
-  assert EXPECTED_WRONG_PATH_STATUS == gordion.app.status.terminal_status(tree_a)
+  assert EXPECTED_WRONG_PATH_STATUS == gordion.app.status.terminal_status(tree_a_local)
 
   # =================================================================================================
   # Tests for branch status
@@ -235,24 +250,24 @@ def test_wrong_path(tree_a, tmp1):
   #   13. (unsaved)
 
 
-def test_branch_ahead(tree_a):
+def test_branch_ahead(tree_a_local):
   """
   Verifies situations:
     10. (ahead)
     2. Child branch is default branch, while root branch is not available.
        (All children are default branch, and still green)
   """
-  original_tag = green(f':{tree_a.repo.handle.head.commit.hexsha[0:7]}')
-  tree_a.repo.handle.index.commit("Empty commit for test_branch_ahead")
+  original_tag = green(f':{tree_a_local.repo.handle.head.commit.hexsha[0:7]}')
+  tree_a_local.repo.handle.index.commit("Empty commit for test_branch_ahead")
   expected = NOMINAL_STATUS.replace(green('test_status'),
                                     green('test_status') + yellow('(ahead)'))
   expected = expected.replace(original_tag,
-                              green(f':{tree_a.repo.handle.head.commit.hexsha[0:7]}'))
+                              green(f':{tree_a_local.repo.handle.head.commit.hexsha[0:7]}'))
 
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_wrong_tracking_branch(tree_a):
+def test_wrong_tracking_branch(tree_a_local):
   """
   Verifies situations:
     6. Child is different branch while default branch is available.
@@ -266,16 +281,16 @@ def test_wrong_tracking_branch(tree_a):
                        green('develop'),
                        yellow('different_branch') + yellow('(develop?, wrong tracking branch)'), 2)
 
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_child_branch_is_root_branch(tree_a):
+def test_child_branch_is_root_branch(tree_a_local):
   """
   Verifies situations:
     12. (untracked)
     1. Child same as root branch.
   """
-  tree_a.repo.handle.git.checkout('-b', 'root_branch')
+  tree_a_local.repo.handle.git.checkout('-b', 'root_branch')
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
   repo_b.handle.git.checkout('-b', 'root_branch')
   expected = NOMINAL_STATUS.replace(green('test_status'),
@@ -284,16 +299,16 @@ def test_child_branch_is_root_branch(tree_a):
                        green('develop'),
                        green('root_branch') + yellow('(untracked)'), 0)
 
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_child_default_root_available(tree_a):
+def test_child_default_root_available(tree_a_local):
   """
   Verifies situations:
     4. Child is default branch while root branch is available.
     8. (root branch?)
   """
-  tree_a.repo.handle.git.checkout('-b', 'root_branch')
+  tree_a_local.repo.handle.git.checkout('-b', 'root_branch')
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
   repo_b.handle.git.checkout('-b', 'root_branch')
   repo_b.handle.branches['develop'].checkout()
@@ -302,15 +317,15 @@ def test_child_default_root_available(tree_a):
   expected = replace_i(expected,
                        green('develop'),
                        yellow('develop') + yellow('(root_branch?)'), 0)
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_child_different_root_available(tree_a):
+def test_child_different_root_available(tree_a_local):
   """
   Verifies situations:
     5. Child is different branch while root branch is available.
   """
-  tree_a.repo.handle.git.checkout('-b', 'root_branch')
+  tree_a_local.repo.handle.git.checkout('-b', 'root_branch')
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
   repo_b.handle.git.checkout('-b', 'root_branch')
   repo_b.handle.git.checkout('-b', 'different_branch')
@@ -319,10 +334,10 @@ def test_child_different_root_available(tree_a):
   expected = replace_i(expected,
                        green('develop'),
                        yellow('different_branch') + yellow('(root_branch?, untracked)'), 0)
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_child_detached_root_available(tree_a):
+def test_child_detached_root_available(tree_a_local):
   """
   Verifies situations:
     7. Child is DETACHED while root or default branch is available.
@@ -332,10 +347,10 @@ def test_child_detached_root_available(tree_a):
   expected = replace_i(NOMINAL_STATUS,
                        green('develop'),
                        yellow('DETACHED HEAD') + yellow('(develop?)'), 2)
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
 
 
-def test_child_detached_green(tree_a):
+def test_child_detached_green(tree_a_local):
   """
   Verifies situations:
     3. Child is DETACHED and root/default branches are not available.
@@ -352,4 +367,125 @@ def test_child_detached_green(tree_a):
                        green('DETACHED HEAD') + yellow('(unsaved)'), 2)
   expected = expected.replace(green(':' + original_commit[0:7]),
                               red(':' + repo_d.handle.head.commit.hexsha[0:7]))
-  assert expected == gordion.app.status.terminal_status(tree_a)
+  assert expected == gordion.app.status.terminal_status(tree_a_local)
+
+
+def test_cache_out_of_sync_missing_repo(tree_a):
+  """
+  Verifies that (out of sync) appears when a repository is missing from cache.
+  """
+  # Delete a dependency repository from the cache
+  workspace = gordion.Workspace()
+  repo_b = workspace.get_repository('gordion_demo_b')
+  assert workspace.is_dependency(repo_b.path), f"Expected {repo_b.path} to be in cache"
+  
+  # Use safe_delete to properly remove the repository
+  gordion.Repository.safe_delete(repo_b.path, force=True)
+  
+  # The status should show (out of sync) next to repos folder
+  status = gordion.app.status.terminal_status(tree_a)
+  
+  # Verify the Not Found error is shown
+  assert bold_red("\nNot Found:\n") in status
+  assert "gordion_demo_b" in status
+  
+  # Verify (out of sync) appears next to the workspace folder
+  assert red("  (out of sync)") in status
+  # Find the line with the workspace folder - it may not be the first line due to errors
+  lines = status.splitlines()
+  workspace_line = None
+  for line in lines:
+    if bold_blue('repos') in line:
+      workspace_line = line
+      break
+  assert workspace_line is not None, "Could not find workspace folder line"
+  assert red("  (out of sync)") in workspace_line
+
+
+def test_cache_out_of_sync_wrong_commit(tree_a):
+  """
+  Verifies that (out of sync) appears when a cache repository has wrong commit.
+  """
+  # Change a dependency repository to wrong commit
+  workspace = gordion.Workspace()
+  repo_b = workspace.get_repository('gordion_demo_b')
+  assert workspace.is_dependency(repo_b.path), f"Expected {repo_b.path} to be in cache"
+  
+  # Checkout a different commit
+  repo_b.handle.head.reset('HEAD~1', index=True, working_tree=True)
+  
+  # The status should show (out of sync) next to repos folder
+  status = gordion.app.status.terminal_status(tree_a)
+  assert red("  (out of sync)") in status
+
+
+def test_dirty_cached_repository(tree_a):
+  """
+  Verifies that an error is shown when a cached repository has uncommitted changes.
+  """
+  # Make changes in a cached repository
+  workspace = gordion.Workspace()
+  repo_b = workspace.get_repository('gordion_demo_b')
+  assert workspace.is_dependency(repo_b.path), f"Expected {repo_b.path} to be in cache"
+  
+  # Create a new file to make the repository dirty
+  test_file = os.path.join(repo_b.path, 'test_dirty.txt')
+  with open(test_file, 'w') as f:
+    f.write('This should not be allowed in cached repositories!')
+  
+  # The status should show the dirty cached repository error
+  status = gordion.app.status.terminal_status(tree_a)
+  
+  # Verify the error header and message are shown
+  assert bold_red("\nDirty Cached Repositories:\n") in status
+  assert red("(Changes not allowed in cached repositories!)\n") in status
+  assert red(f"* {repo_b.path}\n") in status
+  
+  # Verify (out of sync) appears next to the workspace folder
+  assert red("  (out of sync)") in status
+  # Find the line with the workspace folder - it should be after the error header
+  lines = status.splitlines()
+  workspace_line = None
+  for line in lines:
+    if bold_blue('repos') in line:
+      workspace_line = line
+      break
+  assert workspace_line is not None, "Could not find workspace folder line"
+  assert red("  (out of sync)") in workspace_line
+  
+  # Clean up
+  os.remove(test_file)
+
+
+def test_status_show_cache_flag(tree_a):
+  """
+  Verifies that the --cache (-c) flag shows the dependencies cache directory.
+  """
+  workspace = gordion.Workspace()
+  
+  # Regular status (without cache flag)
+  regular_status = gordion.app.status.terminal_status(tree_a, verbose=False, show_cache=False)
+  
+  # Status with cache flag
+  cache_status = gordion.app.status.terminal_status(tree_a, verbose=False, show_cache=True)
+  
+  # The cache status should be longer (includes cache directory)
+  assert len(cache_status) > len(regular_status)
+  
+  # The cache status should contain the encoded cache directory name
+  # The cache directory appears as a base64 encoded name in the output
+  import base64
+  encoded_name = base64.b64encode(workspace.path.encode()).decode().replace('/', '')
+  assert encoded_name in cache_status
+  
+  # The regular status should NOT contain the encoded cache directory
+  assert encoded_name not in regular_status
+  
+  # Verify cached repositories appear when cache flag is set
+  repo_b = workspace.get_repository('gordion_demo_b')
+  if workspace.is_dependency(repo_b.path):
+    assert repo_b.name in cache_status
+    # In regular status, cached repos should not appear
+    assert repo_b.path not in regular_status
+
+

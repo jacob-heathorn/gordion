@@ -32,6 +32,8 @@ def main(argv=None):
   subparsers = parser.add_subparsers(dest='command', help='Git analog commands')
   parser_status = subparsers.add_parser('status', help='Show the gordion status')
   parser_status.add_argument('-v', '--verbose', action='store_true', help='verbose')
+  parser_status.add_argument('-c', '--cache', action='store_true',
+                             help='show cache dependencies directory')
 
   # Clean parser
   parser_clean = subparsers.add_parser('clean', help='Git clean in all repositories')
@@ -101,7 +103,7 @@ def main(argv=None):
       branch = None
       if not root.repo.handle.head.is_detached:
         branch = root.repo.handle.active_branch.name
-      root.update(root.repo.handle.head.commit.hexsha, branch, force=True)
+      root.update(root.repo.handle.head.commit.hexsha, branch, force=False)
 
     # Print the workspace path.
     if args.workspace:
@@ -121,7 +123,7 @@ def main(argv=None):
     # Status
     if args.command == 'status':
       root = gordion.Tree.find(os.getcwd())
-      print(gordion.app.status.terminal_status(root, args.verbose))
+      print(gordion.app.status.terminal_status(root, args.verbose, args.cache))
 
     # Clean
     if args.command == 'clean':
@@ -159,7 +161,7 @@ def main(argv=None):
           args.force)
 
   except Exception as e:
-    gordion.utils.print_exception(e=e, trace=True)
+    gordion.utils.print_exception(e=e, trace=False)
     sys.exit(1)
 
   if PROFILE:

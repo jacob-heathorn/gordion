@@ -25,7 +25,7 @@ def tmp1():
 
   yield tmp1
 
-  shutil.rmtree(tmp1, ignore_errors=True)
+  shutil.rmtree(tmp1)
   gordion.Workspace().discover_repositories()
 
 
@@ -35,13 +35,17 @@ def mock_dependencies():
   Creates a .dependencies folder in the REPOS_DIR and then deletes it.
   """
   mock_dependencies = gordion.Workspace().dependencies_path
-  shutil.rmtree(mock_dependencies, ignore_errors=True)
-  os.mkdir(mock_dependencies)
+  if os.path.exists(mock_dependencies):
+    shutil.rmtree(mock_dependencies)
+    gordion.Workspace().discover_repositories()
+
+  os.makedirs(mock_dependencies)
 
   yield mock_dependencies
 
-  shutil.rmtree(mock_dependencies, ignore_errors=True)
-  gordion.Workspace().discover_repositories()
+  if os.path.exists(mock_dependencies):
+    shutil.rmtree(mock_dependencies)
+    gordion.Workspace().discover_repositories()
 
 
 # =================================================================================================
@@ -109,9 +113,10 @@ def test_trim_repositories_duplicate(repository_a, mock_dependencies):
   If a dependency is a duplicate of a working, it is trimmed.
   """
   duplicate_path = os.path.join(mock_dependencies, repository_a.name)
-  shutil.copytree(repository_a.path, duplicate_path)
-  gordion.Repository(duplicate_path)
+  # Use Repository.clone to create a proper duplicate repository
+  gordion.Repository.clone(duplicate_path, repository_a.url)
   assert gordion.Repository.exists(duplicate_path)
+
   gordion.Workspace().trim_repositories()
   assert not gordion.Repository.exists(duplicate_path)
 
@@ -143,21 +148,15 @@ def test_trim_repositories_not_listed(tree_a):
   assert not gordion.Repository.exists(not_listed_path)
 
 
-def test_unify_dependencies(repository_a, mock_dependencies, tmp1):
+def test_get_repository_from_cache(tree_a):
   """
-  If the workspace root moves, there could be a dangling .dependencies folder left at the old
-  workspace root. If it is inside the new workspace root, it will be merged.
+  Verifies that get_repository can find repositories in the cache.
   """
-  # Clone demo_b inside a dangling dependencies folder.
-  dangling_dependencies = os.path.join(tmp1, '.dependencies')
-  repo_b_path = os.path.join(dangling_dependencies, 'gordion_demo_b')
-  gordion.Repository.clone(repo_b_path, 'https://github.com/jacob-heathorn/gordion_demo_b.git')
+  workspace = gordion.Workspace()
 
-  # Verify paths before and after unify().
-  moved_path = os.path.join(mock_dependencies, 'gordion_demo_b')
-  assert gordion.Repository.exists(repo_b_path)
-  assert not gordion.Repository.exists(moved_path)
-  gordion.Workspace().unify_dependencies()
-  assert not gordion.Repository.exists(repo_b_path)
-  assert gordion.Repository.exists(moved_path)
-  assert not os.path.exists(dangling_dependencies)
+  # The tree_a fixture should have dependencies in the cache
+  # Verify we can find them by name
+  for repo_name in ['gordion_demo_a', 'gordion_demo_b', 'gordion_demo_c', 'gordion_demo_d']:
+    repo = workspace.get_repository_or_throw(repo_name)
+    assert repo is not None, f"Could not find {repo_name}"
+    assert repo.name == repo_name

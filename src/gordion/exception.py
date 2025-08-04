@@ -127,6 +127,18 @@ class UnsafeRemoveLocalBranchNoTrackingBranch(Exception):
     super().__init__(self.message)
 
 
+class CommitCachedRepositoriesError(Exception):
+  def __init__(self, cached_repos):
+    self.cached_repos = cached_repos
+    repos_list = "\n".join([f"  * {repo.name} ({repo.url})" for repo in cached_repos])
+    self.message = (
+        f"Cannot commit: The following repositories in the hierarchy are in the cache and must be "
+        f"cloned to the workspace first:\n{repos_list}\n\n"
+        f"Clone these repositories to your workspace before committing."
+    )
+    super().__init__(self.message)
+
+
 class UnsafeRemoveStashes(Exception):
   def __init__(self, path, stashes):
     self.message = (
@@ -159,15 +171,6 @@ class DanglingCommitError(UpdateError):
     reason = (f"Commit<{target_tag}> is dangling (does not belong to a branch)")
     suggestion = ("Update the commit tag in the parent gordion.yaml")
     super().__init__(target_path, reason, suggestion)
-
-
-class DanglingDependenciesNotEmpty(Exception):
-  def __init__(self, dangling_dependencies_path):
-    self.message = (
-        f"Directory<{dangling_dependencies_path}> is not empty after moving it's repositories. "
-        f"Manually delete it."
-    )
-    super().__init__(self.message)
 
 
 class WrongBranchRepositoryDirty(Exception):

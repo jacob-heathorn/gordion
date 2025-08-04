@@ -162,9 +162,9 @@ def test_add_restore_clean(tree_a: gordion.Tree):
   assert repo_d.is_dirty() is False
 
 
-def test_commit(tree_a: gordion.Tree):
+def test_commit(tree_a_local: gordion.Tree):
   """Verifies git commit analog"""
-  repo_a = tree_a.repo
+  repo_a = tree_a_local.repo
   repo_b = gordion.Workspace().get_repository('gordion_demo_b')
   repo_c = gordion.Workspace().get_repository('gordion_demo_c')
   repo_d = gordion.Workspace().get_repository('gordion_demo_d')
@@ -175,7 +175,7 @@ def test_commit(tree_a: gordion.Tree):
     pass
 
   # Gordion add.
-  analogs = gordion.Analogs(tree_a.repo)
+  analogs = gordion.Analogs(tree_a_local.repo)
   analogs.add(repo_d.handle.active_branch.name, ".")
 
   # Gordion commit.
@@ -214,3 +214,51 @@ def test_push(tree_a: gordion.Tree):
   analogs.push(set_upstream=False, delete=True, remote='origin', branch='test_push', force=False)
   assert not any(ref.name == "origin/test_push" for ref in repo_a.handle.remotes['origin'].refs)
   assert not any(ref.name == "origin/test_push" for ref in repo_d.handle.remotes['origin'].refs)
+
+
+def test_commit_fails_with_cached_repositories(tree_a):
+  """
+  Verifies that commit fails when trying to commit with repositories in the cache.
+  """
+  # Verify we have cached repositories
+  workspace = gordion.Workspace()
+  repo_a = workspace.get_repository('gordion_demo_a')
+  repo_b = workspace.get_repository('gordion_demo_b')
+  repo_c = workspace.get_repository('gordion_demo_c')
+  repo_d = workspace.get_repository('gordion_demo_d')
+  assert workspace.is_dependency(repo_b.path), "Expected repo_b to be in cache"
+  assert workspace.is_dependency(repo_c.path), "Expected repo_c to be in cache"
+  assert workspace.is_dependency(repo_d.path), "Expected repo_d to be in cache"
+
+  # Move demo_d from cache to workspace to make changes
+  new_path_d = os.path.join(os.path.dirname(repo_a.path), 'gordion_demo_d')
+  if not os.path.exists(new_path_d):
+    gordion.Repository.safe_move(repo_d.path, new_path_d)
+  repo_d = workspace.get_repository('gordion_demo_d')
+
+  # Make a change in demo_d
+  test_file = os.path.join(repo_d.path, 'test_commit.txt')
+  with open(test_file, 'w') as f:
+    f.write('Test content for commit')
+
+  # Stage the change
+  repo_d.handle.index.add([test_file])
+
+  # Create analogs from root and try to commit - should fail
+  analogs = gordion.Analogs(repo_a)
+
+  with pytest.raises(gordion.exception.CommitCachedRepositoriesError) as exc_info:
+    analogs.commit(repo_a.get_branch_name(), 'Test commit')
+
+  # Verify the error message contains the cached repositories in the lineage
+  error = exc_info.value
+  assert len(error.cached_repos) == 2  # demo_b and demo_c are both in cache and in the lineage
+  assert 'gordion_demo_b' in str(error.message)
+  assert 'gordion_demo_c' in str(error.message)
+  assert 'gordion_demo_d' not in str(error.message)  # demo_d is now in workspace
+  assert 'must be cloned to the workspace first' in str(error.message)
+
+  # Clean up - reset the staged file
+  repo_d.handle.index.reset(paths=[test_file])
+  if os.path.exists(test_file):
+    os.remove(test_file)

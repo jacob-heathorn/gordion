@@ -13,19 +13,38 @@ class Workspace:
 
   def __init__(self) -> None:
     self.path = ''
+    self.root_repository: Optional[gordion.Repository] = None
 
   def repos(self) -> Dict[str, gordion.Repository]:
     return gordion.Repository.registry()  # type: ignore[attr-defined]
 
-  def setup(self, subpath, force=False):
+  def setup(self, subpath):
     """
-    User must call this function once with a path somewhere inside a workspace.
+    User must call this function once with a path somewhere inside a gordion repository.
     """
-    if force:
-      self.path = subpath
-    else:
-      self.path = Workspace.find_root(subpath)
-    self.dependencies_path = os.path.normpath(os.path.join(self.path, '.dependencies'))
+    # Check if the path is inside a gordion repository
+    repo_root = gordion.utils.get_repository_root(subpath)
+    if not repo_root:
+      raise Exception(f"Path '{subpath}' is not inside a git repository")
+
+    if not gordion.Repository.is_gordion(repo_root):
+      raise Exception(
+          f"Path '{subpath}' is not inside a gordion repository (no gordion.yaml found)"
+      )
+    self.path = Workspace.find_root(subpath)
+
+    # Store the root repository first
+    self.root_repository = gordion.Repository(repo_root)
+
+    # Create a sanitized identifier for cache directory based on root repository
+    repository_id = gordion.Cache.path_to_cache_folder(self.root_repository.path)
+    cache_base = os.path.join(gordion.cache.CACHE_DIR, 'dependencies')
+    self.dependencies_path = os.path.normpath(os.path.join(cache_base, repository_id))
+
+    # Create the cache directory if it doesn't exist
+    if not os.path.exists(self.dependencies_path):
+      os.makedirs(self.dependencies_path, exist_ok=True)
+
     self.discover_repositories()
 
   @staticmethod
@@ -97,20 +116,39 @@ class Workspace:
     """
     Discovers all repository objects in the workspace and caches them in a dictionary.
     """
-    gordion.Repository.reset_registry()  # type: ignore[attr-defined]
+    # Track which paths we've seen during discovery
+    discovered_paths = set()
 
-    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-        full_dirpath = os.path.join(dirpath, dirname)
+    # Get current registry to track what needs to be removed
+    current_registry = gordion.Repository.registry().copy()  # type: ignore[attr-defined]
 
-        if gordion.Repository.exists(full_dirpath):
-          # Register it.
-          gordion.Repository(full_dirpath)
+    # Discover repositories in both workspace and dependencies cache
+    paths_to_walk = [self.path]
+    if os.path.exists(self.dependencies_path):
+      paths_to_walk.append(self.dependencies_path)
 
-          # Remove the current directory's name from dirnames so os.walk will skip its
-          # subdirectories
-          dirnames.remove(dirname)
+    for base_path in paths_to_walk:
+      for dirpath, dirnames, _ in os.walk(base_path, topdown=True):
+        # Create a copy of dirnames for iteration to avoid modifying the list while iterating
+        for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
+          full_dirpath = os.path.join(dirpath, dirname)
+
+          if gordion.Repository.exists(full_dirpath):
+            normalized_path = os.path.normpath(full_dirpath)
+            discovered_paths.add(normalized_path)
+
+            # Only create new instance if not already in registry
+            if normalized_path not in current_registry:
+              gordion.Repository(full_dirpath)
+
+            # Remove the current directory's name from dirnames so os.walk will skip its
+            # subdirectories
+            dirnames.remove(dirname)
+
+    # Remove repositories that no longer exist on disk
+    for path in current_registry:
+      if path not in discovered_paths:
+        gordion.Repository.unregister(path)  # type: ignore[attr-defined]
 
   def delete_empty_parent_folders(self, path):
     """
@@ -172,41 +210,3 @@ class Workspace:
 
     for path in paths:
       gordion.Repository.safe_delete(path)
-
-  def unify_dependencies(self):
-    """
-    Looks for a .dependencies folder that is below the root, and unifies with the folder at the
-    root.
-    """
-    for dirpath, dirnames, _ in os.walk(self.path, topdown=True):
-      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-        full_dirpath = os.path.join(dirpath, dirname)
-        if dirname == ".dependencies" and full_dirpath != self.dependencies_path:
-          # Found a dangling .dependencies folder, merge it.
-          print(f"Merging dangling .dependencies: {full_dirpath} ...")
-          self._safe_merge_dangling_dependencies(full_dirpath)
-
-          # Remove the current directory's name from dirnames so os.walk will skip its
-          # subdirectories
-          dirnames.remove(dirname)
-
-  def _safe_merge_dangling_dependencies(self, other_dependencies_path):
-    for dirpath, dirnames, _ in os.walk(other_dependencies_path, topdown=True):
-      # Create a copy of dirnames for iteration to avoid modifying the list while iterating
-      for dirname in dirnames[:]:  # [:] creates a shallow copy of the list
-        full_dirpath = os.path.join(dirpath, dirname)
-        # Move repositories
-        if gordion.Repository.exists(full_dirpath):
-          destination = os.path.join(self.dependencies_path, dirname)
-          gordion.Repository.safe_move(full_dirpath, destination)
-
-          # Remove the current directory's name from dirnames so os.walk will skip its
-          # subdirectories
-          dirnames.remove(dirname)
-
-    if os.listdir(other_dependencies_path):
-      raise gordion.DanglingDependenciesNotEmpty(other_dependencies_path)
-    else:
-      print(f"Deleting empty folder: {other_dependencies_path}")
-      shutil.rmtree(other_dependencies_path)
