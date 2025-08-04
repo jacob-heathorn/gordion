@@ -5,17 +5,11 @@ import pytest
 # Support both tox and nox test runners
 import tempfile
 
-if 'TOXTEMPDIR' in os.environ:
-    REPOS_DIR = os.path.join(os.environ['TOXTEMPDIR'], 'repos')
-else:
-    # For nox, create a temporary directory
-    temp_dir = tempfile.gettempdir()
-    REPOS_DIR = os.path.join(temp_dir, 'gordion_test_repos')
-SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-# Create repos directory if it doesn't exist
-if not os.path.exists(REPOS_DIR):
-  os.mkdir(REPOS_DIR)
+# For nox, create a temporary directory in .nox
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+NOX_TMP_DIR = os.path.join(os.path.dirname(SCRIPT_DIR), '.nox', 'tmp')
+REPOS_DIR = os.path.join(NOX_TMP_DIR, 'repos')
 
 
 # =================================================================================================
@@ -27,6 +21,13 @@ def workspace():
   Creates the gordion.Repository interface for gordion_demo_a only once for the lifetime of this
   session. This is important so the "fetch_once" doesn't fetch every test case, which saves time.
   """
+  # Clear the tmp directory before starting
+  import shutil
+  if os.path.exists(NOX_TMP_DIR):
+    shutil.rmtree(NOX_TMP_DIR)
+  os.makedirs(NOX_TMP_DIR, exist_ok=True)
+  os.makedirs(REPOS_DIR, exist_ok=True)
+  
   path = os.path.join(REPOS_DIR, 'gordion_demo_a')
   url = 'https://github.com/jacob-heathorn/gordion_demo_a.git'
 
