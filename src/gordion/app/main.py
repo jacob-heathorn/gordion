@@ -20,12 +20,6 @@ def main(argv=None):
   parser.add_argument('-u', '--update', action='store_true', help='Update the gordion tree')
   parser.add_argument('-w', '--workspace', action='store_true', help='Print the gordion workspace')
   parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
-  parser.add_argument(
-      '-g',
-      '--generate-pyproject-toml',
-      type=str,
-      help='Expand gordion env variables in pyproject.in.toml file')
-  parser.add_argument('-o', '--output', type=str, help='Output file after expansion')
   parser.add_argument('--force', action='store_true', help='Update the gordion tree')
 
   # Status parser
@@ -113,10 +107,6 @@ def main(argv=None):
     if args.find:
       repo = workspace.get_repository_or_throw(args.find)
       print(repo.path)
-
-    # Expand file.
-    if args.generate_pyproject_toml:
-      gordion.app.generate_pyproject_toml(args.generate_pyproject_toml)
 
     # Git Analogs
     #

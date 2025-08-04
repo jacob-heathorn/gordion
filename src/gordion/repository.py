@@ -484,9 +484,7 @@ class Repository:
     Does 'git add'
     """
     if self.handle.is_dirty(untracked_files=True):
-      output = self.handle.git.add(pathspec)
-      if output:
-        print(output)
+      self.handle.git.add(pathspec)
 
   def restore(self, pathspec: str, staged: bool):
     """
