@@ -186,9 +186,16 @@ def test_commit(tree_a_local: gordion.Tree):
   b_c_message = f"test_commit\n\n* Bump gordion_demo_d to {repo_d.handle.head.commit.hexsha}\n"
   assert repo_c.handle.head.commit.message == b_c_message
   assert repo_b.handle.head.commit.message == b_c_message
-  a_message = f"test_commit\n\n* Bump gordion_demo_c to {repo_c.handle.head.commit.hexsha}\n"
-  a_message += f"* Bump gordion_demo_b to {repo_b.handle.head.commit.hexsha}\n"
-  assert repo_a.handle.head.commit.message == a_message
+  # The order of B and C in the commit message can vary based on traversal order
+  expected_bumps = {
+    f"* Bump gordion_demo_c to {repo_c.handle.head.commit.hexsha}",
+    f"* Bump gordion_demo_b to {repo_b.handle.head.commit.hexsha}"
+  }
+  actual_message_lines = repo_a.handle.head.commit.message.strip().split('\n')
+  assert actual_message_lines[0] == "test_commit"
+  assert actual_message_lines[1] == ""
+  actual_bumps = set(actual_message_lines[2:])
+  assert actual_bumps == expected_bumps
 
 
 def test_push(tree_a: gordion.Tree):

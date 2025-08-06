@@ -1,7 +1,7 @@
 [project]
 name = "gordion"
-version = "1.0.2"
-description = "Multi-repository management tool for managing complex dependencies"
+version = "1.0.3"
+description = "A multi-repository management tool with a git-like command interface"
 keywords = ["git", "repository", "management", "dependencies", "workspace"]
 authors = [
     {name = "Jacob Heathorn", email = "jacob.heathorn@gmail.com"}
