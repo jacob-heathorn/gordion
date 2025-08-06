@@ -1,7 +1,6 @@
 import gordion
-from typing import Dict
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 class Analogs:
@@ -176,6 +175,31 @@ class Analogs:
     for _, node in self.nodes.items():
       node.repo.clean(force, dirs, extra)
 
+  def _topological_sort(self) -> List[Node]:
+    """
+    Returns nodes in topological order (leaves first, root last).
+    """
+    visited = set()
+    sorted_nodes = []
+
+    def visit(node: Analogs.Node):
+      if node.repo.path in visited:
+        return
+      visited.add(node.repo.path)
+
+      # Visit all children first (post-order traversal)
+      for _, child in node.children.items():
+        visit(child)
+
+      # Add this node after all its children
+      sorted_nodes.append(node)
+
+    # Start from all nodes to ensure we don't miss any disconnected subgraphs
+    for _, node in self.nodes.items():
+      visit(node)
+
+    return sorted_nodes
+
   def commit(self, branch_name: str, header: str):
     """
     Analog for: git commit
@@ -185,28 +209,31 @@ class Analogs:
     self.verify_lineage_is_branch(branch_name)
     self.verify_lineage_does_not_have_unstaged_gordion_changes()
 
-    while self.has_staged_changes():
-      for _, node in self.nodes.items():
-        if node.repo.has_staged_changes():
-          # Print progress message
-          print(f"Committing {node.repo.name}...")
+    # Get topologically sorted nodes (leaves first)
+    sorted_nodes = self._topological_sort()
 
-          # Commit this node.
-          message = header + "\n"
-          message += node.gordion_updates_message
-          node.repo.commit(message, node.committed)
-          node.committed = True
+    # Commit in topological order (from leaves to root)
+    for node in sorted_nodes:
+      if node.repo.has_staged_changes() and not node.committed:
+        # Print progress message
+        print(f"Committing {node.repo.name}...")
 
-          # Modify this node's parents' gordion.yaml files and stage the change.
-          commit = node.repo.handle.head.commit
-          for _, parent in node.parents.items():
-            if not parent.repo.yeditor.read_repository_tag(
-                    node.repo.name) == commit.hexsha:
-              # Update the parent's gordion.yaml file.
-              parent.repo.yeditor.write_repository_tag(node.repo.name, commit.hexsha)
-              # Add the change.
-              parent.repo.add("gordion.yaml")
-              parent.gordion_updates_message += f"\n* Bump {node.repo.name} to {commit.hexsha}"
+        # Commit this node.
+        message = header + "\n"
+        message += node.gordion_updates_message
+        node.repo.commit(message)
+        node.committed = True
+
+        # Modify this node's parents' gordion.yaml files and stage the change.
+        commit = node.repo.handle.head.commit
+        for _, parent in node.parents.items():
+          if not parent.repo.yeditor.read_repository_tag(
+                  node.repo.name) == commit.hexsha:
+            # Update the parent's gordion.yaml file.
+            parent.repo.yeditor.write_repository_tag(node.repo.name, commit.hexsha)
+            # Add the change.
+            parent.repo.add("gordion.yaml")
+            parent.gordion_updates_message += f"\n* Bump {node.repo.name} to {commit.hexsha}"
 
   def push(self, set_upstream: bool, delete: bool, remote: Optional[str], branch: str, force: bool):
     """
