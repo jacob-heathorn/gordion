@@ -9,7 +9,7 @@ from .exception import UpdateLocalBranchAheadError, UpdateNoTrackingBranchError
 from .exception import UpdateWrongTrackingBranchError, UpdateDetachedHeadNotSavedError
 from .exception import UpdateRepoIsDirtyError
 from .exception import UpdateSameRepoDifferentTagError, UnsafeRemoveDirty
-from .exception import NotARepositoryError, DanglingGordionRepositoryError
+from .exception import NotARepositoryError, DanglingGordionRepositoryError, NoOriginRemoteError
 from .exception import UpdateDifferentNameSameUrlError
 from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes

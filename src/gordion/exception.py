@@ -166,6 +166,15 @@ class DanglingGordionRepositoryError(Exception):
     super().__init__(self.message)
 
 
+class NoOriginRemoteError(Exception):
+  def __init__(self, path, remotes):
+    remotes_desc = ", ".join(remotes) if remotes else "none"
+    self.message = (
+        f"Repository<{path}> has no remote named 'origin' (remotes: {remotes_desc})."
+    )
+    super().__init__(self.message)
+
+
 class DanglingCommitError(UpdateError):
   def __init__(self, target_path, target_tag):
     reason = (f"Commit<{target_tag}> is dangling (does not belong to a branch)")
