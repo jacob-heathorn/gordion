@@ -38,7 +38,7 @@ class Repository:
     self.name = os.path.basename(self.path)
     assert gordion.Repository.exists(path)
     self.handle: git.Repo = git.Repo(path)
-    self.url = self.handle.remotes.origin.url
+    self.url = Repository._origin_url(self.handle, self.path)
     self.yeditor = gordion.YamlEditor(os.path.join(self.path, 'gordion.yaml'))
     cache = gordion.Cache()
     _, self.default_branch_name = cache.ensure_mirror(self.url)
@@ -84,17 +84,27 @@ class Repository:
     return gordion.Repository(path)
 
   @staticmethod
+  def _origin_url(handle: git.Repo, path: str) -> str:
+    """
+    Returns the URL of the 'origin' remote, raising a clear error if it's missing.
+    """
+    try:
+      return handle.remotes.origin.url
+    except AttributeError:
+      raise gordion.NoOriginRemoteError(path, [r.name for r in handle.remotes])
+
+  @staticmethod
   def _derive_url(path: str, url: str):
     # Derive url if necessary.
     if not url:
       assert gordion.Repository.exists(path)
       repo = git.Repo(path)
-      url = repo.remotes.origin.url
+      url = Repository._origin_url(repo, path)
     else:
       if gordion.Repository.exists(path):
         repo = git.Repo(path)
         # If a repository with the wrong URL already exists at the child path, remove it.
-        if not gordion.utils.compare_urls(url, repo.remotes.origin.url):
+        if not gordion.utils.compare_urls(url, Repository._origin_url(repo, path)):
           gordion.Repository.safe_delete(path)
 
     return url
@@ -373,7 +383,7 @@ class Repository:
   @staticmethod
   def _url(path: str) -> str:
     repo = git.Repo(path)
-    return repo.remotes.origin.url
+    return Repository._origin_url(repo, path)
 
   def _fetch_once(self):
     """
