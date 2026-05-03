@@ -19,7 +19,12 @@ def main(argv=None):
   parser = argparse.ArgumentParser(prog='gordion', description="Gordion user commands")
   parser.add_argument('-u', '--update', action='store_true', help='Update the gordion tree')
   parser.add_argument('-w', '--workspace', action='store_true', help='Print the gordion workspace')
-  parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
+  parser.add_argument(
+      '-f', '--find', type=str, action='append', metavar='REPO',
+      help='Find full path to a repository. May be repeated to look up '
+           'multiple repos in one Python startup (printed one path per '
+           'line, in the order given). Useful for batch lookups — e.g. '
+           'tools/bazel writing --override_module flags.')
   parser.add_argument('--force', action='store_true', help='Update the gordion tree')
 
   # Status parser
@@ -103,10 +108,11 @@ def main(argv=None):
     if args.workspace:
       print(f"{workspace.path}")
 
-    # Print the respository path.
+    # Print the respository path(s) — one per line, preserving caller order.
     if args.find:
-      repo = workspace.get_repository_or_throw(args.find)
-      print(repo.path)
+      for name in args.find:
+        repo = workspace.get_repository_or_throw(name)
+        print(repo.path)
 
     # Git Analogs
     #
