@@ -90,11 +90,11 @@ bazelisk runs in place of bazel keeps the overrides current:
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-gordion bazelrc > "$(dirname "$0")/../user.bazelrc"
+gordion bazelrc > "$(dirname "$0")/../gordion.bazelrc"
 exec "$BAZEL_REAL" "$@"
 ```
 
-with `try-import %workspace%/user.bazelrc` in `.bazelrc`. `gor commit` keeps the two pins in step:
+with `try-import %workspace%/gordion.bazelrc` in `.bazelrc`. `gor commit` keeps the two pins in step:
 when it bumps a dependency's tag in `gordion.yaml` it also bumps the `commit` of that module's
 `git_override`.
 
