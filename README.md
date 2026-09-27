@@ -90,11 +90,12 @@ of bazel keeps the overrides current:
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-gordion bazelrc > "$(dirname "$0")/../gordion.bazelrc"
+mkdir -p "$(dirname "$0")/../.bazel"
+gordion bazelrc > "$(dirname "$0")/../.bazel/gordion.bazelrc"
 exec "$BAZEL_REAL" "$@"
 ```
 
-with `try-import %workspace%/gordion.bazelrc` in `.bazelrc`. A listed repository that is not on
+with `try-import %workspace%/.bazel/gordion.bazelrc` in `.bazelrc`. A listed repository that is not on
 disk is an error: run `gor -u` first. A dependency leaves gordion's management by gaining a
 `git_override` or registry entry in `MODULE.bazel` and losing its `gordion.yaml` listing.
 
