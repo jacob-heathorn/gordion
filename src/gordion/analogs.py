@@ -233,8 +233,6 @@ class Analogs:
             parent.repo.yeditor.write_repository_tag(node.repo.name, commit.hexsha)
             # Add the change.
             parent.repo.add("gordion.yaml")
-            if gordion.bazel.bump_git_override(parent.repo.path, node.repo.name, commit.hexsha):
-              parent.repo.add(gordion.bazel.MODULE_FILE)
             parent.gordion_updates_message += f"\n* Bump {node.repo.name} to {commit.hexsha}"
 
   def push(self, set_upstream: bool, delete: bool, remote: Optional[str], branch: str, force: bool):

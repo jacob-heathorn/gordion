@@ -212,3 +212,12 @@ class UnstagedGordionChangesInLineage(Exception):
     self.message += " preventing commit propogation. If we were to continue, we would need to"
     self.message += " add changes to these gordion files and commit them."
     super().__init__(self.message)
+
+
+class RepositoryNotFoundError(Exception):
+  """
+  A repository listed in the tree is not on disk.
+  """
+
+  def __init__(self, name: str):
+    super().__init__(f"Repository '{name}' is listed in the tree but not on disk. Run `gor -u`.")

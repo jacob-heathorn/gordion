@@ -10,56 +10,35 @@ _BAZEL_DEP = re.compile(r'bazel_dep\(\s*name\s*=\s*"([^"]+)"')
 
 def bazelrc(root: gordion.Tree) -> str:
   """
-  Returns bazelrc lines pointing bzlmod at every bazel dependency that is checked out in the
-  workspace, so bazel builds against the live checkout instead of fetching the pinned commit.
+  Returns bazelrc lines pointing bzlmod at every gordion-managed bazel dependency in the tree, so
+  gordion.yaml is the only place a dependency's version lives.
   """
-  checkouts = _workspace_checkouts(root)
+  repos = _tree_repositories(root)
   deps: Set[str] = set()
-  for repo in [root.repo, *checkouts.values()]:
+  for repo in [root.repo, *repos.values()]:
     deps |= _bazel_deps(repo.path)
-  names = sorted(deps & checkouts.keys())
-  return "".join(f"common --override_module={name}={checkouts[name].path}\n" for name in names)
+  names = sorted(deps & repos.keys())
+  return "".join(f"common --override_module={name}={repos[name].path}\n" for name in names)
 
 
-def bump_git_override(repo_path: str, module_name: str, commit: str) -> bool:
+def _tree_repositories(root: gordion.Tree) -> Dict[str, gordion.Repository]:
   """
-  Points the git_override for <module_name> in <repo_path>/MODULE.bazel at <commit>. Returns
-  whether the file changed.
-  """
-  module_file = os.path.join(repo_path, MODULE_FILE)
-  if not os.path.exists(module_file):
-    return False
-  with open(module_file) as file:
-    before = file.read()
-  name = re.escape(module_name)
-  pattern = re.compile(
-      rf'(git_override\(\s*module_name\s*=\s*"{name}"[^)]*?commit\s*=\s*")[^"]*(")', re.DOTALL)
-  after = pattern.sub(rf'\g<1>{commit}\g<2>', before)
-  if after == before:
-    return False
-  with open(module_file, 'w') as file:
-    file.write(after)
-  return True
-
-
-def _workspace_checkouts(root: gordion.Tree) -> Dict[str, gordion.Repository]:
-  """
-  Returns the repositories listed anywhere in the tree that are checked out in the workspace rather
-  than the cache. Listings are followed as written, whatever commit each checkout is on.
+  Returns every repository listed in the tree, following listings as written whatever commit each
+  checkout is on. A listed repository that is not on disk needs `gor -u` first.
   """
   workspace = gordion.Workspace()
-  checkouts: Dict[str, gordion.Repository] = {}
-  visited = {root.repo.name}
+  repos: Dict[str, gordion.Repository] = {}
   pending = [root.repo]
   while pending:
     for name in _listed_children(pending.pop()):
+      if name in repos or name == root.repo.name:
+        continue
       repo = workspace.get_repository(name)
-      if repo and name not in visited:
-        visited.add(name)
-        pending.append(repo)
-        if not workspace.is_dependency(repo.path):
-          checkouts[name] = repo
-  return checkouts
+      if repo is None:
+        raise gordion.exception.RepositoryNotFoundError(name)
+      repos[name] = repo
+      pending.append(repo)
+  return repos
 
 
 def _listed_children(repo: gordion.Repository) -> List[str]:

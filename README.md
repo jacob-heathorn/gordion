@@ -76,16 +76,16 @@ If you make changes across multiple repositories in your dependency tree, you ca
 ## Bazel
 
 Gordion pins which commit of each dependency you get; bazel's module system (bzlmod) needs to know
-where that checkout lives. `gor bazelrc` bridges the two. For every `bazel_dep` in the tree that is
-checked out in the workspace it prints
+where that checkout lives. `gor bazelrc` bridges the two. For every `bazel_dep` in the tree that
+gordion manages it prints
 
 ```
 common --override_module=<name>=<path>
 ```
 
-so bazel builds against the live checkout. Dependencies left in the cache are not printed; bazel
-fetches those itself from the `git_override` in `MODULE.bazel`. A `tools/bazel` wrapper that
-bazelisk runs in place of bazel keeps the overrides current:
+so bazel builds against gordion's checkout, in the workspace or in the cache, and `gordion.yaml` is
+the only place the dependency's version lives. A `tools/bazel` wrapper that bazelisk runs in place
+of bazel keeps the overrides current:
 
 ```bash
 #!/usr/bin/env bash
@@ -94,9 +94,9 @@ gordion bazelrc > "$(dirname "$0")/../gordion.bazelrc"
 exec "$BAZEL_REAL" "$@"
 ```
 
-with `try-import %workspace%/gordion.bazelrc` in `.bazelrc`. `gor commit` keeps the two pins in step:
-when it bumps a dependency's tag in `gordion.yaml` it also bumps the `commit` of that module's
-`git_override`.
+with `try-import %workspace%/gordion.bazelrc` in `.bazelrc`. A listed repository that is not on
+disk is an error: run `gor -u` first. A dependency leaves gordion's management by gaining a
+`git_override` or registry entry in `MODULE.bazel` and losing its `gordion.yaml` listing.
 
 ## Installation
 
