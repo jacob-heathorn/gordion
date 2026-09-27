@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Dict, Set
+from typing import Dict, List, Set
 import gordion
 
 MODULE_FILE = 'MODULE.bazel'
@@ -43,14 +43,29 @@ def bump_git_override(repo_path: str, module_name: str, commit: str) -> bool:
 
 
 def _workspace_checkouts(root: gordion.Tree) -> Dict[str, gordion.Repository]:
+  """
+  Returns the repositories listed anywhere in the tree that are checked out in the workspace rather
+  than the cache. Listings are followed as written, whatever commit each checkout is on.
+  """
   workspace = gordion.Workspace()
-  listings, _ = root.listings(name=None, url=None)
-  checkouts = {}
-  for listing in listings:
-    repo = workspace.get_repository(listing.name)
-    if repo and repo is not root.repo and not workspace.is_dependency(repo.path):
-      checkouts[repo.name] = repo
+  checkouts: Dict[str, gordion.Repository] = {}
+  visited = {root.repo.name}
+  pending = [root.repo]
+  while pending:
+    for name in _listed_children(pending.pop()):
+      repo = workspace.get_repository(name)
+      if repo and name not in visited:
+        visited.add(name)
+        pending.append(repo)
+        if not workspace.is_dependency(repo.path):
+          checkouts[name] = repo
   return checkouts
+
+
+def _listed_children(repo: gordion.Repository) -> List[str]:
+  if not repo.yeditor.exists():
+    return []
+  return list(repo.yeditor.yaml_data['repositories'].keys())
 
 
 def _bazel_deps(repo_path: str) -> Set[str]:

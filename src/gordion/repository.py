@@ -359,14 +359,10 @@ class Repository:
 
   @staticmethod
   def exists(path: str) -> bool:
-    try:
-      # Initialize the Repo object
-      repo = git.Repo(path)
-      # Compare the absolute paths to determine if 'path' is the repository root
-      return os.path.abspath(str(repo.working_tree_dir)) == os.path.abspath(path)
-    except (git.NoSuchPathError, git.InvalidGitRepositoryError):
-      # If Repo initialization fails, the path is not a Git repository
-      return False
+    """
+    Returns true if <path> is the root of a git working tree.
+    """
+    return os.path.exists(os.path.join(path, '.git'))
 
   @staticmethod
   def is_gordion(path: str) -> bool:
