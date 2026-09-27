@@ -21,10 +21,8 @@ def main(argv=None):
   parser.add_argument('-w', '--workspace', action='store_true', help='Print the gordion workspace')
   parser.add_argument(
       '-f', '--find', type=str, action='append', metavar='REPO',
-      help='Find full path to a repository. May be repeated to look up '
-           'multiple repos in one Python startup (printed one path per '
-           'line, in the order given). Useful for batch lookups — e.g. '
-           'tools/bazel writing --override_module flags.')
+      help='Find full path to a repository. May be repeated; prints one path per line in the '
+           'order given.')
   parser.add_argument('--force', action='store_true', help='Update the gordion tree')
 
   # Status parser
@@ -88,6 +86,11 @@ def main(argv=None):
       help='The name of the branch to push'
   )
   parser_push.add_argument('-f', '--force', action='store_true', help='force updates')
+
+  # Bazelrc parser
+  subparsers.add_parser(
+      'bazelrc', help='Print bzlmod --override_module flags for dependencies checked out in the '
+      'workspace')
 
   args = parser.parse_args()
 
@@ -155,6 +158,11 @@ def main(argv=None):
           args.remote,
           args.branch,
           args.force)
+
+    # Bazelrc
+    if args.command == 'bazelrc':
+      root = gordion.Tree.find(os.getcwd())
+      print(gordion.bazel.bazelrc(root), end='')
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=False)

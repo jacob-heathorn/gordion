@@ -17,4 +17,5 @@ from .exception import UpdateTargetPathExistsError, UpdateMultipleRepositoriesAl
 from .exception import UpdateWorkingRepositoryWrongUrlError, UpdateSameNameDifferentUrlError
 from .yeditor import YamlEditor
 from .workspace import Workspace
+from . import bazel
 from .app import terminal_status

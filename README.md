@@ -46,6 +46,7 @@ When repository A depends on B and C, which both depend on D, Gordion ensures al
 - `gor commit -m <message>` - Commit changes and update dependency versions
 - `gor push` - Push changes in all repositories
 - `gor -f <repo-name>` - Find path to a specific repository
+- `gor bazelrc` - Print bzlmod `--override_module` flags for dependencies checked out in the workspace
 
 ## Functional Description
 
@@ -71,6 +72,31 @@ If you make changes across multiple repositories in your dependency tree, you ca
 
 ### Information Loss Protection
 `gor -u` guarantees no information can be lost. If the update needs to checkout an earlier commit on a branch, it will only do so if there is already a remote branch that has saved the current commit. If the repository has uncommitted changes that would be lost by the update, the tool will error and notify you rather than proceeding (unless it's a cached dependency). In general, if the tool destroys information during an update that cannot be recovered by conventional git operations, then you've found a bug!
+
+## Bazel
+
+Gordion pins which commit of each dependency you get; bazel's module system (bzlmod) needs to know
+where that checkout lives. `gor bazelrc` bridges the two. For every `bazel_dep` in the tree that is
+checked out in the workspace it prints
+
+```
+common --override_module=<name>=<path>
+```
+
+so bazel builds against the live checkout. Dependencies left in the cache are not printed; bazel
+fetches those itself from the `git_override` in `MODULE.bazel`. A `tools/bazel` wrapper that
+bazelisk runs in place of bazel keeps the overrides current:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+gordion bazelrc > "$(dirname "$0")/../user.bazelrc"
+exec "$BAZEL_REAL" "$@"
+```
+
+with `try-import %workspace%/user.bazelrc` in `.bazelrc`. `gor commit` keeps the two pins in step:
+when it bumps a dependency's tag in `gordion.yaml` it also bumps the `commit` of that module's
+`git_override`.
 
 ## Installation
 
