@@ -3,3 +3,4 @@
 .coverage
 /.direnv
 /dist
+__pycache__/

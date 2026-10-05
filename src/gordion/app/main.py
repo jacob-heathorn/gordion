@@ -19,7 +19,10 @@ def main(argv=None):
   parser = argparse.ArgumentParser(prog='gordion', description="Gordion user commands")
   parser.add_argument('-u', '--update', action='store_true', help='Update the gordion tree')
   parser.add_argument('-w', '--workspace', action='store_true', help='Print the gordion workspace')
-  parser.add_argument('-f', '--find', type=str, help='Find full path to repository name')
+  parser.add_argument(
+      '-f', '--find', type=str, action='append', metavar='REPO',
+      help='Find full path to a repository. May be repeated; prints one path per line in the '
+           'order given.')
   parser.add_argument('--force', action='store_true', help='Update the gordion tree')
 
   # Status parser
@@ -84,6 +87,11 @@ def main(argv=None):
   )
   parser_push.add_argument('-f', '--force', action='store_true', help='force updates')
 
+  # Bazelrc parser
+  subparsers.add_parser(
+      'bazelrc', help='Print bzlmod --override_module flags for dependencies checked out in the '
+      'workspace')
+
   args = parser.parse_args()
 
   try:
@@ -103,10 +111,11 @@ def main(argv=None):
     if args.workspace:
       print(f"{workspace.path}")
 
-    # Print the respository path.
+    # Print the respository path(s) — one per line, preserving caller order.
     if args.find:
-      repo = workspace.get_repository_or_throw(args.find)
-      print(repo.path)
+      for name in args.find:
+        repo = workspace.get_repository_or_throw(name)
+        print(repo.path)
 
     # Git Analogs
     #
@@ -149,6 +158,11 @@ def main(argv=None):
           args.remote,
           args.branch,
           args.force)
+
+    # Bazelrc
+    if args.command == 'bazelrc':
+      root = gordion.Tree.find(os.getcwd())
+      print(gordion.bazel.bazelrc(root), end='')
 
   except Exception as e:
     gordion.utils.print_exception(e=e, trace=False)

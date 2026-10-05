@@ -46,6 +46,7 @@ When repository A depends on B and C, which both depend on D, Gordion ensures al
 - `gor commit -m <message>` - Commit changes and update dependency versions
 - `gor push` - Push changes in all repositories
 - `gor -f <repo-name>` - Find path to a specific repository
+- `gor bazelrc` - Print bzlmod `--override_module` flags for dependencies checked out in the workspace
 
 ## Functional Description
 
@@ -71,6 +72,32 @@ If you make changes across multiple repositories in your dependency tree, you ca
 
 ### Information Loss Protection
 `gor -u` guarantees no information can be lost. If the update needs to checkout an earlier commit on a branch, it will only do so if there is already a remote branch that has saved the current commit. If the repository has uncommitted changes that would be lost by the update, the tool will error and notify you rather than proceeding (unless it's a cached dependency). In general, if the tool destroys information during an update that cannot be recovered by conventional git operations, then you've found a bug!
+
+## Bazel
+
+Gordion pins which commit of each dependency you get; bazel's module system (bzlmod) needs to know
+where that checkout lives. `gor bazelrc` bridges the two. For every `bazel_dep` in the tree that
+gordion manages it prints
+
+```
+common --override_module=<name>=<path>
+```
+
+so bazel builds against gordion's checkout, in the workspace or in the cache, and `gordion.yaml` is
+the only place the dependency's version lives. A `tools/bazel` wrapper that bazelisk runs in place
+of bazel keeps the overrides current:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+mkdir -p "$(dirname "$0")/../.bazel"
+gordion bazelrc > "$(dirname "$0")/../.bazel/gordion.bazelrc"
+exec "$BAZEL_REAL" "$@"
+```
+
+with `try-import %workspace%/.bazel/gordion.bazelrc` in `.bazelrc`. A listed repository that is not on
+disk is an error: run `gor -u` first. A dependency leaves gordion's management by gaining a
+`git_override` or registry entry in `MODULE.bazel` and losing its `gordion.yaml` listing.
 
 ## Installation
 

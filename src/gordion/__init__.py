@@ -15,6 +15,8 @@ from .exception import DanglingCommitError, UnsafeRemoveLocalBranchAhead
 from .exception import UnsafeRemoveLocalBranchNoTrackingBranch, UnsafeRemoveStashes
 from .exception import UpdateTargetPathExistsError, UpdateMultipleRepositoriesAlreadyExistsError
 from .exception import UpdateWorkingRepositoryWrongUrlError, UpdateSameNameDifferentUrlError
+from .exception import RepositoryNotFoundError
 from .yeditor import YamlEditor
 from .workspace import Workspace
+from . import bazel
 from .app import terminal_status
